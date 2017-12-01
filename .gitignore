@@ -1,0 +1,7 @@
+
+# our temporary directiories
+build/
+dist/
+
+# npm
+node_modules/
