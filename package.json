@@ -1,0 +1,23 @@
+{
+	"name": "subminus",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build.old": "flow-remove-types src/ -d lib/",
+		"build": "./peorify.sh",
+		"prepublish": "npm run build"
+	},
+	"author": "peoro",
+	"license": "ISC",
+	"devDependencies": {
+		"@sweet-js/cli": "^3.0.13",
+		"babel-plugin-transform-strict-mode": "^6.24.1",
+		"flow-bin": "^0.59.0",
+		"flow-remove-types": "^1.2.3"
+	},
+	"dependencies": {
+		"js-protocols": "file:../js-protocols",
+		"jsawk": "file:../jsawk"
+	}
+}
