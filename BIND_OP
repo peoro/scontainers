@@ -1,0 +1,29 @@
+
+for each symbol `s` I should define a function `f<s>`:
+```
+f<s> = function( ...args ) { return this[symbols<s>].call(...args); };
+f<s>.symbol = s;
+```
+
+`f<s>()` should be called like this:
+```
+f<s>.call( collection, ...args )
+```
+i.e. (when using function-bind):
+```
+collection::f<s>( ...args );
+```
+
+this way users can avoid using the `.*` operator: instead of `coll.*map(...)` they can do `coll::map(...)`
+one extra advantage is that `f<s>` can handle errors: if it's called on something that doesn't implement `s` (or even on undefined and whatnot), it can print nice error messages.
+
+another advantage is that it'd be easy to implement other, compatible functions `f'<s>` that, for instance, automatically `collect`
+
+I should introduce other bindable functions:
+instead of checking whether an object `o` implements a protocol `p` with `o.*p`
+I could do...
+```
+o::implProto(p)
+```
+
+In `Collections` (i.e. `subminus`) all the protocols (and the abstractions over them, like the `f<s>` functions) should always offer a `factory` property, that returns the optimized function.

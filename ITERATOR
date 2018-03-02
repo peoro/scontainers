@@ -1,0 +1,210 @@
+
+["arg", "bao", "bambi", "ancora", "bestiadidio"]
+	.groupBy( (str)=>str[0] )
+	.map( (group, firstLetter)=>group.size() )
+	....
+
+
+NOTE: *a === iterator<a>
+
+function groupByMap(
+	collection: *a,
+	groupingFn:(a->b),
+	mappingFn:(*a->c)
+) -> { b: c }
+{
+	output = {};
+
+	for item in collection:
+		key = groupingFn( item )
+		if not key in output:
+			output[key] = new Iterator
+		output[key].feed( item )
+
+	for key, iterator in output:
+		output[key] = iterator.end()
+}
+
+
+function identityMap( iterator ) {
+	return iterator
+}
+
+function sumMap( iterator ) {
+	return iterator.fold( (sum, value)=>sum+value, 0 );
+}
+
+
+
+
+
+["aaa", "bbaaaa", "ccccaaa", "aaaxxx"]
+	.groupBy( (str)=>str[0] )
+	.map( (words, firstLetter)=>words.count() )
+
+
+
+
+
+
+
+iterator = {
+	next() -> item | end
+}
+asyncIterator<a> = {
+	feed( a ) -> ()
+	end( ) -> b
+	onNext( callback:(item -> () | end -> b) ) -> ()
+}
+
+async function fold(
+	iterator: *a,
+	reducingFn: (b, a)->b,
+	initialValue: b
+) -> b
+{
+	/*
+	value = initialValue
+	while (item = iterator.next()) != end:
+		value = reducingFn( value, item )
+	return value
+	*/
+
+	// returning the asynchronous iterator
+	return {
+		state: initialValue,
+		next( item ) {
+			this.state = reducingFn( this.state, item )
+		},
+		end( ) {
+			return this.state
+		}
+	}
+}
+
+
+
+groupBy(
+	input: iterator<a>,
+	groupingFn: (a -> b)
+) -> asyncIterator< b: asyncIterator<a> >
+
+
+asyncIterator<a> {
+	onNext: a -> ()
+	enEnd: () -> b
+}
+
+reorderedIterator<a> {
+	feed( a ) -> () { this.onNext(a); },
+	end() -> b { return this.onEnd(); },
+
+
+	/*
+	proceed: () -> b,
+	onNext: a -> (),
+	enEnd: () -> b
+	*/
+	onNext: a->b, b
+	// or
+	onNext: a -> bool,
+	onEnd: () -> b,
+	proceed() {
+		while true:
+			next = it.next()
+			if next.done:
+				break
+			if ! onNext( i+1 ):
+				break
+		return onEnd()
+	}
+}
+
+// iterator generalization: propagator
+{
+	nextValue( value ) {
+	}
+	nextKey( key ) {
+	}
+	nextKV( kv ) {
+	}
+	start( state ) {
+	}
+	next( kv, state ) {
+		// might have only `kv.key` or only `kv.value` or both,
+		// depending on what was called and on the value of `needValue` and `needKey`
+	}
+	end( state ) {
+	}
+	// needValue: false, // e.g. `map:false`, `filter:true`
+	// needKey: false,
+	alwaysPropagate, // `filter:false`; might return `undefined`
+	propagateMulti, // e.g. `flatten:true`, returns an iterator
+	needState: false, // e.g. `sort:true`, `groupBy:true`
+	reorder: false, // e.g. `groupBy` - the returned iterator is a `ReorderedIterator`
+}
+
+
+
+
+function fold(
+	input: reorderedIterator<a>,
+	updatingFn: ((b, a) -> b),
+	initialValue: b
+) -> b {
+	/*
+	let state = initialValue;
+	input.onNext = function( item ) {
+		state = updatingFn( state, item );
+	};
+	input.onEnd = function() { return state; };
+	*/
+
+	let state = initialValue
+	function rec( item ) {
+		state = updatingFn( state, item );
+		return onNext( rec, state );
+	}
+	return onNext( rec, state );
+}
+// or
+{
+	let state = initialValue;
+	input.onNext = function( item ) {
+		state = updatingFn( state, item );
+	};
+	input.onEnd = function() { return state; };
+
+	return input.proceed();
+}
+
+function map(
+	input: reorderedIterator<a>,
+	mappingFn: (a -> b)
+) -> reorderedIterator<a> {
+	/*
+	mappedIterator = new ReorderedIterator()
+
+	mappedIterator.onNext = function() {
+		return input.onNext( (item)=>{
+			return mappedIterator(item)
+		})
+	}
+
+	input.onNext = function( item ) {
+		mappedIterator.feed( mappedIterator(item) )
+	}
+	input.onEnd = function() {
+		return mappedIterator.end()
+	}
+
+	return mappedIterator;
+	*/
+}
+
+
+ArrayIterator.onNext( fn, finalValue ) {
+	return i < arr.length ?
+		fn( arr[i++] ) :
+		finalValue;
+}

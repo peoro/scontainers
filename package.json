@@ -6,7 +6,9 @@
 	"scripts": {
 		"build.old": "flow-remove-types src/ -d lib/",
 		"build": "./peorify.sh",
-		"prepublish": "npm run build"
+		"prepublish": "npm run build",
+		"dist-watch": "npx babel --watch src --out-dir dist",
+		"dist": "npx babel src --out-dir dist"
 	},
 	"author": "peoro",
 	"license": "ISC",
@@ -17,7 +19,19 @@
 		"flow-remove-types": "^1.2.3"
 	},
 	"dependencies": {
+		"babel-cli": "^6.26.0",
+		"babel-core": "^6.26.0",
+		"babel-plugin-transform-function-bind": "^6.22.0",
 		"js-protocols": "file:../js-protocols",
-		"jsawk": "file:../jsawk"
+		"js-protocols-babylon": "file:../js-protocols-babylon"
+	},
+	"babel": {
+		"plugins": [
+			"transform-strict-mode",
+			"transform-function-bind"
+		],
+		"parserOpts": {
+			"parser": "js-protocols-babylon"
+		}
 	}
 }

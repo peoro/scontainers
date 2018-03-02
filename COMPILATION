@@ -1,0 +1,23 @@
+
+We should "compile" iterators.
+
+It's pretty easy: the implementation of `kvIterator` (and possibly `kvReorderedIterator`) should return a factory that creates a `new Function`.
+
+The logic to create the `new Function` should be the following...
+
+Request a `loop` from the parent collection, or create one if possible.
+Add instructions to the `loop`, including `loop.break()` and `loop.continue()`. You can also add instructions after or before the loop.
+
+Examples:
+
+Array.loop = for(...){}
+Map.loop = for(...of...){}
+Keys.loop = parent.loop().add: loop.setValue(loop.getKey())
+Values.loop = parent.loop()
+Filter.loop = parent.loop().add: if fn(loop.getValue(), loop.getKey()): loop.continue()
+Slice.loop = match parent.loop():
+	if .*nth: loop.setStart( +=this.begin ); loop.setEnd( Math.min(loop.getEnd(), this.end) );
+Map.loop = parent.loop().add: loop.setValue( fn(loop.getValue(), loop.getKey()) )
+Chunk.loop = parent.loop().add( for(...) )
+
+Every iterator in the chain must also declare its parameters to the new function, and to pass them upon execution.
