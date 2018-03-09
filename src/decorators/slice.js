@@ -6,6 +6,8 @@ const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
 
+const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
+
 use protocols from subminus.symbols;
 
 module.exports = subminus.makeDecoratorFactory( (Type)=>{
@@ -74,10 +76,11 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 			return `${this.wrapped}[${this.begin}:${this.end}]`;
 		}
 	}
-	Slice.Propagator = {
+
+	Slice::implementCoreProtocolsFromPropagator( Type, {
 		parentCollection() { return this.wrapped; },
 		nToParentN( n ) { if( n >= 0 && n < this.*len() ) { return this.begin + n; } },
-	};
+	});
 
 	return Slice;
 });

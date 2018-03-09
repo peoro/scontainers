@@ -6,6 +6,8 @@ const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
 
+const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
+
 use protocols from subminus.symbols;
 
 module.exports = subminus.makeDecoratorFactory( (Type)=>{
@@ -30,7 +32,7 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 		}
 		nth() {
 			if( proto.*nth && proto.*len ) {
-				return function nth( n ) {
+				return function( n ) {
 					return this.wrapped.*slice( n*this.n, Math.min(this.wrapped.*len(),  (n+1)*this.n) );
 				};
 			}
@@ -38,6 +40,7 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 
 		kvIterator() {
 			// TODO: don't allocate a `Map`: use a reordered iterator
+			// TODO: if you can clone the iterator on `this.wrapped`, do it!
 			return function kvIterator() {
 				return {
 					n: this.n,
@@ -90,10 +93,10 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 			return `${this.wrapped}.chunk(${this.n})`;
 		}
 	}
-	Chunk.Propagator = {
+	Chunk::implementCoreProtocolsFromPropagator( Type, {
 		parentCollection() { return this.wrapped; },
 		nToParentN( n ) { return n*this.n; },
-	};
+	});
 
 	return Chunk;
 });

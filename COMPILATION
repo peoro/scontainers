@@ -12,12 +12,50 @@ Examples:
 
 Array.loop = for(...){}
 Map.loop = for(...of...){}
+Range
+Set
+
 Keys.loop = parent.loop().add: loop.setValue(loop.getKey())
 Values.loop = parent.loop()
+Entries
+Properites
+Enumerate
 Filter.loop = parent.loop().add: if fn(loop.getValue(), loop.getKey()): loop.continue()
+Uniq
 Slice.loop = match parent.loop():
 	if .*nth: loop.setStart( +=this.begin ); loop.setEnd( Math.min(loop.getEnd(), this.end) );
-Map.loop = parent.loop().add: loop.setValue( fn(loop.getValue(), loop.getKey()) )
 Chunk.loop = parent.loop().add( for(...) )
+Map.loop = parent.loop().add: loop.setValue( fn(loop.getValue(), loop.getKey()) )
+MapKey
+Cache
+Iter
+Reordered
+Flatten
+FlattenDeep
+Concat
+SkipWhile
+TakeWhile
+Skip
+Take
+GroupBy
+Cow
+Remap
+KvMap
+Unmap
+UnmapKeys
+Sort
+Shuffle
+Permute
+GroupWhile
+
+
 
 Every iterator in the chain must also declare its parameters to the new function, and to pass them upon execution.
+
+
+
+Compared to what I'm doing I should...
+ - introduce a `Compiler` property for our collections (similar to the `Propagator` one)
+ - have `Compiler.declareArgs(fn)` that calls `fn( this[arg], argName )` for every arg. It will be used both to declare function arguments and to pass the arguments.
+ - have `Compiler.get(compiler)` and/or `Compiler.nth(compiler)`: they can use and assign `compiler.key`, `compiler.value`, call `compiler.skip()` and have to return a statement. (these are supposed to be semantically equivalent to `Propagator.next`).
+ - have `Compiler.kvIterator( compiler )` which is like the current `iteratorCompiler`, but can be automatically generated from `Compiler.get(compiler)` and/or `Compiler.nth(compiler)`.

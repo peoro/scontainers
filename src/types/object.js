@@ -1,35 +1,36 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const symbols = require('../symbols.js');
+const {hasSymbols, decorate, implementSymbolsFromFactory} = require('../util.js');
 
-use protocols from subminus.symbols;
-
-/*
-module.exports = subminus.implementForExistingType( Object, class ObjectWrapper {
-	static from( collection ) {
-		// TODO: this function should be specialized, just like the rest of what this lib does...
-		if( collection.*forAny ) {
-			const object = {};
-			collection.*forAny( (value, key)=>void (object[key] = value) );
-			return object;
-		}
-		assert( false );
-	}
-	constructor( obj ) {
-		this.wrapped = obj;
-	}
-});
-*/
-
-Object.*from = function from( collection ) {
+Object[symbols.from] = function from( collection ) {
 	// TODO: this function should be specialized, just like the rest of what this lib does...
-	if( collection.*forAny ) {
+	if( collection::hasSymbols(symbols.forAny) ) {
 		const object = {};
-		collection.*forAny( (value, key)=>void (object[key] = value) );
+		collection[symbols.forAny]( (value, key)=>void (object[key] = value) );
 		return object;
 	}
 	assert( false );
 };
+
+Object.prototype::implementSymbolsFromFactory( {
+	ownProperties: Object::decorate( require('../decorators/object_own_properties') ),
+	properties: Object::decorate( require('../decorators/object_enumerable_properties') ),
+	// TODO: override `toString`, but force its overriddance
+	toString() {
+		return function toString() {
+			if( this.toString !== Object.prototype.toString ) {
+				return this.toString();
+			}
+
+			const out = this::properties()
+				::map( (value, key)=>`${key::toString()}:${value::toString()}` )
+				::collect( Array );
+			return `{${out.join(', ')}}`;
+		}
+	}
+});
+
+// requiring bound at the end, as it needs our `ownProperties` functions etc
+const {collect, map, properties, toString} = require('../bound.js');

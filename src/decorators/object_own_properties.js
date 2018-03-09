@@ -1,6 +1,7 @@
 
 'use strict';
 
+const assert = require('assert');
 const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
@@ -8,12 +9,12 @@ const subminus = require('../');
 use protocols from subminus.symbols;
 
 module.exports = subminus.makeDecoratorFactory( (Type)=>{
+	assert( Type === Object, `ObjectOwnProperties is only needed by Object...` );
 	const proto = Type.prototype;
 
 	class OwnProperties {
-		constructor( coll, fn ) {
+		constructor( coll ) {
 			this.wrapped = coll;
-			this.fn = fn;
 		}
 
 		get() {

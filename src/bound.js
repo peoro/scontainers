@@ -1,5 +1,9 @@
 
-const {symbols} = require('./');
+require('./index.js'); // to implement some symbols, like `map`
+require('./types/object.js'); // to generate some symbols, like Object[symbols.ownProperties]
+
+const symbols = require('./symbols.js');
+const {toString, hasSymbols} = require('./util.js');
 
 function bindSymbol( sym, symName ) {
 	const f = function() {
@@ -9,7 +13,14 @@ function bindSymbol( sym, symName ) {
 		if( ! this[sym] ) {
 			throw new Error(`${symName} called on ${this} (${this::toString()}), that doesn't implement it.`);
 		}
-		return this[sym].apply( this, arguments );
+
+		try {
+			return this[sym].apply( this, arguments );
+		}
+		catch( err ) {
+			console.log(`Error while calling ${this}.${symName}(${Array.from(arguments)})`);
+			throw err;
+		}
 	};
 	f.factory = function() {
 		TODO();
@@ -24,26 +35,7 @@ module.exports = symbols[symbols.ownProperties]()
 	[symbols.map]( bindSymbol )
 	[symbols.collect]( Object );
 
-module.exports.toString = function( ) {
-	switch( this ) {
-		case null: return `null`;
-		case undefined: return `undefined`;
-	}
-	if( this[symbols.toString] ) {
-		return this[symbols.toString]();
-	}
-	throw new Error(`Nothing, besides null and undefined, should lack ::toString()...`);
-	if( this.toString ) {
-		return this.toString();
-	}
-	return `unknown`;
-}
-
-const {every} = module.exports;
-
-function hasSymbols( ...syms ) {
-	return syms::every( (s)=>!! this[s] );
-}
+module.exports.toString = toString;
 
 if( require.main === module ) {
 	const {Range} = require('./');
