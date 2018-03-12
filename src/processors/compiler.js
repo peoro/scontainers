@@ -26,14 +26,39 @@ class CompilerDefinition {
 				continue;
 			}
 
-			this.methods[factoryName] = function( compiler ) {
-				const args = compiler.pushArgumentsToHierarchy( properties.args );
-				fn.apply( this, arguments );
-			}
+			this.methods[factoryName] = fn;
 		}
 	}
 
+	instantiate( compiler, argsMapFn ) {
+		const definition = this;
+		const parentDefinition = properties.ParentType[compilerSymbol];
+		const properties = this.CollectionType[propertiesSymbol];
 
+		const obj = {};
+
+		for( let fnName in methods ) {
+			obj[fnName] = methods;
+		}
+
+		let parentInstance;
+
+		Object.defineProperties( obj, {
+			args: {
+				value: compiler.pushArgumentsToHierarchy(properties.args);
+			},
+			parent: {
+				get() {
+					return parentInstance = parentInstance || parentDefinition.instantiate( compiler );
+				}
+			},
+			reinstantiate: {
+				value: ( argsMapFn )=>definition.instantiate( compiler, argsMapFn )
+			}
+		};
+
+		return obj;
+	}
 }
 
 function finalizeCompilerDefinition( ) {
