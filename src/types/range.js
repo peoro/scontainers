@@ -47,17 +47,19 @@ Range::defineProperties({
 });
 
 Range::compileProtocolsForRootType({
-	nth( compiler, {begin, end}, n ) {
-		return n.plus(begin);
+	nth( compiler, n ) {
+		const {begin} = this.args;
+		return n.plus( begin );
 	},
-	nToKey( compiler, {begin, end}, n ) {
+	nToKey( compiler, n ) {
 		return n;
 	},
-	keyToN( compiler, {begin, end}, key ) {
+	keyToN( compiler, key ) {
 		return key;
 	},
 	// add: nope
-	len( compiler, {begin, end} ) {
+	len( compiler ) {
+		const {begin, end} = this.args;
 		return end.minus(begin);
 	},
 	// reverse: from nth+len
@@ -102,34 +104,6 @@ Range.prototype::implementSymbols({
 		return n >= 0 && n < this.*len();
 	},
 	nthKey( n ) { return n; },
-
-	/*
-	iteratorCompiler() {
-		console.log( Compiler );
-		const compiler = new Compiler();
-
-		const begin = compiler.cretaeArgumentVariable(`begin`);
-		const end = compiler.cretaeArgumentVariable(`end`);
-		const key = compiler.createUniqueVariable(`k`);
-		const n = compiler.createUniqueVariable(`n`);
-
-		compiler.code.pushStatement(
-			compiler.loop = semantics.for(
-				n.declare( begin ),
-				n.lt( end ),
-				n.increment(),
-				compiler.body = new semantics.Block(
-					key.declare( n.minus(begin) )
-				)
-			)
-		);
-
-		compiler.key = key;
-		compiler.value = n;
-
-		return compiler;
-	},
-	*/
 
 	// optimization
 	sum() { return ( this.begin + this.end-1 ) * this.len() / 2; },

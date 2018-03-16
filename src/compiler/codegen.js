@@ -21,10 +21,115 @@ function log() {
 }
 log.ind = 0;
 
+// associativity constants
+const LTR = Symbol('left-to-right');
+const RTL = Symbol('right-to-left');
+
 const Compiler = module.exports = function( grammar ) {
 	const Compiler = {
 		match( node, pattern ) {
 			return Node.match( node, pattern );
+		},
+
+		precedence( node ) {
+			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+			assert( grammar.Expression.match(node) );
+
+			return Compiler.match( node, {
+				MemberExpression() { return 19; },
+				NewExpression() { return 19; },
+				CallExpression() { return 19; },
+
+				UpdateExpression() { return node.prefix ? 16 : 17; },
+				UnaryExpression() { return 16; }, // TODO: if `yield` falls here, it needs to be handled...
+
+				BinaryExpression() {
+					switch( this.operator ) {
+						case '**': return 15;
+						case '*':
+						case '/':
+						case '%':
+							return 14;
+						case '+':
+						case '-':
+							return 13;
+						case '<<':
+						case '>>':
+						case '>>>':
+							return 12;
+						case '<':
+						case '<=':
+						case '>':
+						case '>=':
+						case 'in':
+						case 'instanceof':
+							return 11;
+						case '==':
+						case '!=':
+						case '===':
+						case '!==':
+							return 10;
+						case '&': return 9;
+						case '^': return 8;
+						case '|': return 7;
+						case '&&': return 6;
+						case '||': return 5;
+					}
+				},
+				ConditionalExpression() { return 4; },
+				AssignmentExpression() { return 3; },
+				SequenceExpression() { return 1; },
+				[Node.unhandled]( unused, t ) {
+					console.error(`Couldn't find precedence for ESTree node ${t}:`, node);
+				}
+			});
+		},
+		associativity( node ) {
+			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+			assert( grammar.Expression.match(node) );
+
+			return Compiler.match( node, {
+				MemberExpression() { return LTR; },
+				NewExpression() {},
+				CallExpression() { return LTR; },
+				UpdateExpression() {},
+				UnaryExpression() { return RTL; }, // TODO: if `yield` falls here, it needs to be handled...
+				BinaryExpression() {
+					switch( this.operator ) {
+						case '**': return RTL;
+						case '*':
+						case '/':
+						case '%':
+						case '+':
+						case '-':
+						case '<<':
+						case '>>':
+						case '>>>':
+						case '<':
+						case '<=':
+						case '>':
+						case '>=':
+						case 'in':
+						case 'instanceof':
+						case '==':
+						case '!=':
+						case '===':
+						case '!==':
+						case '&':
+						case '^':
+						case '|':
+						case '&&':
+						case '||':
+							return LTR;
+					}
+				},
+				ConditionalExpression() { return RTL; },
+				AssignmentExpression() { return RTL; },
+				SequenceExpression() { return LTR; },
+				[Node.unhandled]( unused, t ) {
+					console.error(`Couldn't find associativity for ESTree node ${t}:`, node);
+				}
+			});
 		},
 
 		compile( obj, opts ) {
@@ -206,7 +311,7 @@ const Compiler = module.exports = function( grammar ) {
 					if( node.computed ) {
 						return [node.object, `[`, node.property, `]`];
 					} else {
-						return [node.object, `.`, node.property.value || node.property];
+						return [node.object, `.`, node.property.value ];
 					}
 				},
 				ConditionalExpression()	{ return [node.test, `?`, node.consequent, `:`, node.alternate]; },

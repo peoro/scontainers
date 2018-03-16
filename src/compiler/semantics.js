@@ -19,7 +19,7 @@ module.exports = function( grammar, builders ) {
 		switch( typeof this ) {
 			case "boolean":
 			case "number":
-			case "string":
+			// case "string":
 				return new Literal(this).id();
 		}
 
@@ -52,7 +52,7 @@ module.exports = function( grammar, builders ) {
 		}
 		createUniqueVariable( varBaseName=`unnamedVar` ) {
 			let counter = 0;
-			let varName = `${varBaseName}${counter}`;
+			let varName = `${varBaseName}`;
 			while( this.variables.has(varName) ) {
 				++ counter;
 				varName = `${varBaseName}${counter}`;
@@ -138,6 +138,10 @@ module.exports = function( grammar, builders ) {
 
 		// TODO: should this belong to array, object etc?
 		member( key, computed=false ) {
+			if( typeof key === 'string' ) {
+				key = computed ? lit(key) : id(key);
+			}
+
 			return new Expression( builders.MemberExpression( this.id(), key::ast(), !!computed ) );
 		}
 		/*

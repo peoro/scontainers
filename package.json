@@ -22,6 +22,7 @@
 		"babel-cli": "^6.26.0",
 		"babel-core": "^6.26.0",
 		"babel-plugin-transform-function-bind": "^6.22.0",
+		"escodegen": "^1.9.1",
 		"js-protocols": "file:../js-protocols",
 		"js-protocols-babylon": "file:../js-protocols-babylon"
 	},

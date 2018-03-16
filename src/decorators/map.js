@@ -91,23 +91,21 @@ module.exports = {
 		*/
 
 		Map::compileProtocolsForTransformation( Type, {
-			get( compiler, {mapFn}, key ) {
-				const value = compiler.parent.get( key );
-				return mapFn.call( value, key );
+			nStage( compiler, parentStage ) {
+				const {args, parent} = this;
+				console.log( this );
+				console.log( args );
+				console.log( parent );
+				parentStage( compiler );
+				console.log( `value:`, compiler.value );
+				console.log( `key:`, compiler.key );
+				console.log( `code:`, compiler.toCode() );
+				console.log();
+				compiler.value = args.mapFn.call( compiler.value, compiler.key );
 			},
-			// set: nope
-			hasKey( compiler, {mapFn}, key ) {
-				return compiler.parent.hasKey( key );
+			len( compiler ) {
+				return this.parent.len( compiler );
 			},
-			// has: nope
-			// nth: from get+nthKey
-			// setNth: from set+nthKey
-			// hasNth: from hasKey+nthKey
-			nthKey( compiler ) {},
-			// add: nope
-			len() {},
-			// reverse: from nth+len
-			// clear: nope
 		});
 
 		Map.prototype::implementSymbolsFromFactory({

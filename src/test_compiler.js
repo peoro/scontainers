@@ -36,15 +36,27 @@ function square( n ) { return n*n; }
 		new Range( 3, 12 )
 	);
 
-	//for( let [k,v] of new Range(3, 12) ) {
-	//	console.log( `  ${k}: ${v}` );
-	//}
-	const collection = new Range(3, 12);
-	const it = collection[symbols.kvIterator]();
-	let next = it.next();
-	while( ! next.done ) {
-		console.log( next.value );
-		next = it.next();
+	{
+		//for( let [k,v] of new Range(3, 12) ) {
+		//	console.log( `  ${k}: ${v}` );
+		//}
+		const collection = new Range(3, 12);
+		const it = collection[symbols.kvIterator]();
+		let next = it.next();
+		while( ! next.done ) {
+			console.log( next.value );
+			next = it.next();
+		}
 	}
 
+	{
+		console.log();
+		const collection = new Range(3, 12)::map( square );
+		const it = collection[symbols.kvIterator]();
+		let next = it.next();
+		while( ! next.done ) {
+			console.log( next.value );
+			next = it.next();
+		}
+	}
 }

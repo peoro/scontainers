@@ -27,13 +27,17 @@ Every compilable collection's Properties needs to include:
  - `args`: an object with the argument of the collection. The keys are the names of the arguments and their value is a function returning the argument for the collection instance `this`.
 
 Besides `args`, a Compiler Definition should provide compilers for the functions it wishes to use for compilation:
- - `len( args )`, returning an Expression with the length of the collection
- - `next( args, compiler )`, generating the code to do the equivalent of Propagator's `next`. It finds `code`, `key`, `value`, `loop` and `body` in `compiler`, and can use and modify these values freely.
- - `get( args, compiler, value, key )`
+ - `len()`, returning an Expression with the length of the collection
+ - `next( compiler )`, generating the code to do the equivalent of Propagator's `next`. It finds `code`, `key`, `value`, `loop` and `body` in `compiler`, and can use and modify these values freely.
+ - `get( compiler, value, key )`
+ - `stage( compiler, parentStage )`, `nStage( compiler, parentStage )`, only for derived compilers
 
-`args` are objects matching `Properties.args` whose values are Expressions nodes carrying the value of the arg.
+ Note that these functions have a slightly different semantics from the core protocols. These functions should will be called with a `this` object with the following properties:
+  - `this.parent`, to be used to call parent's compiler functions
+  - `this.args`: an objects matching `Properties.args` whose values are Expressions nodes carrying the value of the arg.
+  - the available methods (e.g. `len` etc)
 
-The processor will set the [compilerSymbol] property of the collection to an object with all the compilers.
+The processor will create an object with functions meant to compile code for the core prototypes, set it as the [compilerSymbol] property of the collection.
 
 ### Implementation NOTEs
 
