@@ -206,7 +206,7 @@ class CompilerDefinition {
 			const parentDefinition = properties.ParentType[compilerSymbol];
 			if( parentDefinition ) {
 				// UGH D:
-				parent = new CompilerDefinition( properties.ParentType, parentDefinition).instantiate( compiler );
+				parent = new CompilerDefinition( properties.ParentType, parentDefinition).instantiate( compiler, argsMapFn );
 			}
 		}
 
@@ -544,17 +544,19 @@ function compileProtocolsForTransformation( ParentType, compilerDefinition ) {
 
 	const properties = this[propertiesSymbol];
 
-if( comp.stage ) // TODO: UGH D:
+// TODO: clean up this mess a bit :F
+const cd = new CompilerDefinition( Type, comp );
+if( comp.nth )
 	proto::implementSymbolsFromFactory({
 		kvIterator: {
 			factory() {
 				const compiler = new Compiler(Type);
 				const cd = new CompilerDefinition( Type, comp ).instantiate( compiler );
-				const args = compiler.registerTypeArguments( Type, properties.args );
 				const cdWithMemberArgs = cd.reinstantiate( (arg)=>semantics.this().member(arg) );
+				const args = compiler.getTypeArgumentArray();
 
 				{
-					const params = Object.values(args);
+					const params = args.map( arg=>arg.variable );
 
 					const Reflect = semantics.id(`Reflect`);
 					const argumentsObj = semantics.id(`arguments`);
@@ -576,9 +578,10 @@ if( comp.stage ) // TODO: UGH D:
 						done.declareFunction( [], semantics.block(
 							semantics.this().member('done').assign( true ),
 						)),
-						Iterator.declareFunction( params, iteratorBody = semantics.block(
+						Iterator.declareFunction( params, semantics.block(
 							i.assign( 0 ),
 							len.assign( cd.len(compiler) ),
+							...args.map( arg=>semantics.this().member(arg.variable).assign( arg.variable ) ),
 						)),
 						Iterator.member('prototype').member('next').assign(
 							semantics.function( null, [], semantics.block(
@@ -591,53 +594,15 @@ if( comp.stage ) // TODO: UGH D:
 							))
 						),
 						semantics.function( null, [], semantics.block(
-							semantics.id(`console`).member(`log`).call( argumentsObj ),
+							// semantics.id(`console`).member(`log`).call( argumentsObj ),
 							Reflect.member('construct').call( Iterator, argumentsObj ).return()
 						)).return()
 					);
-
-					Object.values( args ).forEach( (param)=>{
-						iteratorBody.pushStatement( semantics.this().member(param).assign( param ) )
-					});
 				}
 
 				return compiler.toFunctionFactory();
 			}
 		}
-	});
-
-	return;
-
-	proto::setSymbolCompilers({
-		get: functionalIf( compilerDefinition.get && parentProto.*get, function() {
-			console.log( `COMPILING ${Type.fullName || Type.name}.get()`, !! parentProto.*get.compiler );
-			if( parentProto.*get.compiler ) {
-				const compiler = parentProto.*get.compiler();
-
-				const args = compiler.registerTypeArguments( Type, compilerDefinition.args );
-				compilerDefinition.get( compiler, args );
-
-				return compiler;
-			}
-			else {
-				const compiler = new Compiler(Type);
-
-				const {parent} = compiler.registerTypeArguments(ParentType, {parent: function(){return this;}});
-				const {getSymbol} = compiler.registerConstants({ getSymbol:symbols.get });
-				compiler.key = compiler.expectArgument(`key`);
-				compiler.value = compiler.createUniqueVariable(`value`);
-
-				compiler.body.pushStatement(
-					compiler.value.declare( parent.member(getSymbol, true).call(compiler.key) )
-				);
-
-				const args = compiler.registerTypeArguments( Type, compilerDefinition.args );
-				compilerDefinition.get( compiler, args );
-
-				return compiler;
-			}
-		}),
-
 	});
 }
 

@@ -29,7 +29,7 @@ if( require.main === module ) {
 			builders.ForStatement(
 				// builders.VariableDeclaration( [builders.VariableDeclarator( builders.Identifier('i'), builders.Literal(0) )], 'let'),
 				builders.VariableDeclaration( [builders.VariableDeclarator( builders.Identifier('i'), builders.Literal(0) )], 'var'),
-				builders.LogicalExpression( '<', builders.Identifier('i'), builders.Literal(10) ),
+				builders.BinaryExpression( '<', builders.Identifier('i'), builders.Literal(10) ),
 				builders.UpdateExpression( '++', builders.Identifier('i'), true ),
 				builders.EmptyStatement()
 			)
@@ -58,7 +58,7 @@ if( require.main === module ) {
 			)),
 			Iterator.declareFunction( [], semantics.block(
 				semantics.this().member('i').assign( 0 ),
-				semantics.this().member('len').assign( '...' ),
+				semantics.this().member('len').assign( semantics.lit('...') ),
 				semantics.lit('...')
 			)),
 			Iterator.member('prototype').member('next').assign(
@@ -67,7 +67,7 @@ if( require.main === module ) {
 						semantics.this().member( i ).ge( semantics.this().member(len) ),
 						done.new().return()
 					),
-					value.declare('...'),
+					value.declare( semantics.lit('...') ),
 					kv.new( i.increment(), value ).return()
 				))
 			),
@@ -123,6 +123,18 @@ if( require.main === module ) {
 				)
 			),
 			vars.state.return()
+		).id();
+
+		grammar.Program.check( program );
+		console.log( codegen.compile(program) );
+		console.log();
+	}
+
+	{
+		const program = new semantics.Program(
+			semantics.lit(5).mul( semantics.lit(6).mod(3) ),
+			semantics.lit(5).mul( 6 ).mod( 3 ),
+			semantics.lit(5).mul( semantics.lit(6).mul(3) ),
 		).id();
 
 		grammar.Program.check( program );

@@ -27,7 +27,7 @@ module.exports = function( grammar, builders ) {
 			return this.map( v=>v::ast() );
 		}
 
-		assert( false, this );
+		assert.fail( this );
 	}
 
 	function asStatement() {
@@ -169,14 +169,20 @@ module.exports = function( grammar, builders ) {
 		}
 		plus( arg ) { return this.binaryExpression( '+', arg ); }
 		minus( arg ) { return this.binaryExpression( '-', arg ); }
+		mul( arg ) { return this.binaryExpression( '*', arg ); }
+		div( arg ) { return this.binaryExpression( '/', arg ); }
+		mod( arg ) { return this.binaryExpression( '%', arg ); }
 		gt( arg ) { return this.binaryExpression( '>', arg ); }
 		ge( arg ) { return this.binaryExpression( '>=', arg ); }
 		eq( arg ) { return this.binaryExpression( '===', arg ); }
 		le( arg ) { return this.binaryExpression( '<=', arg ); }
 		lt( arg ) { return this.binaryExpression( '<', arg ); }
 		ne( arg ) { return this.binaryExpression( '!==', arg ); }
-		and( arg ) { return this.binaryExpression( '&&', arg ); }
-		or( arg ) { return this.binaryExpression( '||', arg ); }
+		logicalExpression( op, arg ) {
+			return new Expression( builders.LogicalExpression( op, this.id(), arg::ast() ) );
+		}
+		and( arg ) { return this.logicalExpression( '&&', arg ); }
+		or( arg ) { return this.logicalExpression( '||', arg ); }
 
 		unaryExpression( op, prefix ) {
 			return new Expression( builders.UnaryExpression( op, !!prefix, this.id() ) );

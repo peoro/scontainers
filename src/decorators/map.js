@@ -93,14 +93,7 @@ module.exports = {
 		Map::compileProtocolsForTransformation( Type, {
 			nStage( compiler, parentStage ) {
 				const {args, parent} = this;
-				console.log( this );
-				console.log( args );
-				console.log( parent );
 				parentStage( compiler );
-				console.log( `value:`, compiler.value );
-				console.log( `key:`, compiler.key );
-				console.log( `code:`, compiler.toCode() );
-				console.log();
 				compiler.value = args.mapFn.call( compiler.value, compiler.key );
 			},
 			len( compiler ) {

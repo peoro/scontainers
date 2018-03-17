@@ -1,4 +1,6 @@
 
+const assert = require('assert');
+
 const Node = {
 	unhandled: Symbol(),
 	match( node, obj ) {
@@ -7,7 +9,7 @@ const Node = {
 			return obj[type]();
 		}
 		else {
-			return obj[ Node.unhandled ]( node, key );
+			return obj[ Node.unhandled ]( node, type );
 		}
 	}
 };
@@ -33,9 +35,15 @@ const Compiler = module.exports = function( grammar ) {
 
 		precedence( node ) {
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-			assert( grammar.Expression.match(node) );
+			grammar.Expression.check( node );
 
-			return Compiler.match( node, {
+			const p = Compiler.match( node, {
+				FunctionExpression() { return Infinity; },
+				ArrayExpression() { return Infinity; },
+				Identifier() { return Infinity; },
+				Literal() { return Infinity; },
+				ThisExpression() { return Infinity; },
+
 				MemberExpression() { return 19; },
 				NewExpression() { return 19; },
 				CallExpression() { return 19; },
@@ -44,7 +52,7 @@ const Compiler = module.exports = function( grammar ) {
 				UnaryExpression() { return 16; }, // TODO: if `yield` falls here, it needs to be handled...
 
 				BinaryExpression() {
-					switch( this.operator ) {
+					switch( node.operator ) {
 						case '**': return 15;
 						case '*':
 						case '/':
@@ -72,6 +80,10 @@ const Compiler = module.exports = function( grammar ) {
 						case '&': return 9;
 						case '^': return 8;
 						case '|': return 7;
+					}
+				},
+				LogicalExpression(){
+					switch( this.operator ) {
 						case '&&': return 6;
 						case '||': return 5;
 					}
@@ -79,23 +91,25 @@ const Compiler = module.exports = function( grammar ) {
 				ConditionalExpression() { return 4; },
 				AssignmentExpression() { return 3; },
 				SequenceExpression() { return 1; },
-				[Node.unhandled]( unused, t ) {
-					console.error(`Couldn't find precedence for ESTree node ${t}:`, node);
-				}
 			});
+
+			if( p === undefined ) {
+				console.error(`Couldn't find precedence for ESTree node ${node.type}:`, node);
+			}
+			return p;
 		},
 		associativity( node ) {
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-			assert( grammar.Expression.match(node) );
+			grammar.Expression.check( node );
 
-			return Compiler.match( node, {
+			const a = Compiler.match( node, {
 				MemberExpression() { return LTR; },
 				NewExpression() {},
 				CallExpression() { return LTR; },
 				UpdateExpression() {},
 				UnaryExpression() { return RTL; }, // TODO: if `yield` falls here, it needs to be handled...
 				BinaryExpression() {
-					switch( this.operator ) {
+					switch( node.operator ) {
 						case '**': return RTL;
 						case '*':
 						case '/':
@@ -118,22 +132,30 @@ const Compiler = module.exports = function( grammar ) {
 						case '&':
 						case '^':
 						case '|':
-						case '&&':
-						case '||':
 							return LTR;
+					}
+				},
+				LogicalExpression() {
+					switch( this.operator ) {
+					case '&&':
+					case '||':
+						return LTR;
 					}
 				},
 				ConditionalExpression() { return RTL; },
 				AssignmentExpression() { return RTL; },
 				SequenceExpression() { return LTR; },
 				[Node.unhandled]( unused, t ) {
-					console.error(`Couldn't find associativity for ESTree node ${t}:`, node);
 				}
 			});
+
+			if( a === undefined ) {
+				console.error(`Couldn't find associativity for ESTree node ${node.type}:`, node);
+			}
+			return a;
 		},
 
-		compile( obj, opts ) {
-			opts = opts || {};
+		compile( obj, opts={} ) {
 			const sep = opts.sep || ``;
 			const indent = opts.indent || ``;
 
@@ -166,8 +188,29 @@ const Compiler = module.exports = function( grammar ) {
 			return str;
 		},
 
-		compileESNode( node, opts ) {
-			opts = opts || {};
+		compileESNode( node, opts={} ) {
+			// `p(v)` puts `v` in parentheses, if it's higher precedence than `this`
+			// `pl` and `pr` are similar, but taking associativity into consideration
+			const prec = (arg)=>this.precedence(arg);
+			const assoc = (arg)=>this.associativity(arg);
+			const p = (arg)=>{
+				if( prec(arg) < prec(node) ) { return [`(`, arg, `)`]; }
+				return arg;
+			};
+			const pl = (arg)=>{
+				if( prec(arg) < prec(node) ) { return [`(`, arg, `)`]; }
+				if( prec(arg) === prec(node) ) {
+					if( assoc(node) === RTL ) { return [`(`, arg, `)`]; }
+				}
+				return arg;
+			};
+			const pr = (arg)=>{
+				if( prec(arg) < prec(node) ) { return [`(`, arg, `)`]; }
+				if( prec(arg) === prec(node) ) {
+					if( assoc(node) === LTR ) { return [`(`, arg, `)`]; }
+				}
+				return arg;
+			};
 
 			const compile = (args, opts)=>this.compile(args, opts);
 			const comma = (...args)=>compile( args, {sep:`, `} );
@@ -181,7 +224,7 @@ const Compiler = module.exports = function( grammar ) {
 
 			return this.compile( Compiler.match( node, {
 				Identifier()	{ return node.name; },
-				Literal()	{ return isString(node.value) ? `'${node.value}'` : node.value; },
+				Literal()	{ return isString(node.value) ? `'${node.value}'` : node.value; }, // TODO: escape
 				Program()	{ return newLine(...node.body); },
 				ExpressionStatement()	{ return stmt(node.expression); },
 				BlockStatement() {
@@ -302,20 +345,20 @@ const Compiler = module.exports = function( grammar ) {
 
 					return code;
 				},
-				UnaryExpression()	{ return node.prefix ? [node.operator, node.argument] : [node.argument, node.operator]; },
-				UpdateExpression()	{ return node.prefix ? [node.operator, node.argument] : [node.argument, node.operator]; },
-				BinaryExpression()	{ return [node.left, node.operator, node.right]; },
-				AssignmentExpression()	{ return [node.left, node.operator, node.right]; },
-				LogicalExpression()	{ return [node.left, node.operator, node.right]; },
+				UnaryExpression()	{ return node.prefix ? [node.operator, pr(node.argument)] : [pl(node.argument), node.operator]; },
+				UpdateExpression()	{ return node.prefix ? [node.operator, pr(node.argument)] : [pl(node.argument), node.operator]; },
+				BinaryExpression()	{ return [pl(node.left), node.operator, pr(node.right)]; },
+				AssignmentExpression()	{ return [pl(node.left), node.operator, pr(node.right)]; },
+				LogicalExpression()	{ return [pl(node.left), node.operator, pr(node.right)]; },
 				MemberExpression() {
 					if( node.computed ) {
-						return [node.object, `[`, node.property, `]`];
+						return [pl(node.object), `[`, node.property, `]`];
 					} else {
-						return [node.object, `.`, node.property.value ];
+						return [pl(node.object), `.`, pr(node.property) ];
 					}
 				},
-				ConditionalExpression()	{ return [node.test, `?`, node.consequent, `:`, node.alternate]; },
-				CallExpression()	{ return [node.callee, `(`, comma(...node.arguments), `)`]; },
+				ConditionalExpression()	{ return [p(node.test), `?`, p(node.consequent), `:`, p(node.alternate)]; },
+				CallExpression()	{ return [pl(node.callee), `(`, comma(...node.arguments), `)`]; },
 				NewExpression()	{ return [space(`new`, node.callee), `(`, comma(...node.arguments), `)`]; },
 				SequenceExpression()	{ return comma(...node.expressions); },
 				[Node.unhandled]( unused, t ) {

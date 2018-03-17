@@ -7,6 +7,10 @@ const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten
 
 Error.stackTraceLimit = 25;
 
+function log() {
+	console.log( this::toString() );
+}
+
 function square( n ) { return n*n; }
 
 {
@@ -32,9 +36,11 @@ function square( n ) { return n*n; }
 		console.log();
 	}
 
+	/*
 	print( symbols.kvIterator,
 		new Range( 3, 12 )
 	);
+	*/
 
 	{
 		//for( let [k,v] of new Range(3, 12) ) {
@@ -58,5 +64,8 @@ function square( n ) { return n*n; }
 			console.log( next.value );
 			next = it.next();
 		}
+
+		console.log();
+		collection::log();
 	}
 }
