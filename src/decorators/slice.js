@@ -48,14 +48,12 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 
 		nth() {
 			return function nth( n ) {
-				assert( this.*hasNth(n), `Can't get elements outside of a Slice` );
 				return this.wrapped.*nth( this.begin+n );
 			};
 		}
 		setNth() {
 			if( proto.*setNth ) {
 				return function setNth( n, value ) {
-					assert( this.*hasNth(n), `Can't set elements outside of a Slice` );
 					return this.wrapped.*setNth( this.begin+n, value );
 				};
 			}

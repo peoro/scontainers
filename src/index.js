@@ -68,7 +68,7 @@ function extendCollection( Type, ParentType ) {
 			if( proto.*nth ) {
 				return function forEach( fn ) {
 					for( let i = 0; i < this.*len(); ++i ) {
-						fn(this.*nth(i), this.*nthKey(i), this);
+						fn(this.*nth(i), this.*nToKey(i), this);
 					}
 				};
 			}
@@ -84,7 +84,7 @@ function extendCollection( Type, ParentType ) {
 			if( proto.*nth ) {
 				return function whileEach( fn ) {
 					for( let i = 0; i < this.*len(); ++i ) {
-						const key = this.*nthKey( i );
+						const key = this.*nToKey( i );
 						const value = this.*nth( i );
 						if( ! fn(value, key, this) ) {
 							return [key, value];
@@ -176,7 +176,7 @@ function extendCollection( Type, ParentType ) {
 			if( proto.*nth ) {
 				return function only() {
 					assert( this.*len() === 1, `.only() called on a ${this} with ${this.*len()} items` );
-					return [this.*nthKey(0), this.*nth(0)];
+					return [this.*nToKey(0), this.*nth(0)];
 				};
 			}
 			if( proto.*len ) {
@@ -199,7 +199,7 @@ function extendCollection( Type, ParentType ) {
 		first() {
 			if( proto.*nth ) {
 				return function first() {
-					return [this.*nthKey(0), this.*nth(0)];
+					return [this.*nToKey(0), this.*nth(0)];
 				};
 			}
 			if( proto.*kvIterator ) {
@@ -215,7 +215,7 @@ function extendCollection( Type, ParentType ) {
 			if( proto.*nth ) {
 				return function last() {
 					const n = this.*len() - 1;
-					return [this.*nthKey(n), this.*nth(n)];
+					return [this.*nToKey(n), this.*nth(n)];
 				};
 			}
 			else if( proto.*reverse ) {
@@ -226,7 +226,7 @@ function extendCollection( Type, ParentType ) {
 			if( proto.*nth ) {
 				return function random() {
 					const n = Math.floor( Math.random()*this.*len() );
-					return [this.*nthKey(n), this.*nth(n)];
+					return [this.*nToKey(n), this.*nth(n)];
 				};
 			}
 		},
@@ -706,7 +706,7 @@ function extendObjectWithCollectionSymbols( dest, src ) {
 				dest[sym] = src[fnName];
 			}
 			else if( ! sym ) {
-				console.log(`Unknown symbol ${fnName}`);
+				console.log(`Unknown symbol \`${fnName}\` for ${dest.name || dest.constructor.name}`);
 			}
 		});
 }
@@ -716,10 +716,11 @@ function extendObjectWithCollectionFactories( dest, src ) {
 			const sym = symbols.hasOwnProperty(fnName) && symbols[fnName];
 
 			if( ! sym ) {
-				console.log(`Unknown symbol ${fnName}`);
+				console.log(`Unknown symbol \`${fnName}\` for ${dest.name}`);
+				return;
 			}
 
-			if( sym && ! dest.hasOwnProperty(sym) ) {
+			if( ! dest.hasOwnProperty(sym) ) {
 				const fnFactory = src[fnName];
 				if( ! fnFactory ) {
 					return;

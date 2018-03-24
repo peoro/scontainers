@@ -14,11 +14,9 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 	// naturally-indexed collections (e.g. Array, Range)
 	nth( n ){},	// return the ${n}-th element - O(1)
 	setNth( n, value ){},
-	hasNth( n ){},
 	// needed to make naturally-indexed collections compatible with the associative collection API
-	nthKey( n ){},	// return the key associated to the ${n}-th element (${get( nthKey(n) ) === nth(n)})
-	// TODO: rename `nthKey` in `nToKey`
-	keyToN( key ){},
+	nToKey( n ){},	// return the key associated to the ${n}-th element (${get( nToKey(n) ) === nth(n)})
+	keyToN( key ){},	// return the index associated to the element with key ${key} (${get(key) === nth(keyToN(key))})
 
 	// associative collections (e.g. Map)
 	// note that naturally-indexed collections are also associative, thanks to `nToKey` and `keyToN`

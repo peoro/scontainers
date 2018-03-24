@@ -104,6 +104,11 @@ module.exports = function( grammar, builders ) {
 			this.pushStatement( ...statements );
 		}
 
+		unshiftStatement( ...statements ) {
+			const stats = statements.map( (stat)=>stat::asStatement()::ast() );
+			stats.forEach( (statement)=>grammar.Statement.check(statement) );
+			this.ast.body.unshift( ...stats );
+		}
 		pushStatement( ...statements ) {
 			const stats = statements.map( (stat)=>stat::asStatement()::ast() );
 			stats.forEach( (statement)=>grammar.Statement.check(statement) );
@@ -248,11 +253,20 @@ module.exports = function( grammar, builders ) {
 		}
 
 		asStatement() {
-			return new Statement( builders.FunctionDeclaration( this.ast.id, this.ast.params, this.ast.body ) );
+			return Statement.function( this.ast.id, this.ast.params, this.ast.body );
 		}
 	}
-	Statement.function = function( id, params, body ) {
+	Expression.function = function( id, params, body ) {
+		if( typeof id === 'string' ) {
+			id = new Identifier(id);
+		}
 		return new Function( id, params, body );
+	}
+	Statement.function = function( id, params, body ) {
+		if( typeof id === 'string' ) {
+			id = new Identifier(id);
+		}
+		return new Statement( builders.FunctionDeclaration(id::ast(), params::ast(), body::ast()) );
 	}
 
 	return {
@@ -264,7 +278,7 @@ module.exports = function( grammar, builders ) {
 		if: Statement.if,
 		for: Statement.for,
 		return: Statement.return,
-		function: Statement.function,
+		function: Expression.function,
 		Literal,
 		Variable,
 		lit, id,

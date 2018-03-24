@@ -4,6 +4,7 @@
 const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
+const generatorSymbols = require('../generator_symbols');
 
 use protocols from subminus.symbols;
 
@@ -40,50 +41,37 @@ class Range {
 }
 
 Range::defineProperties({
-	args: {
-		begin(){ return this.begin; },
-		end(){ return this.end; }
-	}
+	argKeys: [id`begin`, id`end`]
 });
 
 Range::compileProtocolsForRootType({
-	nth( compiler, n ) {
-		const {begin} = this.args;
-		return n.plus( begin );
-	},
 	nToKey( compiler, n ) {
-		return n;
+		const {begin} = compiler.getArgs( this );
+		// return n.plus( begin ); // `key===value`
+		return n; // `key===n`
 	},
 	keyToN( compiler, key ) {
+		const {begin} = compiler.getArgs( this );
+		// return key.minus( begin ); // `key===value`
+		return key; // `key==n`
+	},
+	nth( compiler, n ) {
+		const {begin} = compiler.getArgs( this );
+		compiler.key = this[generatorSymbols.nToKey]( compiler, n );
+		// return compiler.key; // NOTE: this only works as long as `key===value` even if `key!==n`
+		return n.plus( begin );
+	},
+	get( compiler, key ) {
 		return key;
 	},
 	// add: nope
 	len( compiler ) {
-		const {begin, end} = this.args;
+		const {begin, end} = compiler.getArgs( this );
 		return end.minus(begin);
 	},
 	// reverse: from nth+len
 	// clear: nope
-
-	/*
-	iterator( compiler, {begin, end} ) {
-		const value = compiler.createUniqueVariable(`value`);
-
-		compiler.body.push(
-			compiler.loop = semantics.for(
-				value.declare( begin ),
-				value.lt( end ),
-				value.increment(),
-
-				compiler.body = new semantics.Block(
-				)
-			)
-		);
-
-		compiler.value = value;
-		compiler.key = value.minus( begin );
-	},
-	*/
+	// iterator: from nth
 });
 
 Range.prototype::implementSymbols({
@@ -92,18 +80,11 @@ Range.prototype::implementSymbols({
 		return this.begin + n;
 	},
 	nth( n ) {
-		if( ! this.*hasNth(n) ) { return; }
+		if( n < 0 || n  ) { return; }
 		return this.begin + n;
 	},
-	hasNth( n ) {
-		// TODO: assert that `n` is integer
-		return n >= 0 && n < this.*len();
-	},
-	hasKey( n ) {
-		// TODO: check that `n` is integer
-		return n >= 0 && n < this.*len();
-	},
-	nthKey( n ) { return n; },
+	keyToN( key ) { return n - this.begin; },
+	nToKey( n ) { return n + this.begin; },
 
 	// optimization
 	sum() { return ( this.begin + this.end-1 ) * this.len() / 2; },
@@ -111,41 +92,5 @@ Range.prototype::implementSymbols({
 });
 
 Range::implementCoreProtocols();
-
-Range.Compiler = {
-	declareArgs() {
-		return { begin:this.begin, end:this.end };
-	},
-
-	get( compiler ) {
-		const value = compiler.createUniqueVariable(`value`);
-		const {begin, end} = compiler.registerArgumentVariables( this );
-
-		compiler.body.pushStatement(
-			compiler.assert( Compiler.isInteger(compiler.key) ),
-			Compiler.if(
-				Compiler.or( compiler.key.lt(begin), compiler.key.ge(end) ),
-				compiler.skip()
-			),
-			mappedValue.declare( mapFn.call(compiler.value, compiler.key) )
-		);
-
-		compiler.value = mappedValue;
-	},
-	// set: nope
-	hasKey( compiler ) {
-		const {begin, end} = compiler.registerArgumentVariables( this );
-		return
-	},
-	// has: nope
-	// nth: from get+nthKey
-	// setNth: from set+nthKey
-	// hasNth: from hasKey+nthKey
-	nthKey( compiler ) { return Type.Compiler.nthKey(compiler); },
-	// add: nope
-	len() { return Type.Compiler.len(compiler); },
-	// reverse: from nth+len
-	// clear: nope
-};
 
 module.exports = subminus.implementForNewType( Range );

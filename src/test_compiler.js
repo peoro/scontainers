@@ -1,11 +1,11 @@
 
 'use strict';
 
+Error.stackTraceLimit = Infinity;
+
 const assert = require('assert');
 const {symbols, Range} = require('./');
-const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg} = require('./bound.js');
-
-Error.stackTraceLimit = 25;
+const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach} = require('./bound.js');
 
 function log() {
 	console.log( this::toString() );
@@ -53,6 +53,7 @@ function square( n ) { return n*n; }
 			console.log( next.value );
 			next = it.next();
 		}
+		console.log( collection[symbols.len]() );
 	}
 
 	{
@@ -64,8 +65,26 @@ function square( n ) { return n*n; }
 			console.log( next.value );
 			next = it.next();
 		}
+		collection::log();
+		console.log();
+
+		collection::forEach( (n, k)=>console.log(`  ${k}: ${n}`) );
 
 		console.log();
+	}
+
+	{
+		console.log();
+		const collection = [7, 3, 5, 0, 2]::map( square );
+		const it = collection[symbols.kvIterator]();
+		let next = it.next();
+		while( ! next.done ) {
+			console.log( next.value );
+			next = it.next();
+		}
 		collection::log();
+		console.log( collection[symbols.len]() );
+
+		console.log();
 	}
 }

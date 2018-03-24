@@ -2,33 +2,140 @@
 const assert = require('assert');
 
 const symbols = require('../symbols');
+const generatorSymbols = require('../generator_symbols');
 
 const compilerSymbol = Symbol('compiler');
 const {propertiesSymbol} = require('./properties');
-const {semantics, codegen} = require('../compiler/index.js');
+const {semantics, codegen, FunctionCompiler} = require('../compiler/index.js');
 
 
-class Compiler {
-	constructor( Type ) {
+
+
+// TODO: this stuff should come from 'js-protocols/util'
+function set( target, fn ) {
+	Object.defineProperty( target, this, {
+		configurable: true,
+		enumerable: false,
+		writable: true,
+		value: fn,
+	});
+	return this;
+}
+function assignProtocols( target, symbolObj ) {
+	for (let name in symbolObj) {
+		console.log( `Assigning ${name} to ${target.name}` );
+		const sym = this[name];
+
+		const value = symbolObj[name];
+		assert( sym, `No protocol \`${name}\`` );
+		assert( ! target[sym], `Already implemented...` );
+		sym::set( target, value );
+		target[ sym ].factory = ()=>value;
+	};
+}
+// replaces `this[sym]` with `fn`
+function replaceSymbol( sym, fn ) {
+	assert( this, `replaceSymbol() must be called on an object` );
+	assert( fn );
+
+	const oldFn = this[sym];
+
+	if( ! fn.compiler && oldFn.compiler ) {
+		fn.compiler = oldFn.compiler;
+	}
+	fn.factory = ()=>fn;
+	this[sym] = fn;
+}
+function assignProtocolFactories( dest, symbolObj ) {
+	for (let symName in symbolObj) {
+		const srcFn = symbolObj[symName];
+		const sym = this[symName];
+
+		assert( sym, `No protocol \`${symName}\`` );
+
+		if( dest[sym] ) {
+			// already implemented...
+			continue;
+		}
+
+		{
+			const fnFactory = srcFn.factory ? ::srcFn.factory : srcFn;
+
+			// functions (not factories!) may return null...
+			if( srcFn === fnFactory ) {
+				if( ! dest::srcFn() ) {
+					continue;
+				}
+			}
+
+			if( srcFn.assignImmediately ) {
+				const fn = dest::fnFactory();
+				dest[sym] = fn;
+				dest[sym].factory = ()=>fn;
+			}
+			else {
+				dest[sym] = function() {
+					const fn = dest[sym].factory();
+					return fn.apply( this, arguments );
+				};
+				dest[sym].factory = function() {
+					const fn = dest::fnFactory();
+					assert( fn, `${dest.constructor.name}.${symName}'s factory returned null` );
+					dest::replaceSymbol( sym, fn );
+					return fn;
+				};
+			}
+		}
+	};
+}
+
+
+function extractKeys( keys ) {
+	const result = {};
+	keys.forEach( key=>{
+		result[key] = this[key];
+		delete this[key];
+	});
+	return result;
+}
+
+
+
+
+
+
+
+
+class Compiler extends FunctionCompiler {
+	constructor( Type, functionName ) {
+		super( `${Type.name.replace(/::/g, '_')}_${functionName}` );
+
 		this.Type = Type;
-		this.varDB = new semantics.VarDB();
 		this.typeArguments = new Map();
-		this.parameters = [];
-		this.constants = new Map();
 
-		this.code = new semantics.Program();
 		this.key = undefined;
 		this.value = undefined;
 		this.loop = undefined;
-		this.body = this.code;
+
+		{
+			let t = Type;
+			while( t ) {
+				const p = t[propertiesSymbol];
+				if( ! p ) {
+					break;
+				}
+
+				this.registerTypeArguments( t, p.argKeys );
+				t = p.ParentType;
+			}
+		}
 	}
 
-	expectArgument( name ) {
-		const variable = this.createUniqueVariable( name );
-		this.parameters.push( variable );
-		return variable;
+	assert( expr ) {
+		return semantics.id(`assert`).call( expr );
 	}
-	registerTypeArguments( Type, argFns ) {
+
+	registerTypeArguments( Type, argKeys ) {
 		const argVars = {};
 
 		let args;
@@ -39,106 +146,102 @@ class Compiler {
 			this.typeArguments.set(Type, args);
 		}
 
-		for( let argName in argFns ) {
-			assert( argFns.hasOwnProperty(argName) );
-
+		argKeys.forEach( argName=>{
 			if( ! args.hasOwnProperty(argName) ) {
 				args[argName] = {
 					name: argName,
 					variable: this.createUniqueVariable( argName ),
-					fn: argFns[argName]
+					fn() { return this[argName]; }
 				};
 			}
 
 			argVars[argName] = args[argName].variable;
-		}
+		});
 
 		return argVars;
 	}
-	registerConstants( args ) {
-		return args[ownProperties]()
-			[map]( (value, name)=>{
-				if( this.constants.has(value) ) {
-					return this.constants.get( value );
-				}
-
-				const variable = this.createUniqueVariable( name );
-				this.constants.set( value, variable );
-				this.parameters.push( variable );
-				return variable;
-			})
-			[collect]( Object );
-	}
-	createUniqueVariable( name ) {
-		return this.varDB.createUniqueVariable( name );
-	}
-	getTypeArgumentArray( instance ) {
-		const getTypeArgRec = (Type, instance)=>{
-			if( ! Type ) {
-				return [];
-			}
+	getTypeArgumentArray( ) {
+		const getTypeArgRec = (Type)=>{
+			if( ! Type ) { return []; }
 
 			const properties = Type[propertiesSymbol];
-			if( ! properties ) {
-				return [];
-			}
+			if( ! properties ) { return []; }
 
 			if( ! this.typeArguments.get(Type) ) {
-				console.log(`No type arguments for ${Type.fullName || Type.name}, while compiling ${this.Type.fullName || this.Type.name}`);
-				console.log( Array.from( this.typeArguments.keys() ).map(T=>T.fullName || T.name) );
+				console.log(`No type arguments for ${Type.name}, while compiling ${this.Type.name}`);
+				console.log( Array.from( this.typeArguments.keys() ).map(T=>T.name) );
 				return [];
 			}
 
-			const args = Object.values( this.typeArguments.get(Type) ).map( (arg, argName)=>{
-				if( instance ) {
-					return Object.assign({}, arg, {
-						value: instance::arg.fn()
-					});
-				}
-				return arg;
-			});
-
-			const parentInstance = instance && properties.ParentType ?
-				instance::properties.parentCollection() :
-				undefined;
+			const args = Object.values( this.typeArguments.get(Type) );
 
 			return [].concat(
-				getTypeArgRec( properties.ParentType, parentInstance ),
+				getTypeArgRec( properties.ParentType ),
 				args
 			);
 		};
 
-		// console.log( this.Type.fullName || this.Type.name, instance );
-		assert( ! instance || instance instanceof this.Type )
+		return getTypeArgRec( this.Type );
+	}
+	getTypeArgumentArrayValues( instance ) {
+		const getTypeArgRec = (Type, instance)=>{
+			if( ! Type ) { return []; }
+			assert( instance instanceof Type, `${instance} is not a ${Type.name}` );
+
+			const properties = Type[propertiesSymbol];
+			if( ! properties ) { return []; }
+
+			if( ! this.typeArguments.get(Type) ) {
+				console.log(`No type arguments for ${Type.name}, while compiling ${this.Type.name}`);
+				console.log( Array.from( this.typeArguments.keys() ).map(T=>T.name) );
+				return [];
+			}
+
+			const args = Object.values( this.typeArguments.get(Type) ).map( (arg, argName)=>{
+				return instance::arg.fn();
+			});
+
+			return [].concat(
+				getTypeArgRec( properties.ParentType, instance[properties.parentCollectionKey] ),
+				args
+			);
+		};
+
 		return getTypeArgRec( this.Type, instance );
 	}
 
-	toCode() {
-		const ast = this.code.id();
-		return codegen( ast );
+	getParent( Type ) {
+		const properties = Type[propertiesSymbol];
+		const parentKey = properties.parentCollectionKey;
+		return this.registerTypeArguments( Type, [parentKey] )[parentKey];
+	}
+	getArgs( Type ) {
+		const properties = Type[propertiesSymbol];
+		return this.registerTypeArguments( Type, properties.argKeys );
+	}
+	mappedArguments( argMapFn ) {
+		return new MappedArgumentsCompiler( this, argMapFn );
 	}
 
 	toFunction() {
-		const f = new Function(
-			...this.getTypeArgumentArray().map( (a)=>a.variable.name ),
-			...this.parameters.map( (v)=>v.name ),
-			this.toCode().split('\n').map( line=>`\t${line}`).join('\n')
+		const constantIdentifiers = Array.from( this.constants.values() ).map( variable=>variable.name );
+		const constantValues = Array.from( this.constants.keys() );
+
+		this.fn.ast.params.push(
+			...this.getTypeArgumentArray().map( (a)=>a.variable.ast ),
+			...this.parameters.map( variable=>variable.ast )
 		);
 
-		console.log( f.toString() );
+		const fFactory = new Function(
+			...constantIdentifiers,
+			this.toCode()
+		);
+		const f = fFactory.apply( null, constantValues );
+
+		console.log( ` >>>>>>>>>>>>>>>>>>>> Compiled function:` );
+		console.log( this.toCode().split(`\n`).map( line=>`\t${line}` ).join(`\n`) );
 
 		return this::Compiler.bindFunction( f );
-	}
-	toFunctionFactory() {
-		const f = new Function(
-			...this.getTypeArgumentArray().map( (a)=>a.variable.name ),
-			...this.parameters.map( (v)=>v.name ),
-			this.toCode().split('\n').map( line=>`\t${line}`).join('\n')
-		);
-
-		console.log( f.toString() );
-
-		return this::Compiler.bindFunction( f() );
 	}
 
 	static bindFunction( f ) {
@@ -146,12 +249,15 @@ class Compiler {
 		const constants = this.constants;
 
 		const boundFunction = function() {
-			const args = compiler.getTypeArgumentArray( this );
+			const args = compiler.getTypeArgumentArray();
 
 			// pushing constants...
 			const constArgs = constants.keys();
 
-			const allArgs = [].concat( args.map(a=>a.value), Array.from(constArgs) );
+			const allArgs = [].concat(
+				compiler.getTypeArgumentArrayValues(this),
+				Array.from(constArgs)
+			);
 
 			try {
 				return f.call( this, ...allArgs, ...arguments );
@@ -169,448 +275,402 @@ class Compiler {
 	}
 }
 
-
-class CompilerDefinition {
-	constructor( CollectionType, comp ) {
-		this.CollectionType = CollectionType;
-		this.methods = {};
-		this.addMethods( comp );
+// TODO: maybe use a `Proxy` ?
+class CompilerWrapper {
+	constructor( compiler ) {
+		this.compiler = compiler;
 	}
 
-	addMethods( methods ) {
-		const properties = this.CollectionType[propertiesSymbol];
+	getArgs( Type ) { return this.compiler.getArgs(Type); }
+}
 
-		for( let factoryName in methods ) {
-			if( this.methods[factoryName] ) {
-				continue;
-			}
-
-			const factory = methods[factoryName];
-			// const fn = factory();
-			const fn = factory;
-			if( ! fn ) {
-				continue;
-			}
-
-			this.methods[factoryName] = fn;
-		}
+class MappedArgumentsCompiler extends CompilerWrapper {
+	constructor( compiler, argMapFn ) {
+		super( compiler );
+		this.argMapFn = argMapFn;
 	}
-
-	instantiate( compiler, argsMapFn ) {
-		const properties = this.CollectionType[propertiesSymbol];
-		assert( properties, this.fullName || this.name || JSON.stringify(this) );
-
-		// preparing parent
-		let parent;
-		if( properties.ParentType ) {
-			const parentDefinition = properties.ParentType[compilerSymbol];
-			if( parentDefinition ) {
-				// UGH D:
-				parent = new CompilerDefinition( properties.ParentType, parentDefinition).instantiate( compiler, argsMapFn );
-			}
+	getArgs( Type ) {
+		const args = super.getArgs( Type );
+		for( let argName in args ) {
+			args[argName] = this.argMapFn( args[argName], argName );
 		}
-
-		// preparing args
-		const args = compiler.registerTypeArguments( this.CollectionType, properties.args );
-		if( argsMapFn ) {
-			for( let argName in args ) {
-				args[argName] = argsMapFn( args[argName], argName );
-			}
-		}
-
-		// preparing the reinstantiate function
-		const reinstantiate = ( argsMapFn )=>this.instantiate(compiler, argsMapFn);
-
-		// preparing member functions
-		const obj = {};
-		for( let fnName in this.methods ) {
-			obj[fnName] = this.methods[fnName];
-		}
-
-		// putting everything together in an object that will be used as `this`
-		Object.assign( obj, {
-			parent,
-			args,
-			reinstantiate
-		});
-
-		return obj;
+		return args;
 	}
 }
 
-function finalizeCompilerDefinition( ) {
-	assert( this, `finalizeCompilerDefinition() must be called on an object` );
+
+
+function implementCoreProtocolGenerators( compilerConfiguration ) {
+	assert( this, `implementCoreProtocolGenerators() must be called on an object` );
 
 	const Type = this;
-	const comp = this[compilerSymbol];
 	const properties = this[propertiesSymbol];
 
-	function assign( factories ) {
-		for( let factoryName in factories ) {
-			const factory = factories[factoryName];
+	const {nth, len, keyToN, nToKey, setNth, nToParentN} = generatorSymbols;
 
-			if( this[factoryName] ) {
-				continue;
-			}
-
-			const fn = factory();
-			if( fn ) {
-				this[factoryName] = fn;
-			}
-		}
-	}
-
-	// implemenitng core functions from `stage` and `nStage`
-	processNStage: if( comp.nStage ) {
-		const {ParentType} = properties;
-		const parentComp = ParentType[compilerSymbol];
-		if( ! parentComp ) {
-			break processNStage;
-		}
-
-		comp::assign({
-			nth() {
-				if( parentComp.nth ) {
-					return function( compiler, n ) {
-						compiler.key = n;
-						this::comp.nStage( compiler, (c)=>{
-							compiler.value = this.parent.nth( c, c.key );
-						});
-						return compiler.value;
-					}
-				}
-			},
-			stage() { return comp.nStage; },
-		});
-	}
-	if( comp.stage ) {
-		const {ParentType} = properties;
-		const parentComp = ParentType[compilerSymbol];
-
-		comp::assign({
-			get() {
-				if( parentComp.get ) {
-					return function( compiler, key ) {
-						compiler.key = key;
-						this::comp.stage( compiler, (c)=>void this.parent.get(c, compiler.key) );
-						return compiler.value;
-					}
-				}
-			},
-			// TODO: `hasKey` should recurse through types using `stage`, and also call the `hasKey` in the compiler definition for each type that defines it...
-			// so the compiler definition's `hasKey` should NEVER be used: we should always provide this function here...
-			// `hasKey` should only be implemented if `stage` doesn't do no filtering (e.g. `Filter` shouldn't define it)!
-			hasKey() {
-				if( parentComp.hasKey ) {
-					return function( compiler, key ) {
-						compiler.key = key;
-						this::comp.stage( compiler, (c)=>void this.parent.hasKey(c, compiler.key) );
-						this::comp.hasKey( compiler, key );
-					}
-				}
-			},
-		});
-	}
-
-	// implementing the duality between `key` and `n`:
-	//	`get`=`nth`
-	//	`setNth`=`set`
-	//	`keyToParentKey`=`nToParentN`
-	//	`hasKey` = (`hasNth` is unnecessary: always the same)
-	comp::assign({
+	generatorSymbols::assignProtocolFactories( this, {
 		get() {
-			if( comp.nth && comp.keyToN ) {
+			if( this[nth] && this[keyToN] ) {
 				return function( compiler, key ) {
-					const n = this.keyToN( compiler, key );
-					return this.nth( compiler, n );
+					const n = this[keyToN]( compiler, key );
+					return this[nth]( compiler, n );
 				}
 			}
 		},
 
 		hasKey() {
-			if( comp.keyToN ) {
+			if( this[keyToN] ) {
 				return function( compiler, key ) {
 					const Number = semantics.id(`Number`);
-					const n = this.keyToN( compiler, key );
+					const n = this[keyToN]( compiler, key );
 					return semantics.and(
 						Number.member(`isInteger`).call( n ),
 						n.ge( 0 ),
-						n.lt( this.len(compiler) )
+						n.lt( this[len](compiler) )
 					);
 				}
 			}
 		},
 
 		set() {
-			if( comp.setNth && comp.keyToN ) {
+			if( this[setNth] && this[keyToN] ) {
 				return function( compiler, key, value ) {
-					const n = comp.keyToN( compiler, key );
-					return comp.setNth( compiler, n, value );
+					const n = this[keyToN]( compiler, key );
+					return this[setNth]( compiler, n, value );
 				}
 			}
 		},
 
-		keyToParentKey() {
-			if( comp.nToParentN && comp.keyToN ) {
-				return function( compiler, key, value ) {
-					const n = comp.keyToN( compiler, key );
-					return comp.nToParentN( compiler, n );
-				}
-			}
-		},
-
-		iterator() {
-			if( comp.nth ) {
-				return function( compiler ) {
+		loop() {
+			if( this[nth] ) {
+				return function( compiler, generator ) {
 					const i = compiler.createUniqueVariable(`i`);
-					const len = comp.len( compiler );
+					const lenVar = this[len]( compiler );
 
 					compiler.body.pushStatement(
 						compiler.loop = semantics.for(
 							i.declare( 0 ),
-							i.lt( len ),
+							i.lt( lenVar ),
 							i.increment(),
 
 							compiler.body = new semantics.Block()
 						)
 					)
-					compiler.key = i;
-					compiler.value = comp.nth( compiler, i );
+					compiler.key = this[nToKey]( compiler, i );
+					compiler.value = this[nth]( compiler, i );
+
+					generator( compiler.body );
 				}
 			}
 		}
 	});
 }
 
-
-function compileProtocolsForRootType( compilerDefinition ) {
-	assert( this, `compileProtocolsForRootType() must be called on an object` );
+function deriveProtocolsFromGenerators() {
+	assert( this, `deriveProtocolsFromGenerators() must be called on an object` );
 
 	const Type = this;
-	const proto = this.prototype;
-
-	assert( ! this[compilerSymbol] );
-	const comp = this[compilerSymbol] = Object.assign({}, compilerDefinition);
-	this::finalizeCompilerDefinition();
-
 	const properties = this[propertiesSymbol];
+	const ParentType = properties.ParentType;
 
-	function implementCompilers( compilerFactories ) {
-		const symbolFactory = {};
-		const Collection = this;
+	// implementing core protocols from generators
+	{
+		const {get, hasKey, nth, len, loop} = generatorSymbols;
 
-		for( let symName in compilerFactories ) {
-			if( ! compilerFactories.hasOwnProperty(symName) ) {
-				console.log(`Unexpected prototype's enumerable property ${symName}`);
-				continue;
-			}
+		const proto = this.prototype;
 
-			const compilerFactory = compilerFactories[symName];
-			if( ! compilerFactory ) {
-				console.log(`Compiler factory ${symName} has no value O,o`);
-				continue;
-			}
+		function deriveProtocols( protoObj ) {
+			const factories = {};
 
-			const compilerFn = compilerFactory();
-			if( ! compilerFn ) {
-				continue;
-			}
-
-			symbolFactory[symName] = {
-				factory() {
-					const compiler = new Compiler(Type);
-					const cd = new CompilerDefinition( Type, comp ).instantiate( compiler );
-					const result = cd::compilerFn( compiler );
-					compiler.body.pushStatement(
-						result.return()
-					);
-					return compiler.toFunction();
+			for( let key in protoObj ) {
+				const factory = protoObj[key]();
+				if( ! factory ) {
+					continue;
 				}
+
+				factories[key] = {
+					factory() {
+						const sym = generatorSymbols[key];
+						const compiler = new Compiler( Type, key );
+						const result = Type::factory( compiler );
+						if( result ) {
+							compiler.body.pushStatement(
+								result.return()
+							);
+						}
+						return compiler.toFunction();
+					}
+				};
 			}
+
+			return symbols::assignProtocolFactories( proto, factories )
 		}
 
-		this::implementSymbolsFromFactory( symbolFactory );
+		deriveProtocols({
+			nth() {
+				if( Type[nth] && Type[get] ) {
+					return function( compiler ) {
+						const n = compiler.registerParameter(`n`);
+						compiler.body.pushStatement(
+							compiler.assert( semantics.id(`Number`).member(`isInteger`).call( n ) ),
+							semantics.if(
+								semantics.or( n.lt( 0 ), n.ge( Type[len](compiler) ) ),
+								semantics.return()
+							)
+						);
+						return Type[nth]( compiler, n );
+					}
+				}
+			},
+			get() {
+				if( Type[get] && Type[hasKey] ) {
+					return function( compiler ) {
+						const key = compiler.registerParameter(`key`);
+						compiler.body.pushStatement(
+							semantics.if(
+								Type[hasKey](compiler, key).not(),
+								semantics.return()
+							)
+						);
+						return Type[get]( compiler, key );
+					}
+				}
+			},
+			len() {
+				if( Type[len] ) {
+					return function( compiler ) {
+						return Type[len]( compiler );
+					}
+				}
+			},
+			kvIterator() {
+				if( Type[nth] ) {
+					return function( compiler ) {
+						const args = compiler.getTypeArgumentArray();
+						// const cd = new CompilerDefinition( Type, comp ).instantiate( compiler );
+						// const cdWithMemberArgs = cd.reinstantiate( (arg)=>semantics.this().member(arg) );
+						const compilerWithMemberArgs = compiler.mappedArguments( (arg)=>semantics.this().member(arg) );
+
+						{
+							const params = args.map( arg=>arg.variable );
+
+							const Reflect = semantics.id(`Reflect`);
+							const argumentsObj = semantics.id(`arguments`);
+							const kv = compiler.createUniqueVariable( `kv` );
+							const done = compiler.createUniqueVariable( `done` );
+							const Iterator = compiler.createUniqueVariable( `Iterator` );
+							const i = semantics.this().member( compiler.createUniqueVariable(`i`) );
+							const lenVar = semantics.this().member( compiler.createUniqueVariable(`len`) );
+							const key = compiler.createUniqueVariable( `key` );
+							const value = compiler.createUniqueVariable( `value` );
+
+							compiler.ast.unshiftStatement(
+								kv.declareFunction( [key, value], semantics.block(
+									semantics.this().member('done').assign( false ),
+									semantics.this().member('value').assign( semantics.array(key, value) ),
+								)),
+								done.declareFunction( [], semantics.block(
+									semantics.this().member('done').assign( true ),
+								)),
+								Iterator.declareFunction( params, semantics.block(
+									i.assign( 0 ),
+									lenVar.assign( Type[len](compiler) ),
+									...args.map( arg=>semantics.this().member(arg.variable).assign( arg.variable ) ),
+								)),
+								Iterator.member('prototype').member('next').assign(
+									semantics.function( null, [], semantics.block(
+										semantics.if(
+											i.ge( lenVar ),
+											done.new().return()
+										),
+										value.declare( Type[nth](compilerWithMemberArgs, i) ),
+										kv.new( i.increment(), value ).return()
+									))
+								),
+							);
+
+							compiler.body.pushStatement(
+								semantics.id(`console`).member(`log`).call( argumentsObj ),
+								Reflect.member('construct').call( Iterator, argumentsObj ).return()
+							);
+						}
+					};
+				}
+			},
+			forEach() {
+				if( Type[loop] ) {
+					return function( compiler ) {
+						const fn = compiler.registerParameter(`fn`);
+
+						const i = compiler.key = compiler.createUniqueVariable(`i`);
+
+						/*
+						compiler.body.pushStatement(
+							semantics.for(
+								i.declare( 0 ),
+								i.lt( Type[len](compiler) ),
+								i.increment(),
+
+								new semantics.Block(
+									compiler.value = Type[nth]( compiler, i ),
+									fn.call( compiler.value, compiler.key )
+								)
+							)
+						);
+						*/
+						Type[loop]( compiler, (block)=>{
+							block.pushStatement( fn.call( compiler.value, compiler.key ) );
+						});
+					}
+				}
+			}
+		});
 	}
 
-	// implementing core functions
-	proto::implementCompilers({
-		get() {
-			if( comp.get ) {
-				return function( compiler ) {
-					const key = compiler.expectArgument(`key`);
-					compiler.body.pushStatement(
-						semantics.if(
-							this::comp.hasKey(compiler, key).not(),
-							semantics.return()
-						)
-					);
-					return this::comp.get( compiler, key );
-				}
-			}
-		},
-		nth() {
-			if( comp.nth ) {
-				return function( compiler ) {
-					const Number = semantics.id(`Number`);
-					const n = compiler.expectArgument(`n`);
-					compiler.body.pushStatement(
-						compiler.assert( Number.member(`isInteger`).call( compiler.n ) ),
-						semantics.if(
-							n.lt( 0 ).or( n.ge( this::comp.len(compiler) ) ),
-							semantics.return()
-						)
-					);
-					return this::comp.get( compiler, n );
-				}
-			}
-		}
-	});
+}
 
-	proto::implementSymbolsFromFactory({
-		kvIterator: {
-			factory() {
-				const compiler = new Compiler(Type);
-				const cd = new CompilerDefinition( Type, comp ).instantiate( compiler );
-				const args = compiler.registerTypeArguments( Type, properties.args );
-				const cdWithMemberArgs = cd.reinstantiate( (arg)=>semantics.this().member(arg) );
 
-				{
-					const params = Object.values(args);
 
-					const Reflect = semantics.id(`Reflect`);
-					const argumentsObj = semantics.id(`arguments`);
-					const kv = compiler.createUniqueVariable( `kv` );
-					const done = compiler.createUniqueVariable( `done` );
-					const Iterator = compiler.createUniqueVariable( `Iterator` );
-					const i = semantics.this().member( compiler.createUniqueVariable(`i`) );
-					const len = semantics.this().member( compiler.createUniqueVariable(`len`) );
-					const key = compiler.createUniqueVariable( `key` );
-					const value = compiler.createUniqueVariable( `value` );
 
-					let iteratorBody;
 
-					compiler.body.pushStatement(
-						kv.declareFunction( [key, value], semantics.block(
-							semantics.this().member('done').assign( false ),
-							semantics.this().member('value').assign( semantics.array(key, value) ),
-						)),
-						done.declareFunction( [], semantics.block(
-							semantics.this().member('done').assign( true ),
-						)),
-						Iterator.declareFunction( params, iteratorBody = semantics.block(
-							i.assign( 0 ),
-							len.assign( cd.len(compiler) ),
-						)),
-						Iterator.member('prototype').member('next').assign(
-							semantics.function( null, [], semantics.block(
-								semantics.if(
-									i.ge( len ),
-									done.new().return()
-								),
-								value.declare( cdWithMemberArgs.nth(compiler, i) ),
-								kv.new( i.increment(), value ).return()
-							))
-						),
-						semantics.function( null, [], semantics.block(
-							semantics.id(`console`).member(`log`).call( argumentsObj ),
-							Reflect.member('construct').call( Iterator, argumentsObj ).return()
-						)).return()
-					);
 
-					Object.values( args ).forEach( (param)=>{
-						iteratorBody.pushStatement( semantics.this().member(param).assign( param ) )
-					});
-				}
+function compileProtocolsForRootType( compilerConfiguration ) {
+	assert( this, `compileProtocolsForRootType() must be called on an object` );
 
-				return compiler.toFunctionFactory();
-			}
-		}
-	});
+	generatorSymbols::assignProtocols( this, compilerConfiguration );
+	this::implementCoreProtocolGenerators( compilerConfiguration );
+	this::deriveProtocolsFromGenerators();
 }
 
 
 // implements collection protocols for the type `this` whose parent type is `ParentType`,
-// generating functions using `compilerDefinition`
-function compileProtocolsForTransformation( ParentType, compilerDefinition ) {
+// generating functions using `compilerConfiguration`
+function compileProtocolsForTransformation( compilerConfiguration ) {
 	assert( this, `compileProtocolsForTransformation() must be called on an object` );
 
 	const Type = this;
-	const proto = this.prototype;
-	const parentProto = ParentType.prototype;
-
-	assert( ! this[compilerSymbol] );
-	const comp = this[compilerSymbol] = Object.assign({}, compilerDefinition);
-	this::finalizeCompilerDefinition();
-
 	const properties = this[propertiesSymbol];
+	const ParentType = properties.ParentType;
 
-// TODO: clean up this mess a bit :F
-const cd = new CompilerDefinition( Type, comp );
-if( comp.nth )
-	proto::implementSymbolsFromFactory({
-		kvIterator: {
-			factory() {
-				const compiler = new Compiler(Type);
-				const cd = new CompilerDefinition( Type, comp ).instantiate( compiler );
-				const cdWithMemberArgs = cd.reinstantiate( (arg)=>semantics.this().member(arg) );
-				const args = compiler.getTypeArgumentArray();
+	assert( ParentType, `${this.name} should specify its ParentType` );
 
-				{
-					const params = args.map( arg=>arg.variable );
+	// taking the non-protocol data from `compilerConfiguration` (e.g.  `nStage` and `stage`)
+	let {stage, nStage, nToParentN, keyToParentKey} = compilerConfiguration::extractKeys( [id`stage`, id`nStage`, id`nToParentN`, id`keyToParentKey`] );
 
-					const Reflect = semantics.id(`Reflect`);
-					const argumentsObj = semantics.id(`arguments`);
-					const kv = compiler.createUniqueVariable( `kv` );
-					const done = compiler.createUniqueVariable( `done` );
-					const Iterator = compiler.createUniqueVariable( `Iterator` );
-					const i = semantics.this().member( compiler.createUniqueVariable(`i`) );
-					const len = semantics.this().member( compiler.createUniqueVariable(`len`) );
-					const key = compiler.createUniqueVariable( `key` );
-					const value = compiler.createUniqueVariable( `value` );
-
-					let iteratorBody;
-
-					compiler.body.pushStatement(
-						kv.declareFunction( [key, value], semantics.block(
-							semantics.this().member('done').assign( false ),
-							semantics.this().member('value').assign( semantics.array(key, value) ),
-						)),
-						done.declareFunction( [], semantics.block(
-							semantics.this().member('done').assign( true ),
-						)),
-						Iterator.declareFunction( params, semantics.block(
-							i.assign( 0 ),
-							len.assign( cd.len(compiler) ),
-							...args.map( arg=>semantics.this().member(arg.variable).assign( arg.variable ) ),
-						)),
-						Iterator.member('prototype').member('next').assign(
-							semantics.function( null, [], semantics.block(
-								semantics.if(
-									i.ge( len ),
-									done.new().return()
-								),
-								value.declare( cdWithMemberArgs.nth(compiler, i) ),
-								kv.new( i.increment(), value ).return()
-							))
-						),
-						semantics.function( null, [], semantics.block(
-							// semantics.id(`console`).member(`log`).call( argumentsObj ),
-							Reflect.member('construct').call( Iterator, argumentsObj ).return()
-						)).return()
-					);
-				}
-
-				return compiler.toFunctionFactory();
+	{
+		if( nStage && ! stage ) {
+			stage = function( compiler, key, innerStage ) {
+				const n = this[keyToN]( compiler, key );
+				this::nStage( compiler, n, (c, n)=>{
+					const key = this[nToKey]( compiler, key );
+					return innerStage(c, key);
+				});
+			};
+		}
+		if( nToParentN && ! keyToParentKey ) {
+			keyToParentKey = function( compiler, key, value ) {
+				const n = this::parentCoreSymbols.keyToN( compiler, key );
+				return this::nToParentN( compiler, n );
 			}
 		}
-	});
+	}
+
+	generatorSymbols::assignProtocolFactories( this, compilerConfiguration );
+
+	{
+		const {nth, get, nToKey, keyToN} = generatorSymbols;
+
+		generatorSymbols::assignProtocolFactories( Type, {
+			nToKey() {
+				if( nToParentN && ParentType[nToKey] ) {
+					return function( compiler, n ) {
+						const parentN = this::nToParentN( compiler, n );
+						return ParentType[nToKey]( compiler, parentN );
+					}
+				}
+			},
+			nth() {
+				if( nStage && ParentType[nth] ) {
+					return function( compiler, n ) {
+						this::nStage( compiler, n, (c, n)=>{
+							c.value = ParentType[nth]( c, n );
+						});
+						return compiler.value;
+					}
+				}
+			},
+			get() {
+				if( stage && ParentType[get] ) {
+					return function( compiler, key ) {
+						compiler.key = key;
+						this::stage( compiler, (c)=>{
+							compiler.value = ParentType[get]( c, c.key );
+						});
+						return compiler.value;
+					}
+				}
+			},
+			hasKey() {
+				if( stage && ParentType[nth] ) {
+					return function( compiler, key ) {
+						TODO(`Meh, use \`compiler.skip()\` to return false...`);
+						compiler.key = key;
+						this::stage( compiler, (c)=>{
+							compiler.value = ParentType[nth]( c, c.key );
+						});
+						return true;
+					}
+				}
+			},
+			keyToN() {
+				if( keyToParentKey && ParentType[keyToN] ) {
+					return function( compiler, key ) {
+						const parentKey = this::keyToParentKey( compiler, key );
+						return ParentType[keyToN]( compiler, parentKey );
+					}
+				}
+			},
+		});
+	}
+
+	this::implementCoreProtocolGenerators( compilerConfiguration );
+	this::deriveProtocolsFromGenerators();
 }
+
+
+
+
+const parentCoreSymbols = {};
+
+for( let symName in generatorSymbols ) {
+	const genSym = generatorSymbols[symName];
+	assert( genSym, `${symName} is not a valid core protocol generator` );
+
+	const sym = symbols[symName];
+	assert( sym, `${symName} is not a valid core protocol` );
+
+	parentCoreSymbols[symName] = function( compiler, ...args ) {
+		const Type = this;
+		const properties = Type[propertiesSymbol];
+		const ParentType = properties.ParentType;
+
+		if( ParentType[genSym] ) {
+			return ParentType[genSym]( compiler );
+		}
+
+		const symVar = compiler.registerConstant( sym, `${symName}Sym` );
+		return compiler.getParent( this ).member( symVar, true ).call( ...args );
+	};
+}
+
+
+
 
 
 module.exports = {
 	compileProtocolsForTransformation,
-	compileProtocolsForRootType
+	compileProtocolsForRootType,
+	parentCoreSymbols
 };
 
-const {get, set, hasKey, has, nth, setNth, hasNth, nthKey, add, len, reverse, clear, kvIterator, kvReorderedIterator} = symbols;
 const {hasSymbols, implementSymbolsFromFactory, functionalIf, identity} = require('../util.js');

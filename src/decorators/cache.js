@@ -32,7 +32,7 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 		nth() {
 			if( proto.*nth ) {
 				return function nth( n ) {
-					const key = this.*nthKey( n );
+					const key = this.*nToKey( n );
 					return this.*get( key );
 				};
 			}

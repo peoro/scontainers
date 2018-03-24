@@ -193,6 +193,8 @@ const Compiler = module.exports = function( grammar ) {
 			// `pl` and `pr` are similar, but taking associativity into consideration
 			const prec = (arg)=>this.precedence(arg);
 			const assoc = (arg)=>this.associativity(arg);
+			// TODO: avoid duplication in the three following functions
+			// and fix them so that `pr` and `pl` don't put in parenthesis the same operators
 			const p = (arg)=>{
 				if( prec(arg) < prec(node) ) { return [`(`, arg, `)`]; }
 				return arg;

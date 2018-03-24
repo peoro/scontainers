@@ -1,7 +1,7 @@
 
 const assert = require('assert');
 
-const {hasNth, nthKey} = require('../symbols');
+const {nToKey} = require('../symbols');
 const {implementSymbolsFromFactory} = require('../util.js');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
@@ -14,17 +14,10 @@ function implementCoreProtocolsFromPropagator( ParentType, propagator ) {
 	const parentProto = ParentType.prototype;
 
 	proto::implementSymbolsFromFactory({
-		nthKey() {
-			if( propagator.nToParentN && parentProto.*nthKey ) {
+		nToKey() {
+			if( propagator.nToParentN && parentProto.*nToKey ) {
 				return function( n ) {
-					return this::propagator.parentCollection().*nthKey( this::propagator.nToParentN(n) );
-				}
-			}
-		},
-		hasNth() {
-			if( propagator.nToParentN && parentProto.*hasNth ) {
-				return function( n ) {
-					return this::propagator.parentCollection().*hasNth( this::propagator.nToParentN(n) );
+					return this::propagator.parentCollection().*nToKey( this::propagator.nToParentN(n) );
 				}
 			}
 		},

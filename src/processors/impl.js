@@ -2,7 +2,7 @@
 const assert = require('assert');
 
 const symbols = require('../symbols');
-const {get, set, hasKey, has, nth, setNth, hasNth, nthKey, add, len, reverse, clear, kvIterator, kvReorderedIterator} = symbols
+const {get, set, hasKey, has, nth, setNth, nToKey, add, len, reverse, clear, kvIterator, kvReorderedIterator} = symbols
 const {hasSymbols, implementSymbolsFromFactory} = require('../util.js');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
@@ -30,27 +30,20 @@ function implementCoreProtocols( src={} ) {
 		has() {
 			// must be provided
 		},
-		nthKey() {
+		nToKey() {
 			// must be provided
 		},
 		nth() {
-			if( proto.*get && proto.*nthKey ) {
+			if( proto.*get && proto.*nToKey ) {
 				return function( n ) {
-					return this.*get( this.*nthKey(n) );
+					return this.*get( this.*nToKey(n) );
 				};
 			}
 		},
 		setNth() {
-			if( proto.*set && proto.*nthKey ) {
+			if( proto.*set && proto.*nToKey ) {
 				return function( n, value ) {
-					return this.*set( this.*nthKey(n), value );
-				};
-			}
-		},
-		hasNth() {
-			if( proto.*hasKey && proto.*nthKey ) {
-				return function( n ) {
-					return this.*hasKey( this.*nthKey(n) );
+					return this.*set( this.*nToKey(n), value );
 				};
 			}
 		},
@@ -79,7 +72,7 @@ function implementCoreProtocols( src={} ) {
 							if( this.i < coll.*len() ) {
 								const n = this.i ++;
 								return {
-									value:[coll.*nthKey(n), coll.*nth(n)],
+									value:[coll.*nToKey(n), coll.*nth(n)],
 									done:false
 								};
 							}
@@ -134,9 +127,8 @@ function implementDerivedProtocols() {
 
 	// running a quick validity check on `this`
 	{
-		if( proto.*nth ) {
-			assert( proto.*hasNth, `${Type.fullName} misses .\*hasNth()` );
-			assert( proto.*nthKey, `${Type.fullName} misses .\*nthKey()` );
+		if( proto.*nth && proto.*nToKey ) {
+			assert( proto.*nToKey, `${Type.fullName} misses .\*nToKey()` );
 			assert( proto.*len, `${Type.fullName} misses .\*len()` );
 			// assert( proto.*get, `${Type.fullName} misses .\*get()` );
 		}

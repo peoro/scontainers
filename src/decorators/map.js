@@ -3,9 +3,12 @@
 
 const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
-const {len, nth, nthKey, hasKey, get} = require('../symbols');
-const {compileProtocolsForTransformation, implementProtocolsForTransformation, implementCoreProtocolsFromPropagator, defineProperties} = require('../processors/index.js')
+const symbols = require('../symbols');
+const generatorSymbols = require('../generator_symbols');
+const {compileProtocolsForTransformation, implementProtocolsForTransformation, implementCoreProtocolsFromPropagator, defineProperties, parentCoreSymbols} = require('../processors/index.js')
 const {implementSymbolsFromFactory} = require('../util.js');
+
+const {len, nth, nToKey, hasKey, get} = symbols;
 
 
 		// iteratorCompiler() {
@@ -35,7 +38,9 @@ module.exports = {
 	factory( Type ) {
 		const proto = Type.prototype;
 
-		class MapD {
+		class Map {
+			static get name() { return `${Type.name}::Map`; }
+
 			constructor( coll, fn ) {
 				this.wrapped = coll;
 				this.fn = fn;
@@ -45,15 +50,15 @@ module.exports = {
 				return `${this.wrapped}.map(${this.fn.name || 'ƒ'})`;
 			}
 		}
-		MapD.fullName = `${Type.fullName || Type.name}::map`
-		const Map = MapD;
 
 		Map::defineProperties({
 			ParentType: Type,
-			parentCollection() { return this.wrapped; },
-			args: {
-				mapFn() { return this.fn; }
-			}
+			parentCollectionKey: id`wrapped`,
+			argKeys: [id`fn`],
+
+			propagateEveryElement: true,
+			propagateMultipleElements: false,
+			createsNewElements: false,
 		});
 
 		/*
@@ -90,16 +95,62 @@ module.exports = {
 		});
 		*/
 
-		Map::compileProtocolsForTransformation( Type, {
-			nStage( compiler, parentStage ) {
+		/*
+		{
+			function nStage( compiler, parentStage ) {
 				const {args, parent} = this;
 				parentStage( compiler );
 				compiler.value = args.mapFn.call( compiler.value, compiler.key );
-			},
-			len( compiler ) {
+			};
+
+			function len( compiler ) {
 				return this.parent.len( compiler );
-			},
-		});
+			};
+			len.requirements = [proto.*len];
+
+			Map::compileProtocolsForTransformation({
+				nStage,
+				len
+			});
+		}
+
+		{
+			Map::compileProtocolsForTransformation({
+				nStage: function() {
+					....
+				}.require([ proto.get ])
+				len
+			});
+		}
+		*/
+
+		{
+			const ParentType = Type;
+			const parentProto = ParentType.prototype;
+
+			Map::compileProtocolsForTransformation({
+				nStage( compiler, n, innerStage ) {
+					const {fn} = compiler.getArgs( this );
+					innerStage( compiler, n );
+					compiler.value = fn.call( compiler.value, compiler.key );
+				},
+				stage( compiler, key, innerStage ) {
+					const {fn} = compiler.getArgs( this );
+					innerStage( compiler, key );
+					compiler.value = fn.call( compiler.value, compiler.key );
+				},
+				nToParentN( compiler, n ) {
+					return n;
+				},
+				len() {
+					if( parentProto[len] ) {
+						return function( compiler ) {
+							return this::parentCoreSymbols.len( compiler );
+						}
+					}
+				},
+			});
+		}
 
 		Map.prototype::implementSymbolsFromFactory({
 			len() {
@@ -109,10 +160,19 @@ module.exports = {
 					};
 				}
 			},
-			nthKey() {
-				if( proto.*nthKey ) {
+			nToKey() {
+				if( proto.*nToKey ) {
 					return function( n ) {
-						return this.wrapped.*nthKey( n );
+						return this.wrapped.*nToKey( n );
+					};
+				}
+			},
+			nth() {
+				if( proto.*nth ) {
+					return function( n ) {
+						// TODO: check `n`
+						const value = this.wrapped.*nth( n );
+						return this.fn( value, this.*nToKey(n), this );
 					};
 				}
 			},

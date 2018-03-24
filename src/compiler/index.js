@@ -12,15 +12,104 @@ const builders = createClasses( grammar );
 const codegen = createCodegen( grammar );
 const semantics = createSemantics( grammar, builders );
 
+function compile( ast ) {
+	// return codegen.compile( ast );
+	return escodegen.generate( ast, {
+		format: {
+			indent: {
+				style: `\t`
+			}
+		}
+	});
+}
+
+class Compiler {
+	constructor( ast ) {
+		this.varDB = new semantics.VarDB();
+		this.ast = ast;
+	}
+
+	createUniqueVariable( name ) {
+		return this.varDB.createUniqueVariable( name );
+	}
+
+	toCode() {
+		const ast = this.ast.id();
+		return compile( ast );
+	}
+}
+
+class ProgramCompiler extends Compiler {
+	constructor() {
+		super( new semantics.Program() );
+		this.body = this.ast;
+	}
+}
+
+class FunctionCompiler extends Compiler {
+	constructor( name ) {
+		super( new semantics.Program() );
+
+		this.body = new semantics.Block();
+		this.fn = semantics.function(name, [], this.body);
+		this.ast.pushStatement( this.fn.return() )
+
+		this.constants = new Map();
+		this.parameters = [];
+	}
+
+	registerParameter( name ) {
+		const variable = this.createUniqueVariable( name );
+		this.parameters.push( variable );
+		return variable;
+	}
+	registerConstant( value, name ) {
+		if( this.constants.has(value) ) {
+			return this.constants.get( value );
+		}
+
+		const variable = this.createUniqueVariable( name );
+		this.constants.set( value, variable );
+		return variable;
+	}
+	registerConstants( args ) {
+		const result = {};
+		for( let key in args ) {
+			if( args.hasOwnProperty(key) ) {
+				const variable = this.registerConstant( args[key], key );
+				result[key] = variable;
+			}
+		}
+		return result;
+	}
+
+	compile() {
+		const constantIdentifiers = Array.from( this.constants.values() ).map( variable=>variable.name );
+		const constantValues = Array.from( this.constants.keys() );
+
+		this.fn.ast.params.push( ...this.parameters.map( variable=>variable.ast ) );
+
+		const f = new Function(
+			...constantIdentifiers,
+			this.toCode()
+		);
+
+		return f.apply( null, constantValues );
+	}
+}
+
+
 module.exports = {
 	grammar,
 	builders,
 	semantics,
-	// codegen(){ return codegen.compile.apply( codegen, arguments ); },
-	codegen(){ return escodegen.generate.apply( escodegen, arguments ); },
+	codegen: compile,
+	Compiler, ProgramCompiler, FunctionCompiler
 };
 
 if( require.main === module ) {
+	Error.stackTraceLimit = Infinity;
+
 	{
 		const program = builders.Program([
 			// builders.Literal(true), // this correctly fails
@@ -35,7 +124,7 @@ if( require.main === module ) {
 			)
 		]);
 		grammar.Program.check( program );
-		console.log( codegen.compile(program) );
+		console.log( compile(program) );
 		console.log();
 	}
 	{
@@ -76,7 +165,7 @@ if( require.main === module ) {
 			)).return()
 		).id();
 		grammar.Program.check( program );
-		console.log( codegen.compile(program) );
+		console.log( compile(program) );
 		console.log();
 	}
 	{
@@ -126,7 +215,7 @@ if( require.main === module ) {
 		).id();
 
 		grammar.Program.check( program );
-		console.log( codegen.compile(program) );
+		console.log( compile(program) );
 		console.log();
 	}
 
@@ -138,7 +227,21 @@ if( require.main === module ) {
 		).id();
 
 		grammar.Program.check( program );
-		console.log( codegen.compile(program) );
+		console.log( compile(program) );
 		console.log();
+	}
+
+	// testing compilers
+	{
+		const compiler = new FunctionCompiler(`fun`);
+		const three = compiler.registerConstant( 3, `three` );
+		const x = compiler.registerParameter( `x` );
+		compiler.body.pushStatement(
+			semantics.id(`console`).member(`log`).call( three.mul(x) )
+		);
+		const fun = compiler.compile();
+
+		console.log( fun.toString() );
+		fun( 5 );
 	}
 }

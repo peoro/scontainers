@@ -1,4 +1,8 @@
 
+global.id = function( strings ) {
+	return strings[0];
+}
+
 module.exports = Object.assign( {},
 	require('./properties.js'),
 	require('./compiler.js'),

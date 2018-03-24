@@ -28,15 +28,11 @@ module.exports = subminus.implementForExistingType( Array, class ArrayWrapper {
 	len() { return this.length; }
 	get( n ) { return this[n]; }
 	nth( n ) { return this[n]; }
-	hasNth( n ) {
-		// TODO: assert that `n` is integer
-		return n >= 0 && n < this.*len();
-	}
 	hasKey( n ) {
 		// TODO: check that `n` is integer
 		return n >= 0 && n < this.*len();
 	}
-	nthKey( n ) { return n; }
+	nToKey( n ) { return n; }
 	setNth( n, value ) { this[n] = value; }
 	add( value ) { this.push(value); }
 	clear() { this.length = 0; }

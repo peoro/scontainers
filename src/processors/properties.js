@@ -4,8 +4,8 @@ const assert = require('assert');
 const propertiesSymbol = Symbol('properties');
 
 function defineProperties( props ) {
-	assert( props.args );
-	assert( (!!props.parentCollection)===(!!props.ParentType) );
+	assert( props.argKeys );
+	assert( (!!props.parentCollectionKey)===(!!props.ParentType), this );
 
 	this[propertiesSymbol] = props;
 }

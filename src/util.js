@@ -108,7 +108,7 @@ function implementSymbolsFromFactory( src ) {
 		if( srcFn.assignImmediately ) {
 			const fn = fnFactory();
 			dest[sym] = fn;
-			this[sym].factory = ()=>fn;
+			dest[sym].factory = ()=>fn;
 		}
 		else {
 			dest[sym] = function() {
