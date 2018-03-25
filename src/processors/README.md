@@ -1,97 +1,63 @@
 
-# TODOs, ideas
+# Processors
 
-A `collection` passes the `compiler configuration` to the compiler processor.
-The `compiler configuration` is used to build the `core protocol generators` for the `collection`. It should include some `core protocol generators` or functions to generate them (e.g. `nStage`, `stage`).
+The modules in this directory offer "processors": helpers to implement all the protocols for our collections.
 
-Both `core protocols` and `derived protocols` can be implemented using the `core protocol generators`.
+When defining a new collection only a few core protocols or helping functions are needed. The processors can use those to generate many of the remaining protocols.
 
+Currently we have two different processors, that can be used simultaneously:
+ - `impl` is the simpler one. It's fed with JavaScript functions or protocol definitions, and expands the collection with other protocols that call the supplied ones.
+  - `compiler` dynamically compiles the protocols for our collections, resulting in superior performance, or zero-cost abstraction.
 
-Note that some functions in the `compiler configuration` are used to generate `core protocol generators` (e.g. `nStage`=>(`nth`,`stage`); `stage`=>`get`; `nth`=>`set` etc), while others are directly used and never overridden (e.g. `len`, `nth`).
-`Decorators` can use `stage` and `nStage` to easily define most `core generators`. They should work (in different ways of course) both when the inner collection has the needed `core protocol generators` and when it doesn't but has `core protocols` instead.
-
-## Current status
-Currently we have something similar to `compilable collection`: what's returned by `CompilerDefinition.prototype.instantiate`.
-`CompilerDefinition` isn't really needed and it should be dropped.
+Both processors offer two functions to implement protocols for our collections: one for root collections (e.g. `Array`, `Range` etc) and one for decorators (e.g. `Filter`, `Zip`).
+These take a processor configuration object that can contain protocol implementations or helper functions (usually most useful for decorators).
 
 ## Definitions
- - `(collection) core protocols`: the core protocols to manipulate a collection. For instance `nth`, `get`, `len` etc.
- - `(collection) derived protocols`: higher level protocols that are generated from `core protocols`. For instance `forEach`, `reduce`, `count`.
- - `collection`: an object that implements all the applicable `core protocols`.
+
+ - `protocol`: a function with a well defined signature and semantics, set to a Symbol key of an object.
+ - `collection`: an object that implements all the applicable `protocols`.
  - `root collection`: a collection generating data out of stuff which is not a collection. It includes `Array`, `Map`, `Range`, `Fibonacci` etc.
- - `decorator`: a collection that is build on top of another. The data it contains is derived from the data of the inner collection.
+ - `decorator`: a collection that is built on top of another. The data it contains is derived from the data of the inner collection.
+ - `(collection) core protocols`: the core protocols to manipulate a collection. For instance `nth`, `get`, `len` etc. They're defined in "/src/symbols.js".
+ - `(collection) derived protocols`: higher level protocols that are generated from `core protocols`. For instance `forEach`, `reduce`, `count`. They're defined in "/src/symbols.js".
+
+ Definitions useful to our Compiler processor:
  - `compiler`: the component that stores the AST we're generating and offers functions to manipulate it and turn into actual code.
- - `collection compiler`: a `compiler` specific for compiling collections. It keeps track of stuff like `value`, `key`, loop's `body` etc.
+ - `collection compiler`: a `compiler` meant to compile collection protocols. It keeps track of stuff like `value`, `key`, loop's `body` etc.
  - `code generator`: a function that modifies the AST of a compiler to implement some semantics.
- - `compilable collection`: an object that implement `code generators` for all the applicable collection core protocols.
- - `core protocol generators`: the necessary information to generate a `compilable collection`. These generators are semantically different from `core protocols` and a few extra ones are supported/required, and are used to compile them. For instance `nStage`, `stage`, `nth`, `len`, `args`, `parentCollection`.
- - `compiler configuration`: stuff passed to the compiler processor that will be used to derive `core protocol generators`.
+ - `protocol generator`: a protocol that work as a `code generator` and is meant to dynamically generate the code for `core protocols`. They're defined in "/src/generator_symbols.js".
 
-## Core protocol derivability
-`nStage` => `nth`
-`nStage` + `keyToN` => `stage`
-`stage` => `get`, `hasKey`
+## Impl processor
 
-## More TODOs
+The Impl Processor Configuration is an object whose keys are protocol names or special keywords, and whose values are functions: protocol implementations for root collections, or protocol factories for derived collections.
+
+The special functions are:
+ - `nStage( n, innerStage )`: to ease the implementation of `nth` and `stage`.
+ - `stage( key, innerStage )`: to ease the implementation of `get` and `hasKey`.
+ - `nToParentN( n )`: to ease the implementation of `nToKey` and `keyToParentKey`.
+ - `keyToParentKey( key )`: to ease the implementation of `keyToN`.
+
+## Compiler Processor
+
+The Compiler Processor Configuration is an object whose keys are protocol generator names or special keywords, and whose values are functions: protocol implementations for root collections, or protocol factories for derived collections.
+
+The special functions are:
+ - `nStage( compiler, n, innerStage )`: to ease the implementation of `nth` and `stage`.
+ - `stage( compiler, key, innerStage )`: to ease the implementation of `get` and `hasKey`.
+ - `nToParentN( compiler, n )`: to ease the implementation of `nToKey` and `keyToParentKey`.
+ - `keyToParentKey( compiler, key )`: to ease the implementation of `keyToN`.
+
+
+
+
+
+# TODOs
  - `Collection` or `Container`?
  - I should get rid of `Propagator`, but rather do something similar to `core generators`: the object passed to the impl processor should be allowed to contain stuff which is not a core protocol (e.g. `nToParentN`, `parentCollection`, `stage`, `nStage`), and this should be used to generate `core protocols` when necessary.
  - both the compiler and the impl (which includes propagator) processor, should use the same collection properties. These should also include stuff like writable.
  - `core protocols` should include a function to access the parent collection (for decorators) and the root one... Or not?
+ - instead of `propertiesSymbol`, we should have a whole set of symbols used for properties, like we're doing for collection protocols and collection protocol generators.
 
- - `core protocol generators` (or maybe just the `compiler configuration`?) should include a `localKeyToN` and `localNToKey` that can be used to generate `keyToN` and `nToKey` and doesn't decrease performance in the code generated by the version og `stage` derived by `nStage`...
-
-
-
-# Processors
-
-The modules in this directory offer "processors": functions that implement protocols for our collections.
-
-When defining a new collection only a few core protocols need to specified. Using them, the processors can generate the remaining core protocols and the derived ones.
-
- - impl processes protocols in a straightforward way, implementing them using the supplied ones directly.
- - propagator uses the "propagator" approach: an object that defines a bunch of properties for the Collection, simplifying the definition of some protocols.
- - compiler uses the "compiler" approach: generating code for `new Function`.
- - properties should be used to define some static properties of the collection, useful to compiler and propagator
-
-## Propagator
-
-## Compiler
-
-A Collection that wishes to use the compiler module should use a "Compiler Definition", an object providing everything necessary for the compilation.
-
-Decorators's Properties need to have:
- - `parentType()`
-
- And their Compiler Definition needs to have:
- - `parentCollection()`: a function that returns the parent collection `this` is transforming
-
-
-Every compilable collection's Properties needs to include:
- - `args`: an object with the argument of the collection. The keys are the names of the arguments and their value is a function returning the argument for the collection instance `this`.
-
-Besides `args`, a Compiler Definition should provide compilers for the functions it wishes to use for compilation:
- - `len()`, returning an Expression with the length of the collection
- - `next( compiler )`, generating the code to do the equivalent of Propagator's `next`. It finds `code`, `key`, `value`, `loop` and `body` in `compiler`, and can use and modify these values freely.
- - `get( compiler, value, key )`
- - `stage( compiler, parentStage )`, `nStage( compiler, parentStage )`, only for derived compilers
-
- Note that these functions have a slightly different semantics from the core protocols. These functions should will be called with a `this` object with the following properties:
-  - `this.parent`, to be used to call parent's compiler functions
-  - `this.args`: an objects matching `Properties.args` whose values are Expressions nodes carrying the value of the arg.
-  - the available methods (e.g. `len` etc)
-
-The processor will create an object with functions meant to compile code for the core prototypes, set it as the [compilerSymbol] property of the collection.
-
-### Implementation NOTEs
-
-The Compiler Definition functions are very simple.
-The ones for decorators receive an extra parameter compared to the root type ones: the result computed by the lower level.
-The Compiler processor uses these definitions to generate the actual protocols. While the thing is straightforward for root types, it's slightly more complicated for decorators.
-For decorators, Compiler recurses through the parents. If one ancestor lacks a core function we need, we give up and generate no function. We can end the recursion in two other cases: reaching the root type, or reaching a type with no Compiler Definition. In either case we get their value, and start bubbling up, effectively `reduce`ing the computed value.
-
-# To think about
-
-The following stuff can be automatically generated in a number of ways...
 
 ## For Decorators
 
@@ -167,3 +133,14 @@ Should generate a pre-loop where it keeps skipping, and then a good one.
 Iterable only.
 ### Slice
 It's like skip+take+mapKey
+
+
+
+TODO: Whenever assigning any "standard" protocol, whether it's a generator or an impl one, I should always set a generic function and implement a [[compiled]] and [[impl]] protocols to it.
+the generic function chooses a version between [[compiled]] and [[impl]], takes it, assigns it, and reassigns all the old protocols to the new function.
+
+Probably also for `impl` we need some symbols that are semantically different from the standard ones...
+The standard symbols could do extra stuff, like `nth(n)` should assert that `n` is an integer, and make sure that it's between 0 and len-1...
+The `impl` one should return a `KV` instead, that can be used to implement `hasNth` and all the rest.
+Should we have a `KVN`, instead of a `KV`, if the collection is also enumerable?
+And then, maybe... a `K` for sets? :F

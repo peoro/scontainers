@@ -293,6 +293,15 @@ module.exports = function( grammar, builders ) {
 				expr = expr.and( values.pop() );
 			}
 			return expr;
-		}
+		},
+		or( ...values ) {
+			assert( values.length >= 2 );
+
+			let expr = values.pop();
+			while( values.length ) {
+				expr = expr.or( values.pop() );
+			}
+			return expr;
+		},
 	};
 }

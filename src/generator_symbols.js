@@ -8,35 +8,35 @@ const generatorSymbols = new protocols.util.Protocol();
 // these are used to dynamically generate core and derived protocols for higher performance
 generatorSymbols[utilSymbols.defineAndAssign]( {}, {
 	// naturally-indexed collections (e.g. Array, Range)
-	nth( n ){},	// return the ${n}-th element - O(1)
-	setNth( n, value ){},
+	nth( compiler, n ){},	// return the ${n}-th element - O(1)
+	setNth( compiler, n, value ){},
 	// needed to make naturally-indexed collections compatible with the associative collection API
-	nToKey( n ){},	// return the key associated to the ${n}-th element (${get( nToKey(n) ) === nth(n)})
-	keyToN( key ){},
+	nToKey( compiler, n ){},	// return the key associated to the ${n}-th element (${get( nToKey(n) ) === nth(n)})
+	keyToN( compiler, key ){},
 
 	// associative collections (e.g. Map)
 	// note that naturally-indexed collections are also associative, thanks to `nToKey` and `keyToN`
-	get( key ){},	// return the value of key ${key} - O(1)
-	set( key, value ){},	// set ${value} as value for ${key} - O(1)
-	hasKey( key ){},	// return true if ${this} has a key ${key}, false otherwise - O(1)
+	get( compiler, key ){},	// return the value of key ${key} - O(1)
+	set( compiler, key, value ){},	// set ${value} as value for ${key} - O(1)
+	hasKey( compiler, key ){},	// return true if ${this} has a key ${key}, false otherwise - O(1)
 
 	//
 	// delete( ? ){},	// deletes
 
 	// unindexed collections (Set)
-	has( item ){},	// return true or false depending on whether ${item} is in ${this} - O(1)
+	has( compiler, item ){},	// return true or false depending on whether ${item} is in ${this} - O(1)
 
 	// collections without a key, or with automatic key (e.g. Set, extendible naturally-indexed collections)
-	add( value ){},	// adds ${value} to ${this} - O(1)
+	add( compiler, value ){},	// adds ${value} to ${this} - O(1)
 
 	// collections with known size
-	len(){},	// return the number of elements in the collection - O(1)
+	len( compiler ){},	// return the number of elements in the collection - O(1)
 
 	// clearable collection
-	clear(){},	// removes every item from ${this} - O(n)
+	clear( compiler ){},	// removes every item from ${this} - O(n)
 
 	// iterable collections
-	loop(){},
+	loop( compiler,  ){},
 });
 
 module.exports = generatorSymbols;

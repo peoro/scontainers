@@ -87,4 +87,19 @@ function square( n ) { return n*n; }
 
 		console.log();
 	}
+
+	{
+		console.log();
+		const collection = [7, 3, 5, 0, 2];
+		const it = collection[symbols.kvIterator]();
+		let next = it.next();
+		while( ! next.done ) {
+			console.log( next.value );
+			next = it.next();
+		}
+		collection::log();
+		console.log( collection[symbols.len]() );
+
+		console.log();
+	}
 }

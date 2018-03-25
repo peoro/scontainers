@@ -13,6 +13,7 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 symbols[utilSymbols.defineAndAssign]( {}, {
 	// naturally-indexed collections (e.g. Array, Range)
 	nth( n ){},	// return the ${n}-th element - O(1)
+	nthKVN( n ){},	// NOTE: it doesn't check to see if `n` is there - O(1)
 	setNth( n, value ){},
 	// needed to make naturally-indexed collections compatible with the associative collection API
 	nToKey( n ){},	// return the key associated to the ${n}-th element (${get( nToKey(n) ) === nth(n)})
@@ -21,6 +22,7 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 	// associative collections (e.g. Map)
 	// note that naturally-indexed collections are also associative, thanks to `nToKey` and `keyToN`
 	get( key ){},	// return the value of key ${key} - O(1)
+	getKVN( key ){},	// NOTE: it doesn't check to see if `key` is there - O(1)
 	set( key, value ){},	// set ${value} as value for ${key} - O(1)
 	hasKey( key ){},	// return true if ${this} has a key ${key}, false otherwise - O(1)
 
@@ -68,7 +70,9 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 	last(){},	// return the last item in ${this} - O(1)
 	random(){},	// return a random item in ${this} - O(n) // TODO: or O(1) ?
 
-	swap( k1, k2 ){}, // swap two elements (by key)
+	swapNs( n1, n2 ){},	// swap two elements (by n)
+	swapKeys( k1, k2 ){},	// swap two elements (by key)
+	swap(){},	// TODO: get rid of this...
 	reduce( fn ){},
 	reduceFirst( fn ){},
 	sum(){},

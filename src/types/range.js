@@ -8,8 +8,8 @@ const generatorSymbols = require('../generator_symbols');
 
 use protocols from subminus.symbols;
 
-const {defineProperties, compileProtocolsForRootType, implementCoreProtocols} = require('../processors/index.js')
-const {implementSymbols} = require('../util.js')
+const {defineProperties, compileProtocolsForRootType, implementCoreProtocols} = require('../processors/index.js');
+const {implementSymbols} = require('../util.js');
 
 const {Compiler, semantics} = require('../compiler/index.js');
 
@@ -57,12 +57,10 @@ Range::compileProtocolsForRootType({
 	},
 	nth( compiler, n ) {
 		const {begin} = compiler.getArgs( this );
-		compiler.key = this[generatorSymbols.nToKey]( compiler, n );
-		// return compiler.key; // NOTE: this only works as long as `key===value` even if `key!==n`
-		return n.plus( begin );
-	},
-	get( compiler, key ) {
-		return key;
+		compiler.value = n.plus( begin );
+		// compiler.key = compiler.value; // `key===value`
+		compiler.key = this[generatorSymbols.nToKey]( compiler, n ); // `key==n`
+		return compiler.value;
 	},
 	// add: nope
 	len( compiler ) {
@@ -83,8 +81,10 @@ Range.prototype::implementSymbols({
 		if( n < 0 || n  ) { return; }
 		return this.begin + n;
 	},
-	keyToN( key ) { return n - this.begin; },
-	nToKey( n ) { return n + this.begin; },
+	// keyToN( key ) { return n - this.begin; },
+	// nToKey( n ) { return n + this.begin; },
+	keyToN( key ) { return key; },
+	nToKey( n ) { return n; },
 
 	// optimization
 	sum() { return ( this.begin + this.end-1 ) * this.len() / 2; },

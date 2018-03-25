@@ -2,15 +2,17 @@
 const assert = require('assert');
 
 const symbols = require('../symbols');
+
 const {get, set, hasKey, has, nth, setNth, nToKey, add, len, reverse, clear, kvIterator, kvReorderedIterator} = symbols
-const {hasSymbols, implementSymbolsFromFactory} = require('../util.js');
+const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories} = require('../util.js');
+const {propertiesSymbol} = require('./properties');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
 
 // implements collection protocols for the type `this` whose parent type is `ParentType`,
 // using the functions from `src`'s factories
 function implementCoreProtocols( src={} ) {
-	assert( this, `implementCoreProtocolsForTransformation() must be called on an object` );
+	assert( this, `implementCoreProtocols() must be called on an object` );
 
 	const Type = this;
 	const proto = Type.prototype;
@@ -155,7 +157,165 @@ function implementDerivedProtocols() {
 	});
 }
 
+function deriveProtocolsForTransformation( configuration ) {
+	assert( this, `deriveProtocolsForTransformation() must be called on an object` );
+	const check = (cond, err)=>{
+		assert( cond, `${this.name}.compileProtocolsForTransformation(): ${err}` );
+	};
+
+	const Type = this;
+	const proto = this;
+	const ParentType = this[propertiesSymbol].ParentType;
+	check( ParentType, `need to specify the ParentType` );
+	const parentProto = ParentType.prototype;
+	const parentKey = this[propertiesSymbol].parentCollectionKey;
+
+	// TODO: `stage` (and its specializations) could be improved...
+	// most collections don't do anything *before* `stage` returns from recursion.
+	// it would be more efficient (and easier to write) if we had a `stageEnd` that doesn't recurse, like the old `propagator.next`.
+
+	// taking the non-protocol data from `configuration` (e.g.  `nStage` and `stage`)
+	let {stage, nStage, kStage, indexToParentIndex, nToParentN, keyToParentKey} =
+		configuration::extractKeys( Object.keys({
+			stage:null, nStage:null, kStage:null, indexToParentIndex:null, nToParentN:null, keyToParentKey:null
+		}) );
+	// deriving the missing non-protocol functions we can derive
+	{
+		check( !!stage === !!indexToParentIndex && !!nStage === !!nToParentN && !!kStage === !!keyToParentKey,
+			`\`*Stage\` needs to match \`*ToParent*\`` );
+
+		if( stage ) {
+			check( !nStage && !kStage, `either supply \`stage\` or \`nStage\` or \`kStage\`` );
+			nStage = stage;
+			kStage = stage;
+		}
+
+		if( indexToParentIndex ) {
+			check( !nToParentN && !keyToParentKey, `either supply \`indexToParentIndex\` or  \`nToParentN\` or \`keyToParentKey\`` );
+			nToParentN = indexToParentIndex;
+			keyToParentKey = indexToParentIndex;
+		}
+	}
+
+	// all the remaining stuff in `compilerConfiguration` should be protocol generator factories: assigning them to `this`
+	symbols::assignProtocolFactories( this, configuration );
+
+	// deriving the other core protocol factories we can derive from the non-protocol data
+	{
+		const {nth, get, nToKey, keyToN} = symbols;
+
+		symbols::assignProtocolFactories( this.prototype, {
+			nToKey() {
+				if( nToParentN && parentProto[nToKey] ) {
+					return function( n ) {
+						const parentN = this::nToParentN( n );
+						return this[parentKey][nToKey]( parentN );
+					}
+				}
+			},
+			nthKVN() {
+				if( nStage && parentProto[nthKVN] ) {
+					return function( n ) {
+						const parentN = this::nToParentN( n );
+						const parentKVN = this[parentKey][nthKVN]( parentN );
+						if( parentKVN ) {
+							return this::nStage( parentKVN );
+						}
+					}
+				}
+			},
+			nth() {
+				if( proto[nthKVN] ) {
+					return function( n ) {
+						const kvn = this[nthKVN]( n );
+						if( kvn ) {
+							return kvn.value;
+						}
+					}
+				}
+			},
+			getKVN() {
+				if( kStage && parentProto[getKVN] ) {
+					return function( key ) {
+						const parentKey = this::keyToParentKey( key );
+						const parentKVN = this[parentKey][getKVN]( parentKey );
+						if( parentKVN ) {
+							return this::nStage( parentKVN );
+						}
+					}
+				}
+			},
+			get() {
+				if( proto[getKVN] ) {
+					return function( key ) {
+						const kvn = this[getKVN]( key );
+						if( kvn ) {
+							return kvn.value;
+						}
+					}
+				}
+			},
+			hasKey() {
+				if( kStage && parentProto[nth] ) {
+					return function( key ) {
+						return this::kStage( (c)=>{
+							this[parentKey][nth]( c, c.key );
+						});
+						return true;
+					}
+				}
+			},
+			keyToN() {
+				if( keyToParentKey && parentProto[keyToN] ) {
+					return function( key ) {
+						const parentKey = this::keyToParentKey( key );
+						return this[parentKey][keyToN]( parentKey );
+					}
+				}
+			},
+
+			kvIterator() {
+				if( parentProto[kvIterator] ) {
+					return function() {
+						const self = this;
+						const parentCollection = this[parentKey];
+
+						const it = parentCollection[kvIterator]();
+						return {
+							next() {
+								const next = it.next();
+								if( next.done ) {
+									return next;
+								}
+
+								const [key, value] = next.value;
+								const parentKV = new ReorderedIterator.KV( key, value );
+								const kv = self::kStage( arg );
+								if( ! kv ) {
+									return this.next();
+								}
+
+								if( false ) {
+									TODO(`handle the situation wehn ${kv} is an iterator`);
+								}
+
+								return {
+									done: false,
+									value: [kv.key, kv.value]
+								};
+							}
+						};
+					};
+				}
+			}
+		});
+	}
+
+	this::implementCoreProtocols();
+}
+
 module.exports = {
 	implementCoreProtocols,
-	implementDerivedProtocols
+	implementDerivedProtocols,
+	deriveProtocolsForTransformation
 };

@@ -5,31 +5,10 @@ const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const symbols = require('../symbols');
 const generatorSymbols = require('../generator_symbols');
-const {compileProtocolsForTransformation, implementProtocolsForTransformation, implementCoreProtocolsFromPropagator, defineProperties, parentCoreSymbols} = require('../processors/index.js')
+const {compileProtocolsForTransformation, implementProtocolsForTransformation, implementCoreProtocolsFromPropagator, defineProperties, parentCoreSymbols, deriveProtocolsForTransformation} = require('../processors/index.js')
 const {implementSymbolsFromFactory} = require('../util.js');
 
 const {len, nth, nToKey, hasKey, get} = symbols;
-
-
-		// iteratorCompiler() {
-		// 	if( proto.*iteratorCompiler ) {
-		// 		return function iteratorCompiler() {
-		// 			const compiler = this.wrapped.*iteratorCompiler();
-		//
-		// 			const mapFn = compiler.cretaeArgumentVariable(`mapFn`);
-		// 			const value = compiler.createUniqueVariable(`value`);
-		//
-		// 			compiler.loopBody.pushStatement(
-		// 				value.declare( mapFn.call(compiler.value, compiler.key) )
-		// 			);
-		//
-		// 			compiler.value = value;
-		//
-		// 			return compiler;
-		// 		};
-		// 	}
-		// }
-
 
 module.exports = {
 	canProduce( Type ) {
@@ -95,53 +74,17 @@ module.exports = {
 		});
 		*/
 
-		/*
-		{
-			function nStage( compiler, parentStage ) {
-				const {args, parent} = this;
-				parentStage( compiler );
-				compiler.value = args.mapFn.call( compiler.value, compiler.key );
-			};
-
-			function len( compiler ) {
-				return this.parent.len( compiler );
-			};
-			len.requirements = [proto.*len];
-
-			Map::compileProtocolsForTransformation({
-				nStage,
-				len
-			});
-		}
-
-		{
-			Map::compileProtocolsForTransformation({
-				nStage: function() {
-					....
-				}.require([ proto.get ])
-				len
-			});
-		}
-		*/
-
 		{
 			const ParentType = Type;
 			const parentProto = ParentType.prototype;
 
-			Map::compileProtocolsForTransformation({
-				nStage( compiler, n, innerStage ) {
+			false && Map::compileProtocolsForTransformation({
+				stage( compiler, index, innerStage ) {
 					const {fn} = compiler.getArgs( this );
-					innerStage( compiler, n );
+					innerStage( compiler, index );
 					compiler.value = fn.call( compiler.value, compiler.key );
 				},
-				stage( compiler, key, innerStage ) {
-					const {fn} = compiler.getArgs( this );
-					innerStage( compiler, key );
-					compiler.value = fn.call( compiler.value, compiler.key );
-				},
-				nToParentN( compiler, n ) {
-					return n;
-				},
+				indexToParentIndex( compiler, index ) { return index; },
 				len() {
 					if( parentProto[len] ) {
 						return function( compiler ) {
@@ -150,6 +93,23 @@ module.exports = {
 					}
 				},
 			});
+
+			/*
+			Map::deriveProtocolsForTransformation({
+				stage( kvn ) {
+					kvn.value = this.fn( kv.value, kv.key, kv.n );
+					return kvn;
+				},
+				indexToParentIndex( index ) { return index; },
+				len() {
+					if( parentProto[len] ) {
+						return function( ) {
+							return this.wrapped[len]();
+						}
+					}
+				},
+			});
+			*/
 		}
 
 		Map.prototype::implementSymbolsFromFactory({

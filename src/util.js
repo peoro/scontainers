@@ -163,6 +163,67 @@ function setSymbolCompilers( src ) {
 }
 */
 
+
+
+// TODO: this stuff should come from 'js-protocols/util'...
+// `this` is an object made of symbols; keys of `symbolObj` are keys of `this`. assigns the protocols in `symbolObj` to `target`.
+function assignProtocols( target, symbolObj ) {
+	for (let name in symbolObj) {
+		const sym = this[name];
+
+		const value = symbolObj[name];
+		assert( sym, `No protocol \`${name}\`` );
+		assert( ! target[sym], `Already implemented...` );
+		target[sym] = value;
+		target[sym].factory = ()=>value;
+	};
+}
+
+// like `assignProtocols`, but the values of `symbolObj` are protocol factories, rather than just protocols
+function assignProtocolFactories( dest, symbolObj ) {
+	for (let symName in symbolObj) {
+		const srcFn = symbolObj[symName];
+		const sym = this[symName];
+
+		assert( sym, `No protocol \`${symName}\`` );
+
+		if( dest[sym] ) {
+			// already implemented...
+			continue;
+		}
+
+		{
+			const fnFactory = srcFn.factory ? ::srcFn.factory : srcFn;
+
+			// functions (not factories!) may return null...
+			if( srcFn === fnFactory ) {
+				if( ! dest::srcFn() ) {
+					continue;
+				}
+			}
+
+			if( srcFn.assignImmediately ) {
+				const fn = dest::fnFactory();
+				dest[sym] = fn;
+				dest[sym].factory = ()=>fn;
+			}
+			else {
+				dest[sym] = function() {
+					const fn = dest[sym].factory();
+					return fn.apply( this, arguments );
+				};
+				dest[sym].factory = function() {
+					const fn = dest::fnFactory();
+					assert( fn, `${dest.constructor.name}.${symName}'s factory returned null` );
+					dest::replaceSymbol( sym, fn );
+					return fn;
+				};
+			}
+		}
+	};
+}
+
+
 // replaces `this[sym]` with `fn`
 function replaceSymbol( sym, fn ) {
 	assert( this, `replaceSymbol() must be called on an object` );
@@ -170,11 +231,18 @@ function replaceSymbol( sym, fn ) {
 
 	const oldFn = this[sym];
 
-	if( ! fn.compiler && oldFn.compiler ) {
-		fn.compiler = oldFn.compiler;
-	}
 	fn.factory = ()=>fn;
 	this[sym] = fn;
+}
+
+// remove all the `keys` from `this`, and return an object made of all the removed keys and their values.
+function extractKeys( keys ) {
+	const result = {};
+	keys.forEach( key=>{
+		result[key] = this[key];
+		delete this[key];
+	});
+	return result;
 }
 
 module.exports = {
@@ -184,5 +252,8 @@ module.exports = {
 	hasSymbols,
 	decorate,
 	implementSymbols,
-	implementSymbolsFromFactory
+	implementSymbolsFromFactory,
+	replaceSymbol,
+	extractKeys,
+	assignProtocols, assignProtocolFactories,
 };
