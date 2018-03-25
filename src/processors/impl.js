@@ -3,7 +3,7 @@ const assert = require('assert');
 
 const symbols = require('../symbols');
 
-const {get, set, hasKey, has, nth, setNth, nToKey, add, len, reverse, clear, kvIterator, kvReorderedIterator} = symbols
+const {get, set, hasKey, has, nth, setNth, nToKey, keyToN, add, len, reverse, clear, kvIterator, kvReorderedIterator} = symbols
 const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories} = require('../util.js');
 const {propertiesSymbol} = require('./properties');
 
@@ -60,6 +60,35 @@ function implementCoreProtocols( src={} ) {
 		},
 		clear() {
 			// must be provided
+		},
+
+		nthKVN() {
+			if( proto.*nth ) {
+				assert( proto.*nToKey );
+			}
+
+			if( proto.*nth && proto.*nToKey ) {
+				return function( n ) {
+					return new KVN(
+						this.*nToKey( n ),
+						this.*nth( n ),
+						n
+					);
+				}
+			}
+		},
+		getKVN() {
+			if( proto.*get && proto.*keyToN ) {
+				return function( n ) {
+					return new KVN( this.*keyToN( n ), this.*nth( n ), n );
+				}
+			}
+			else if( proto.*get ) {
+				assert( ! proto.*nth, `${Type.name} gettable, nthable, but no keyToN` );
+				return function( key ) {
+					return new KVN( key, this.*get(n) );
+				}
+			}
 		},
 
 		// iterable
@@ -198,11 +227,11 @@ function deriveProtocolsForTransformation( configuration ) {
 	}
 
 	// all the remaining stuff in `compilerConfiguration` should be protocol generator factories: assigning them to `this`
-	symbols::assignProtocolFactories( this, configuration );
+	symbols::assignProtocolFactories( this.prototype, configuration );
 
 	// deriving the other core protocol factories we can derive from the non-protocol data
 	{
-		const {nth, get, nToKey, keyToN} = symbols;
+		const {nthKVN, getKVN, nToKey, keyToN} = symbols;
 
 		symbols::assignProtocolFactories( this.prototype, {
 			nToKey() {
@@ -290,7 +319,7 @@ function deriveProtocolsForTransformation( configuration ) {
 
 								const [key, value] = next.value;
 								const parentKV = new ReorderedIterator.KV( key, value );
-								const kv = self::kStage( arg );
+								const kv = self::kStage( parentKV );
 								if( ! kv ) {
 									return this.next();
 								}

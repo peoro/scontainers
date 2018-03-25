@@ -78,11 +78,11 @@ module.exports = {
 			const ParentType = Type;
 			const parentProto = ParentType.prototype;
 
-			false && Map::compileProtocolsForTransformation({
-				stage( compiler, index, innerStage ) {
+			Map::compileProtocolsForTransformation({
+				stage( compiler, kvn ) {
 					const {fn} = compiler.getArgs( this );
-					innerStage( compiler, index );
-					compiler.value = fn.call( compiler.value, compiler.key );
+					kvn.value = fn.call( kvn.value, kvn.key, kvn.n );
+					return kvn;
 				},
 				indexToParentIndex( compiler, index ) { return index; },
 				len() {
@@ -94,10 +94,9 @@ module.exports = {
 				},
 			});
 
-			/*
 			Map::deriveProtocolsForTransformation({
 				stage( kvn ) {
-					kvn.value = this.fn( kv.value, kv.key, kv.n );
+					kvn.value = this.fn( kvn.value, kvn.key, kvn.n );
 					return kvn;
 				},
 				indexToParentIndex( index ) { return index; },
@@ -109,9 +108,9 @@ module.exports = {
 					}
 				},
 			});
-			*/
 		}
 
+		/*
 		Map.prototype::implementSymbolsFromFactory({
 			len() {
 				if( proto.*len ) {
@@ -168,6 +167,7 @@ module.exports = {
 			needState: false,
 			reorder: false
 		});
+		*/
 
 		extendCollection( Map, Type );
 

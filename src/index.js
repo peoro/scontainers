@@ -761,12 +761,19 @@ function extendObjectWithCollectionFactories( dest, src ) {
 		});
 }
 
+function KVN( key, value, n ) {
+	this.key = key;
+	this.value = value;
+	this.n = n;
+}
+
 module.exports = {
 	DEBUG: true,
 	symbols,
 	implementForNewType, implementForExistingType, makeDecoratorFactory,
 	extendCollection,
-	ReorderedIterator
+	ReorderedIterator,
+	KVN,
 };
 
 {

@@ -45,6 +45,8 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 				return function has( item ) { return this.wrapped.*has( item ); };
 			}
 		}
+		keyToN() { if( proto.*keyToN ) { return function( key ) { return this.wrapped.*keyToN( key ); }; } }
+		nToKey() { if( proto.*nToKey ) { return function( n ) { return this.wrapped.*nToKey( n ); }; } }
 
 		/*
 		kvIterator() {

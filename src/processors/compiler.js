@@ -63,6 +63,9 @@ class Compiler extends FunctionCompiler {
 		const assertVar = this.registerConstant( assert, `assert` );
 		return assertVar.call( expr );
 	}
+	debug() {
+		return semantics.id(`console`).member(`log`).call( semantics.id(`arguments`) );
+	}
 
 	registerTypeArguments( Type, argKeys ) {
 		const argVars = {};
@@ -175,14 +178,14 @@ class Compiler extends FunctionCompiler {
 			...this.parameters.map( variable=>variable.ast )
 		);
 
+		console.log( ` >>>>>>>>>>>>>>>>>>>> Compiled function:` );
+		console.log( this.toCode().split(`\n`).map( line=>`\t${line}` ).join(`\n`) );
+
 		const fFactory = new Function(
 			...constantIdentifiers,
 			this.toCode()
 		);
 		const f = fFactory.apply( null, constantValues );
-
-		console.log( ` >>>>>>>>>>>>>>>>>>>> Compiled function:` );
-		console.log( this.toCode().split(`\n`).map( line=>`\t${line}` ).join(`\n`) );
 
 		return this::Compiler.bindFunction( f );
 	}
@@ -249,24 +252,14 @@ function deriveCoreProtocolGenerators() {
 
 	const Type = this;
 
-	const {nth, len, keyToN, nToKey, setNth, nToParentN} = generatorSymbols;
+	const {nthKVN, len, keyToN, nToKey, setNth, nToParentN} = generatorSymbols;
 
 	generatorSymbols::assignProtocolFactories( this, {
-		/*
 		getKVN() {
-			if( this[nth] && this[keyToN] ) {
+			if( this[nthKVN] && this[keyToN] ) {
 				return function( compiler, key ) {
 					const n = this[keyToN]( compiler, key );
-					return this[nth]( compiler, n );
-				}
-			}
-		},
-		*/
-		get() {
-			if( this[nth] && this[keyToN] ) {
-				return function( compiler, key ) {
-					const n = this[keyToN]( compiler, key );
-					return this[nth]( compiler, n );
+					return new KVN( key, this[nth](compiler, n), n );
 				}
 			}
 		},
@@ -292,25 +285,27 @@ function deriveCoreProtocolGenerators() {
 			}
 		},
 		loop() {
-			if( this[nth] ) {
+			if( this[nthKVN] ) {
 				return function( compiler, generator ) {
+					compiler.skip = function() {
+						return semantics.continue();
+					};
+
 					const i = compiler.createUniqueVariable(`i`);
 					const lenVar = this[len]( compiler );
 
-					compiler.body.pushStatement(
-						compiler.loop = semantics.for(
+					return [
+						semantics.for(
 							i.declare( 0 ),
 							i.lt( lenVar ),
 							i.increment(),
 
-							compiler.body = new semantics.Block()
+							new semantics.Block(
+								...generator( compiler, this[nthKVN](compiler, i) ),
+							)
 						)
-					)
-					compiler.key = this[nToKey]( compiler, i );
-					compiler.value = this[nth]( compiler, i );
-
-					generator( compiler, compiler.body );
-				}
+					];
+				};
 			}
 		}
 	});
@@ -323,7 +318,7 @@ function deriveProtocolsFromGenerators() {
 
 	// implementing core protocols from generators
 	{
-		const {get, hasKey, nth, len, loop} = generatorSymbols;
+		const {getKVN, hasKey, nthKVN, len, loop} = generatorSymbols;
 
 		const proto = this.prototype;
 
@@ -356,8 +351,18 @@ function deriveProtocolsFromGenerators() {
 
 		// deriving core protocols from protocol generators
 		deriveProtocols({
+			nthKVN() {
+				if( Type[nthKVN] ) {
+					return function( compiler ) {
+						const KVNVar = this.registerConstant( KVN, `KVN` );
+						const n = compiler.registerParameter(`n`);
+						const kvn = Type[nthKVN]( compiler, n );
+						return KVNVar.new( kvn.key, kvn.value, kvn.n );
+					}
+				}
+			},
 			nth() {
-				if( Type[nth] ) {
+				if( Type[nthKVN] ) {
 					return function( compiler ) {
 						const n = compiler.registerParameter(`n`);
 						compiler.body.pushStatement(
@@ -366,13 +371,23 @@ function deriveProtocolsFromGenerators() {
 								semantics.or( n.lt( 0 ), n.ge( Type[len](compiler) ) ),
 								semantics.return()
 							),
-							semantics.return( Type[nth](compiler, n) ),
+							semantics.return( Type[nthKVN](compiler, n).value ),
 						);
 					}
 				}
 			},
+			getKVN() {
+				if( Type[getKVN] ) {
+					return function( compiler ) {
+						const KVNVar = this.registerConstant( KVN, `KVN` );
+						const n = compiler.registerParameter(`n`);
+						const kvn = Type[getKVN]( compiler, n );
+						return KVNVar.new( kvn.key, kvn.value, kvn.n );
+					}
+				}
+			},
 			get() {
-				if( Type[get] && Type[hasKey] ) {
+				if( Type[getKVN] && Type[hasKey] ) {
 					return function( compiler ) {
 						const key = compiler.registerParameter(`key`);
 						compiler.body.pushStatement(
@@ -380,7 +395,7 @@ function deriveProtocolsFromGenerators() {
 								Type[hasKey](compiler, key).not(),
 								semantics.return()
 							),
-							semantics.return( Type[get](compiler, key) ),
+							semantics.return( Type[getKVN](compiler, key).value ),
 						);
 					}
 				}
@@ -393,7 +408,7 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			kvIterator() {
-				if( Type[nth] ) {
+				if( Type[nthKVN] ) {
 					return function( compiler ) {
 						const compilerWithMemberArgs = compiler.mappedArguments( (arg)=>semantics.this().member(arg) );
 
@@ -415,7 +430,7 @@ function deriveProtocolsFromGenerators() {
 										i.ge( lenVar ),
 										done.new().return()
 									),
-									value.declare( Type[nth](compilerWithMemberArgs, i) ),
+									value.declare( Type[nthKVN](compilerWithMemberArgs, i).value ),
 									kv.new( i.increment(), value ).return()
 								))
 							),
@@ -448,7 +463,7 @@ function deriveProtocolsFromGenerators() {
 
 						// implementing the real function... It should just return a `new Iterator(...)`
 						compiler.body.pushStatement(
-							semantics.id(`console`).member(`log`).call( argumentsObj ),
+							compiler.debug(),
 							Reflect.member('construct').call( Iterator, argumentsObj ).return()
 						);
 					};
@@ -462,9 +477,32 @@ function deriveProtocolsFromGenerators() {
 				if( Type[loop] ) {
 					return function( compiler ) {
 						const fn = compiler.registerParameter(`fn`);
-						Type[loop]( compiler, (c, block)=>{
-							block.pushStatement( fn.call( c.value, c.key ) );
-						});
+
+						compiler.body.pushStatement(
+							...Type[loop]( compiler, (compiler, kvn)=>[
+								fn.call( kvn.value, kvn.key, kvn.n ),
+							])
+						);
+					}
+				}
+			},
+			reduce() {
+				if( Type[loop] ) {
+					return function( compiler ) {
+						const fn = compiler.registerParameter(`fn`);
+						const initialValue = compiler.registerParameter(`initialValue`);
+
+						const state = compiler.createUniqueVariable(`state`);
+
+						compiler.body.pushStatement(
+							state.declare( initialValue ),
+
+							...Type[loop]( compiler, (compiler, kvn)=>[
+								state.assign( fn.call(state, kvn.value, kvn.key, kvn.n) ),
+							]),
+
+							state.return(),
+						);
 					}
 				}
 			},
@@ -515,16 +553,8 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 
 		if( stage ) {
 			check( !nStage && !kStage, `either supply \`stage\` or \`nStage\` or \`kStage\`` );
-			nStage = function( compiler, n, innerStage ) {
-				this::stage( compiler, n, (c, n)=>{
-					return innerStage(c, n);
-				});
-			};
-			kStage = function( compiler, key, innerStage ) {
-				this::stage( compiler, key, (c, key)=>{
-					return innerStage(c, key);
-				});
-			};
+			nStage = stage;
+			kStage = stage;
 		}
 
 		if( indexToParentIndex ) {
@@ -539,7 +569,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
-		const {nth, get, nToKey, keyToN} = generatorSymbols;
+		const {nthKVN, getKVN, nToKey, keyToN, loop} = generatorSymbols;
 
 		generatorSymbols::assignProtocolFactories( this, {
 			nToKey() {
@@ -547,41 +577,31 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 					return function( compiler, n ) {
 						const parentN = this::nToParentN( compiler, n );
 						return ParentType[nToKey]( compiler, parentN );
-					}
+					};
 				}
 			},
-			nth() {
-				if( nStage && ParentType[nth] ) {
+			nthKVN() {
+				if( nStage && ParentType[nthKVN] ) {
 					return function( compiler, n ) {
-						this::nStage( compiler, n, (c, n)=>{
-							c.key = n;
-							c.value = ParentType[nth]( c, n );
-						});
-						return compiler.value;
-					}
+						const parentKVN = ParentType[nthKVN]( compiler, n );
+						return this::nStage( compiler, parentKVN );
+					};
 				}
 			},
-			get() {
-				if( kStage && ParentType[get] ) {
+			getKVN() {
+				if( kStage && ParentType[getKVN] ) {
 					return function( compiler, key ) {
-						this::kStage( compiler, key, (c, key)=>{
-							compiler.key = key;
-							compiler.value = ParentType[get]( c, key );
-						});
-						return compiler.value;
-					}
+						const parentKVN = ParentType[getKVN]( compiler, key );
+						return this::kStage( compiler, parentKVN );
+					};
 				}
 			},
 			hasKey() {
-				if( kStage && ParentType[nth] ) {
+				if( kStage && ParentType[getKVN] ) {
 					return function( compiler, key ) {
-						TODO(`Meh, use \`compiler.skip()\` to return false...`);
-						this::kStage( compiler, key, (ckey, )=>{
-							compiler.key = key;
-							compiler.value = ParentType[nth]( c, c.key );
-						});
-						return true;
-					}
+						const parentKVN = ParentType[getKVN]( compiler, key );
+						return this::kStage( compiler, parentKVN );
+					};
 				}
 			},
 			keyToN() {
@@ -589,7 +609,22 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 					return function( compiler, key ) {
 						const parentKey = this::keyToParentKey( compiler, key );
 						return ParentType[keyToN]( compiler, parentKey );
-					}
+					};
+				}
+			},
+			loop() {
+				if( ParentType[loop] ) {
+					return function( compiler, generator ) {
+						return ParentType[loop]( compiler, (compiler, parentKVN)=>{
+							compiler.body = semantics.block();
+							const kvn = this::kStage( compiler, parentKVN );
+
+							return [
+								compiler.body,
+								...generator( compiler, kvn )
+							];
+						});
+					};
 				}
 			},
 		});

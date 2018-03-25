@@ -27,7 +27,7 @@ module.exports = function( grammar, builders ) {
 			return this.map( v=>v::ast() );
 		}
 
-		assert.fail( this );
+		assert.fail( this, `No known way to get an AST out of \`${this}\`` );
 	}
 
 	function asStatement() {
@@ -37,7 +37,7 @@ module.exports = function( grammar, builders ) {
 		else if( this instanceof Statement ) {
 			return this;
 		}
-		assert( false, this );
+		assert.fail( this );
 	}
 
 	class VarDB {
@@ -160,6 +160,7 @@ module.exports = function( grammar, builders ) {
 		}
 
 		call( ...args ) {
+			args = args.map( arg=>arg === undefined ? id(`undefined`) : arg );
 			return new Expression( builders.CallExpression( this.id(), args::ast() ) );
 		}
 		new( ...args ) {

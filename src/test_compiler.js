@@ -5,13 +5,14 @@ Error.stackTraceLimit = Infinity;
 
 const assert = require('assert');
 const {symbols, Range} = require('./');
-const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach} = require('./bound.js');
+const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach, len} = require('./bound.js');
 
 function log() {
 	console.log( this::toString() );
 }
 
 function square( n ) { return n*n; }
+function isEven( n ) { return n%2 === 0; }
 
 {
 	function compile( coll, sym ) {
@@ -33,6 +34,7 @@ function square( n ) { return n*n; }
 		console.log( coll.toString() );
 		console.log( coll::toString() );
 		// console.log( compile(coll, sym) );
+
 		console.log();
 	}
 
@@ -53,7 +55,9 @@ function square( n ) { return n*n; }
 			console.log( next.value );
 			next = it.next();
 		}
-		console.log( collection[symbols.len]() );
+		collection::len()::log();
+
+		console.log();
 	}
 
 	{
@@ -83,7 +87,7 @@ function square( n ) { return n*n; }
 			next = it.next();
 		}
 		collection::log();
-		console.log( collection[symbols.len]() );
+		collection::len()::log();
 
 		console.log();
 	}
@@ -101,5 +105,24 @@ function square( n ) { return n*n; }
 		console.log( collection[symbols.len]() );
 
 		console.log();
+	}
+
+	{
+		console.log();
+		const collection = new Range(3, 12)::map( square )::filter( isEven );
+		const it = collection[symbols.kvIterator]();
+		let next = it.next();
+		while( ! next.done ) {
+			console.log( next.value );
+			next = it.next();
+		}
+		collection::log();
+		console.log();
+
+		collection::forEach( (n, k)=>console.log(`  ${k}: ${n}`) );
+
+		console.log();
+
+		collection::sum()::log();
 	}
 }

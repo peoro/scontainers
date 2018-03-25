@@ -12,6 +12,7 @@ const {defineProperties, compileProtocolsForRootType, implementCoreProtocols} = 
 const {implementSymbols} = require('../util.js');
 
 const {Compiler, semantics} = require('../compiler/index.js');
+const {KVN} = subminus;
 
 class Range {
 	constructor( begin, end ) {
@@ -55,12 +56,13 @@ Range::compileProtocolsForRootType({
 		// return key.minus( begin ); // `key===value`
 		return key; // `key==n`
 	},
-	nth( compiler, n ) {
+	nthKVN( compiler, n ) {
 		const {begin} = compiler.getArgs( this );
-		compiler.value = n.plus( begin );
-		// compiler.key = compiler.value; // `key===value`
-		compiler.key = this[generatorSymbols.nToKey]( compiler, n ); // `key==n`
-		return compiler.value;
+		return new KVN(
+			this[generatorSymbols.nToKey]( compiler, n ),
+			n.plus( begin ),
+			n
+		);
 	},
 	// add: nope
 	len( compiler ) {
@@ -85,6 +87,7 @@ Range.prototype::implementSymbols({
 	// nToKey( n ) { return n + this.begin; },
 	keyToN( key ) { return key; },
 	nToKey( n ) { return n; },
+	len() { return this.len(); },
 
 	// optimization
 	sum() { return ( this.begin + this.end-1 ) * this.len() / 2; },

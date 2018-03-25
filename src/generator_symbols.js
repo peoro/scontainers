@@ -8,7 +8,7 @@ const generatorSymbols = new protocols.util.Protocol();
 // these are used to dynamically generate core and derived protocols for higher performance
 generatorSymbols[utilSymbols.defineAndAssign]( {}, {
 	// naturally-indexed collections (e.g. Array, Range)
-	nth( compiler, n ){},	// return the ${n}-th element - O(1)
+	nthKVN( compiler, n ){},	// return the ${n}-th element - O(1)
 	setNth( compiler, n, value ){},
 	// needed to make naturally-indexed collections compatible with the associative collection API
 	nToKey( compiler, n ){},	// return the key associated to the ${n}-th element (${get( nToKey(n) ) === nth(n)})
@@ -16,7 +16,7 @@ generatorSymbols[utilSymbols.defineAndAssign]( {}, {
 
 	// associative collections (e.g. Map)
 	// note that naturally-indexed collections are also associative, thanks to `nToKey` and `keyToN`
-	get( compiler, key ){},	// return the value of key ${key} - O(1)
+	getKVN( compiler, key ){},	// return the value of key ${key} - O(1)
 	set( compiler, key, value ){},	// set ${value} as value for ${key} - O(1)
 	hasKey( compiler, key ){},	// return true if ${this} has a key ${key}, false otherwise - O(1)
 
