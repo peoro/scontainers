@@ -170,10 +170,14 @@ function setSymbolCompilers( src ) {
 function assignProtocols( target, symbolObj ) {
 	for (let name in symbolObj) {
 		const sym = this[name];
+		assert( sym, `No protocol \`${name}\`` );
+
+		if( target[sym] ) {
+			// already implemented...
+			continue;
+		}
 
 		const value = symbolObj[name];
-		assert( sym, `No protocol \`${name}\`` );
-		assert( ! target[sym], `Already implemented...` );
 		target[sym] = value;
 		target[sym].factory = ()=>value;
 	};
@@ -189,6 +193,10 @@ function assignProtocolFactories( dest, symbolObj ) {
 
 		if( dest[sym] ) {
 			// already implemented...
+			continue;
+		}
+
+		if( ! srcFn ) {
 			continue;
 		}
 
@@ -254,8 +262,9 @@ function KVN( key, value, n ) {
 
 // TODO: get rid of these... they're used by `iterator`
 function KVNArr( key, value, n ) {
-	this.done = false;
+	assert( n === undefined || ( Number.isInteger(n) && n >= 0 ), `n=${n} not valid` );
 	this.value = [ key, value, n ];
+	this.done = false;
 }
 function Done() {
 	this.done = true;

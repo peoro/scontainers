@@ -31,11 +31,14 @@ function bindSymbol( sym, symName ) {
 	return f;
 };
 
-module.exports = symbols[symbols.ownProperties]()
-	[symbols.map]( bindSymbol )
-	[symbols.collect]( Object );
+const boundFunctions = {};
+for( const symName in symbols ) {
+	let sym = symbols[symName];
+	boundFunctions[symName] = bindSymbol( sym, symName );
+}
+boundFunctions.toString = toString;
 
-module.exports.toString = toString;
+module.exports = boundFunctions;
 
 if( require.main === module ) {
 	const {Range} = require('./');

@@ -14,7 +14,7 @@ module.exports = subminus.implementForExistingType( Map, class MapWrapper {
 		}
 		else if( collection.*kvReorderedIterator ) {
 			const map = new Map();
-			collection.*forAny( (value, key)=>void map.set(key, value) );
+			collection.*forEach( (value, key)=>void map.set(key, value) );
 			return map;
 		}
 		assert( false );

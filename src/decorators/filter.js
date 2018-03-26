@@ -88,9 +88,6 @@ module.exports = {
 			});
 		}
 
-		extendCollection( Filter, Type );
 		return Filter;
 	}
 };
-
-const {extendCollection} = require('../index.js');

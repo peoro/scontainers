@@ -91,10 +91,10 @@ module.exports = function( grammar, builders ) {
 	}
 
 	Statement.if = function( condition, then ) {
-		return new If( builders.IfStatement( condition.id(), then::asStatement()::ast() ) );
+		return new If( builders.IfStatement( condition::ast(), then::asStatement()::ast() ) );
 	}
 	Statement.for = function( init, test, update, body ) {
-		return new Statement( builders.ForStatement( init.id(), test.id(), update.id(), body::asStatement()::ast() ) );
+		return new Statement( builders.ForStatement( init::ast(), test::ast(), update::ast(), body::asStatement()::ast() ) );
 	}
 	Statement.return = function( value ) {
 		return new Statement( builders.ReturnStatement( value ? value::ast() : null ) );

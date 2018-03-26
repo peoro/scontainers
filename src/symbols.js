@@ -57,11 +57,6 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 	whileEach( fn ){},
 	untilEach( fn ){},
 
-	// TODO: should we remove these?
-	forAny( fn ){},	// like `forEach`, but also works with reordered iterators
-	whileAny( fn ){},
-	untilAny( fn ){},
-
 	count(){},	// return the number of elements in the collection - any cost, often O(n)
 	isEmpty(){},	// return true if the collection is empty, false otherwise - O(1)
 

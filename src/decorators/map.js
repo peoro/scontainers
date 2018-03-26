@@ -79,10 +79,6 @@ module.exports = {
 			});
 		}
 
-		extendCollection( Map, Type );
-
 		return Map;
 	}
 };
-
-const {extendCollection} = require('../index.js');

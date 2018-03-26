@@ -1,17 +1,8 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
-const generatorSymbols = require('../generator_symbols');
-
-use protocols from subminus.symbols;
-
-const {defineProperties, compileProtocolsForRootType, implementCoreProtocols} = require('../processors/index.js');
+const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
 const {implementSymbols, KVN} = require('../util.js');
-
-const {Compiler, semantics} = require('../compiler/index.js');
 
 class Range {
 	constructor( begin, end ) {
@@ -45,12 +36,8 @@ Range::defineProperties({
 });
 
 Range::compileProtocolsForRootType({
-	nToKey( n ) {
-		return n;
-	},
-	keyToN( key ) {
-		return key;
-	},
+	nToKey( n ) { return n.plus( this.args.begin ); },
+	keyToN( key ) { return key.minus( this.args.begin ); },
 	nthKVN( n ) {
 		return new KVN(
 			this.protocols.nToKey( n ),
@@ -68,26 +55,15 @@ Range::compileProtocolsForRootType({
 	// iterator: from nth
 });
 
-Range.prototype::implementSymbols({
-	get( n ) {
-		if( ! this.*hasKey(n) ) { return; }
-		return this.begin + n;
-	},
-	nth( n ) {
-		if( n < 0 || n  ) { return; }
-		return this.begin + n;
-	},
-	// keyToN( key ) { return n - this.begin; },
-	// nToKey( n ) { return n + this.begin; },
-	keyToN( key ) { return key; },
-	nToKey( n ) { return n; },
+Range::deriveProtocolsForRootType({
+	nthUnchecked( n ) { return this.begin + n; },
+	keyToN( key ) { return key - this.begin; },
+	nToKey( n ) { return n + this.begin; },
 	len() { return this.len(); },
 
-	// optimization
+	// optimizations
 	sum() { return ( this.begin + this.end-1 ) * this.len() / 2; },
 	slice( begin, end ) { return new Range(this.begin+begin, this.begin+end) },
 });
 
-Range::implementCoreProtocols();
-
-module.exports = subminus.implementForNewType( Range );
+module.exports = Range;

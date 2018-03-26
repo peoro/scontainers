@@ -1,54 +1,23 @@
 
 'use strict';
 
-const assert = require('assert');
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
+const {assignProtocols, KVN} = require('../util.js');
+const symbols = require('../symbols');
+const {forEach, values} = symbols;
 
-use protocols from subminus.symbols;
-
-const {KVN} = require('../util');
-
-/*
-module.exports = subminus.implementForExistingType( Array, class ArrayWrapper {
-	static from( collection ) {
-		// TODO: this function should be specialized, just like the rest of what this lib does...
-		if( collection.*forEach ) {
-			return Array.from( collection.*values() );
-		}
-		else if( collection.*forAny ) {
-			const array = new Array();
-			collection.*forAny( (value)=>void array.push(value) );
-			return array;
-		}
-		assert( false, `${collection} not iterable` );
-	}
-	constructor( arr ) {
-		this.wrapped = arr;
-	}
-
-	toString() {
-		return `[${this.*map( (value)=>subminus.toString(value) ).*collect(Array).join(', ')}]`;
-	}
-});
-*/
-
-const {defineProperties, compileProtocolsForRootType, implementCoreProtocols} = require('../processors/index.js')
-const {implementSymbols} = require('../util.js');
-
-Array::implementSymbols({
+symbols::assignProtocols( Array, {
 	from( collection ) {
 		// TODO: this function should be specialized, just like the rest of what this lib does...
-		if( collection.*forEach ) {
-			return Array.from( collection.*values() );
+		if( collection[values] ) {
+			return Array.from( collection[values]() );
 		}
-		else if( collection.*forAny ) {
+		else if( collection[forEach] ) {
 			const array = new Array();
-			collection.*forAny( (value)=>void array.push(value) );
+			collection[forEach]( (value)=>void array.push(value) );
 			return array;
 		}
-		assert( false, `${collection} not iterable` );
+		assert.fail( `${collection} not iterable` );
 	}
 });
 
@@ -75,14 +44,9 @@ Array::compileProtocolsForRootType({
 	// iterator: from nth
 });
 
-Array.prototype::implementSymbols({
+Array::deriveProtocolsForRootType({
 	len() { return this.length; },
-	get( n ) { return this[n]; },
-	nth( n ) { return this[n]; },
-	hasKey( n ) {
-		// TODO: check that `n` is integer
-		return n >= 0 && n < this.*len();
-	},
+	nthUnchecked( n ) { return this[n]; },
 	nToKey( n ) { return n; },
 	keyToN( key ) { return key; },
 	setNth( n, value ) { this[n] = value; },
@@ -92,9 +56,4 @@ Array.prototype::implementSymbols({
 	forEach( fn ) { this.forEach( fn ); },
 });
 
-Array::implementCoreProtocols();
-
-
-module.exports = subminus.implementForExistingType( Array, function(){} );
-
-// module.exports = Array; // subminus.implementForExistingType( Array );
+module.exports = Array;
