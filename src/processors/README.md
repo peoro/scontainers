@@ -139,8 +139,36 @@ It's like skip+take+mapKey
 TODO: Whenever assigning any "standard" protocol, whether it's a generator or an impl one, I should always set a generic function and implement a [[compiled]] and [[impl]] protocols to it.
 the generic function chooses a version between [[compiled]] and [[impl]], takes it, assigns it, and reassigns all the old protocols to the new function.
 
-Probably also for `impl` we need some symbols that are semantically different from the standard ones...
-The standard symbols could do extra stuff, like `nth(n)` should assert that `n` is an integer, and make sure that it's between 0 and len-1...
-The `impl` one should return a `KV` instead, that can be used to implement `hasNth` and all the rest.
-Should we have a `KVN`, instead of a `KV`, if the collection is also enumerable?
-And then, maybe... a `K` for sets? :F
+`properties` and `ownProperties` need to be NOT collection protocols...
+
+Add a `DefaultMap` type: it works like a `Map`, except it needs a `defaultConstructor(key)` function, and when you use `get` on a non existing item, it creates a new value using `defaultConstructor(key)`, adds it to the inner `Map` and returns it.
+...Actually it could be a decorator! `Collection::default( defaultConstructor )` - only works with writable collections
+
+Instead of `extractKeys`, use object deconstructors!!!
+
+Rename `parent` to `inner`
+
+To check whether a protocol/type implements a protocol, we could create an object that has got a key for each protocol...
+```
+protoHas = symbols::buildHasObject( Type.proto )
+protoHas.len() // returns `true` or `false`
+```
+
+
+
+`Compiler` should be abstracted in a better way...
+We need `Compiler` to handle...
+ - AST
+ - VarDB
+   - parameters, constants
+ - type arguments
+ - compilation
+
+All these stuff should be kept in mostly-independent modules that can be easily replaced.
+We need to change the AST root because of stuff like `loop`, type arguments because of stuff like `kvIterator` etc...
+
+Instead of `Compiler` it could be called `Compilation Frame`: it represents the state of compilation for a specific generator.
+It'll be the `this` object for generators, and it has everything the generator needs: functions to...
+ - register constants, parameters, variables etc (manipulate the VarDB)
+ - push code, modifying the AST
+ - access type arguments, member protocols and parent's protocols

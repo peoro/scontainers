@@ -761,19 +761,12 @@ function extendObjectWithCollectionFactories( dest, src ) {
 		});
 }
 
-function KVN( key, value, n ) {
-	this.key = key;
-	this.value = value;
-	this.n = n;
-}
-
 module.exports = {
 	DEBUG: true,
 	symbols,
 	implementForNewType, implementForExistingType, makeDecoratorFactory,
 	extendCollection,
 	ReorderedIterator,
-	KVN,
 };
 
 {
@@ -795,13 +788,13 @@ module.exports = {
 }
 
 
-const {toString, decorate} = require('./util.js');
+const {toString, decorate, KVN, Done} = require('./util.js');
 const decorator = decorate;
 
 const toStr = toString;
 
 Object.assign( module.exports, {
-	toString
+	toString, KVN, Done
 });
 
 require('./types/object.js');

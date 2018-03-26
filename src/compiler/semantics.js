@@ -37,6 +37,8 @@ module.exports = function( grammar, builders ) {
 		else if( this instanceof Statement ) {
 			return this;
 		}
+
+		console.log( this );
 		assert.fail( this );
 	}
 
@@ -221,7 +223,7 @@ module.exports = function( grammar, builders ) {
 	class Identifier extends Expression {
 		constructor( name ) {
 			super( builders.Identifier(name) );
-			this.name = name;
+			this.name = name; // TODO: get rid of this...
 		}
 	}
 	function id( value ) {
@@ -231,7 +233,7 @@ module.exports = function( grammar, builders ) {
 	class Variable extends Expression {
 		constructor( name ) {
 			super( builders.Identifier(name) );
-			this.name = name;
+			this.name = name; // TODO: get rid of this...
 		}
 
 		declare( value, kind='var' ) {
@@ -271,6 +273,9 @@ module.exports = function( grammar, builders ) {
 	}
 
 	return {
+		ast,
+		asStatement,
+
 		VarDB,
 		Statement,
 		Program,

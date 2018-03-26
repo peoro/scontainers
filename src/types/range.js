@@ -9,10 +9,9 @@ const generatorSymbols = require('../generator_symbols');
 use protocols from subminus.symbols;
 
 const {defineProperties, compileProtocolsForRootType, implementCoreProtocols} = require('../processors/index.js');
-const {implementSymbols} = require('../util.js');
+const {implementSymbols, KVN} = require('../util.js');
 
 const {Compiler, semantics} = require('../compiler/index.js');
-const {KVN} = subminus;
 
 class Range {
 	constructor( begin, end ) {
@@ -46,28 +45,23 @@ Range::defineProperties({
 });
 
 Range::compileProtocolsForRootType({
-	nToKey( compiler, n ) {
-		const {begin} = compiler.getArgs( this );
-		// return n.plus( begin ); // `key===value`
-		return n; // `key===n`
+	nToKey( n ) {
+		return n;
 	},
-	keyToN( compiler, key ) {
-		const {begin} = compiler.getArgs( this );
-		// return key.minus( begin ); // `key===value`
-		return key; // `key==n`
+	keyToN( key ) {
+		return key;
 	},
-	nthKVN( compiler, n ) {
-		const {begin} = compiler.getArgs( this );
+	nthKVN( n ) {
 		return new KVN(
-			this[generatorSymbols.nToKey]( compiler, n ),
-			n.plus( begin ),
+			this.protocols.nToKey( n ),
+			n.plus( this.args.begin ),
 			n
 		);
 	},
 	// add: nope
-	len( compiler ) {
-		const {begin, end} = compiler.getArgs( this );
-		return end.minus(begin);
+	len() {
+		const {begin, end} = this.args;
+		return end.minus( begin );
 	},
 	// reverse: from nth+len
 	// clear: nope

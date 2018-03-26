@@ -23,20 +23,20 @@ module.exports = {
 		class Filter {
 			static get name() { return `${Type.name}::Filter`; }
 
-			constructor( coll, fn ) {
+			constructor( coll, filterFn ) {
 				this.wrapped = coll;
-				this.fn = fn;
+				this.filterFn = filterFn;
 			}
 
 			toString( ) {
-				return `${this.wrapped}.filter(${this.fn.name || 'ƒ'})`;
+				return `${this.wrapped}.filter(${this.filterFn.name || 'ƒ'})`;
 			}
 		}
 
 		Filter::defineProperties({
 			ParentType: Type,
 			parentCollectionKey: id`wrapped`,
-			argKeys: [id`fn`],
+			argKeys: [id`filterFn`],
 
 			propagateEveryElement: false,
 			propagateMultipleElements: false,
@@ -48,20 +48,24 @@ module.exports = {
 			const parentProto = ParentType.prototype;
 
 			Filter::compileProtocolsForTransformation({
-				kStage( compiler, kvn ) {
-					const {fn} = compiler.getArgs( this );
-					compiler.body.pushStatement(
-						semantics.if( fn.call(kvn.value, kvn.key, kvn.n).not(),
-							compiler.skip()
+				kStage( kvn ) {
+					this.pushStatement(
+						semantics.if(
+							this.args.filterFn.call( kvn.value, kvn.key, kvn.n ).not(),
+
+							this.skip()
 						)
 					);
 					return kvn;
 				},
-				keyToParentKey( compiler, key ) { return key; },
+				keyToParentKey( key ) {
+					return key;
+				},
+
 				len() {
 					if( parentProto[len] ) {
 						return function( compiler ) {
-							return this::parentCoreSymbols.len( compiler );
+							return this.inner.len( compiler );
 						}
 					}
 				},
@@ -69,7 +73,7 @@ module.exports = {
 
 			Filter::deriveProtocolsForTransformation({
 				kStage( kvn ) {
-					if( this.fn(kvn.value, kvn.key, kvn.n) ) {
+					if( this.filterFn(kvn.value, kvn.key, kvn.n) ) {
 						return kvn;
 					}
 				},

@@ -5,7 +5,7 @@ Error.stackTraceLimit = Infinity;
 
 const assert = require('assert');
 const {symbols, Range} = require('./');
-const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach, len} = require('./bound.js');
+const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, reduce, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach, len} = require('./bound.js');
 
 function log() {
 	console.log( this::toString() );
@@ -13,6 +13,7 @@ function log() {
 
 function square( n ) { return n*n; }
 function isEven( n ) { return n%2 === 0; }
+function sumFn( a, b ) { return a+b; }
 
 {
 	function compile( coll, sym ) {
@@ -49,6 +50,8 @@ function isEven( n ) { return n%2 === 0; }
 		//	console.log( `  ${k}: ${v}` );
 		//}
 		const collection = new Range(3, 12);
+		collection::len()::log();
+
 		const it = collection[symbols.kvIterator]();
 		let next = it.next();
 		while( ! next.done ) {
@@ -124,5 +127,16 @@ function isEven( n ) { return n%2 === 0; }
 		console.log();
 
 		collection::sum()::log();
+	}
+
+	{
+		console.log();
+		const collection = new Range(3, 12)::filter( isEven )::map( square )::filter( isEven );
+		collection::sum()::log();
+
+		const range = new Range(10000);
+		range::filter( isEven )::map( square )::sum()::log();
+		range::filter( isEven )::map( square )::reduce( sumFn, 0 )::log();
+		// range::collect( Array )::filter( isEven )::map( square )::reduce( sumFn, 0 )::log();
 	}
 }

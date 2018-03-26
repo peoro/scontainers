@@ -245,6 +245,22 @@ function extractKeys( keys ) {
 	return result;
 }
 
+
+function KVN( key, value, n ) {
+	this.key = key;
+	this.value = value;
+	this.n = n;
+}
+
+// TODO: get rid of these... they're used by `iterator`
+function KVNArr( key, value, n ) {
+	this.done = false;
+	this.value = [ key, value, n ];
+}
+function Done() {
+	this.done = true;
+}
+
 module.exports = {
 	identity,
 	functionalIf,
@@ -256,4 +272,5 @@ module.exports = {
 	replaceSymbol,
 	extractKeys,
 	assignProtocols, assignProtocolFactories,
+	KVN, KVNArr, Done,
 };

@@ -8,7 +8,7 @@ const subminus = require('../');
 
 use protocols from subminus.symbols;
 
-const {KVN} = subminus;
+const {KVN} = require('../util');
 
 /*
 module.exports = subminus.implementForExistingType( Array, class ArrayWrapper {
@@ -57,20 +57,18 @@ Array::defineProperties({
 });
 
 Array::compileProtocolsForRootType({
-	nToKey( compiler, n ) {
+	nToKey( n ) {
 		return n;
 	},
-	keyToN( compiler, key ) {
+	keyToN( key ) {
 		return key;
 	},
-	nthKVN( compiler, n ) {
-		const array = compiler.getSelf( this );
-		return new KVN( n, array.member( n, true ), n );
+	nthKVN( n ) {
+		return new KVN( n, this.self.member( n, true ), n );
 	},
 	// add: nope
 	len( compiler ) {
-		const array = compiler.getSelf( this );
-		return array.member(`length`);
+		return this.self.member(`length`);
 	},
 	// reverse: from nth+len
 	// clear: nope

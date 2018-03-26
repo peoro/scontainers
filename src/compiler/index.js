@@ -13,7 +13,8 @@ const codegen = createCodegen( grammar );
 const semantics = createSemantics( grammar, builders );
 
 function compile( ast ) {
-	// return codegen.compile( ast );
+	return codegen.compile( ast );
+	/*
 	return escodegen.generate( ast, {
 		format: {
 			indent: {
@@ -21,6 +22,7 @@ function compile( ast ) {
 			}
 		}
 	});
+	*/
 }
 
 class Compiler {
