@@ -12,6 +12,7 @@ const {
 	shuffle, permute, groupWhile, allProperties, assign, defaults, collectInto, repeat, loop, iterator
 } = symbols;
 
+
 const util = require('../util.js');
 const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVNArr, Done} = util;
 const {propertiesSymbol} = require('./properties');
@@ -452,9 +453,10 @@ function deriveProtocols() {
 						decoratorFactory.factory( Collection ) :
 						decoratorFactory( Collection );
 					assert( Decorator, `${decoratorFactory.name} can be produced, but has no decorator factory?!` );
-					return function() {
-						const args = [this, ...arguments];
-						return Reflect.construct( Decorator, args );
+					return function( ...args ) {
+						return new Decorator( this, ...args );
+						// const args = [this, ...arguments];
+						// return Reflect.construct( Decorator, args );
 						// return Reflect.construct( Decorator, arguments );
 					};
 				}
@@ -465,14 +467,30 @@ function deriveProtocols() {
 		return decorator( require(`../decorators/${moduleName}.js`) );
 	}
 
+	const Values = require('../decorators/values.js');
+	const Entries = require('../decorators/entries.js');
+	const Filter = require('../decorators/filter.js');
+	const Slice = require('../decorators/slice.js');
+	const Chunk = require('../decorators/chunk.js');
+	const Map = require('../decorators/map.js');
+	const MapKey = require('../decorators/map_key.js');
+	const Cache = require('../decorators/cache.js');
+	const Iter = require('../decorators/iter.js');
+	const Reordered = require('../decorators/reordered.js');
+	const GroupBy = require('../decorators/group_by.js');
+	const Cow = require('../decorators/cow.js');
+	const Flatten = require('../decorators/flatten.js');
+	const SkipWhile = require('../decorators/skip_while.js');
+	const TakeWhile = require('../decorators/take_while.js');
+
 	symbols::assignProtocolFactories( proto, {
 		keys() {
 			return function keys() {
 				return this.*map( function key(value, key){return key;} ).*values();
 			};
 		},
-		values: requireDecorator('values'),
-		entries: requireDecorator('entries'),
+		values: decorator(Values),
+		entries: decorator(Entries),
 		enumerate() {
 			return function enumerate() {
 				TODO();
@@ -480,21 +498,17 @@ function deriveProtocols() {
 				return this.*map( (value)=>[count++, value] );
 			};
 		},
-		/*
-		ownProperties: requireDecorator('object_own_properties'),
-		properties: requireDecorator('object_enumerable_properties'),
-		*/
-		filter: requireDecorator('filter'),
-		slice: requireDecorator('slice'),
-		chunk: requireDecorator('chunk'),
-		map: requireDecorator('map'),
-		mapKey: requireDecorator('map_key'),
-		cache: requireDecorator('cache'),
-		iter: requireDecorator('iter'),
-		reordered: requireDecorator('reordered'),
-		groupBy: requireDecorator('group_by'),
-		cow: requireDecorator('cow'),
-		flatten: requireDecorator('flatten'),
+		filter: decorator(Filter),
+		slice: decorator(Slice),
+		chunk: decorator(Chunk),
+		map: decorator(Map),
+		mapKey: decorator(MapKey),
+		cache: decorator(Cache),
+		iter: decorator(Iter),
+		reordered: decorator(Reordered),
+		groupBy: decorator(GroupBy),
+		cow: decorator(Cow),
+		flatten: decorator(Flatten),
 		flattenDeep() {
 			if( this.*map ) {
 				return function() {
@@ -519,8 +533,8 @@ function deriveProtocols() {
 				};
 			}
 		},
-		skipWhile: requireDecorator('skip_while'),
-		takeWhile: requireDecorator('take_while'),
+		skipWhile: decorator(SkipWhile),
+		takeWhile: decorator(TakeWhile),
 		skip() {
 			if( proto.*slice ) {
 				return function skip( n ) { return this.*slice(n); };

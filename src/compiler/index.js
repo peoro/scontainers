@@ -5,7 +5,7 @@ const createEnhancedGrammar = require('./enhance_symbol');
 const createClasses = require('./create_classes');
 const createCodegen = require('./codegen');
 const createSemantics = require('./semantics');
-const escodegen = require('escodegen');
+// const escodegen = require('escodegen');
 
 const grammar = createEnhancedGrammar( Symbols );
 const builders = createClasses( grammar );

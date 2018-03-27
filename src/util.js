@@ -65,9 +65,8 @@ function decorate( decoratorFactory ) {
 			factory() {
 				const Decorator = decoratorFactory( Type );
 				assert( Decorator, `${decoratorFactory.name} can be produced, but go no decorator factory?!` );
-				return function() {
-					const args = [this, ...arguments];
-					return Reflect.construct( Decorator, args );
+				return function( ...args ) {
+					return new Decorator( this, ...args );
 				};
 			}
 		};
@@ -266,6 +265,10 @@ function replaceSymbol( sym, fn ) {
 	assert( fn );
 
 	const oldFn = this[sym];
+
+	for( let key in oldFn ) {
+		fn[key] = oldFn[key];
+	}
 
 	fn.factory = ()=>fn;
 	this[sym] = fn;
