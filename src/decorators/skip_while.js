@@ -25,12 +25,12 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 					next() {
 						while( true ) {
 							const next = this.it.next();
-							if( next.done ) {
-								return next;
+							if( ! next ) {
+								return;
 							}
 
-							const [key, value] = next.value;
-							if( ! this.fn(value, key, this.collection) ) {
+							const {key, value, n} = next;
+							if( ! this.fn(value, key, n) ) {
 								this.next = function next() { return this.it.next(); };
 								return next;
 							}

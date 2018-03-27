@@ -41,7 +41,15 @@ Map::deriveProtocolsForRootType({
 	clear() { this.clear(); },
 
 	kvIterator() {
-		return this[Symbol.iterator]();
+		return {
+			it: this[Symbol.iterator](),
+			next() {
+				const next = this.it.next();
+				if( ! next.done ) {
+					return new KVN( next.value[0], next.value[1] );
+				}
+			}
+		};
 	},
 	entries() { return this; },
 	forEach( fn ) { this.forEach( fn ); },

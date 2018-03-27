@@ -291,10 +291,12 @@ function KVN( key, value, n ) {
 	this.n = n;
 }
 
-// TODO: get rid of these... they're used by `iterator`
-function KVNArr( key, value, n ) {
-	assert( n === undefined || ( Number.isInteger(n) && n >= 0 ), `n=${n} not valid` );
-	this.value = [ key, value, n ];
+function KVArr( key, value ) {
+	this.value = [key, value];
+	this.done = false;
+}
+function KArr( value ) {
+	this.value = value;
 	this.done = false;
 }
 function Done() {
@@ -312,5 +314,5 @@ module.exports = {
 	replaceSymbol,
 	extractKeys,
 	assignProtocols, assignProtocolFactories,
-	KVN, KVNArr, Done,
+	KVN, KVArr, KArr, Done,
 };

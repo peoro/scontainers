@@ -5,6 +5,7 @@ const assert = require('assert');
 const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
+const {KVN} = require('../util.js');
 
 const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
 
@@ -50,18 +51,17 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 						const chunk = new Map();
 						for( let i = 0; i < this.n; ++i ) {
 							const next = this.it.next();
-							if( next.done ) {
+							if( ! next ) {
 								break;
 							}
 
-							const [key, value] = next.value;
-							chunk.set( key, value );
+							const {key, value, n} = next;
+							chunk.set( key, value, n );
 						}
 
 						if( chunk.size ) {
-							return { done:false, value:[this.count++, chunk] };
+							return new KVN( this.count++, chunk );
 						}
-						return { done:true };
 					}
 				};
 			};

@@ -16,29 +16,6 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 			this.fn = fn;
 		}
 
-		/*
-		kvIterator() {
-			return function kvIterator() {
-				return {
-					collection: this.wrapped,
-					fn: this.fn,
-					it: this.wrapped.*kvIterator(),
-					next() {
-						const next = this.it.next();
-						if( next.done ) {
-							return next;
-						}
-
-						const [key, value] = next.value;
-						return {
-							done: false,
-							value: [this.fn(value, key, this.collection), value]
-						};
-					}
-				};
-			};
-		}
-		*/
 		reverse() {
 			if( proto.*reverse ) {
 				return this.wrapped.*reverse().*mapKey( this.fn );

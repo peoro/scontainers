@@ -14,7 +14,7 @@ const {
 
 
 const util = require('../util.js');
-const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVNArr, Done} = util;
+const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVN, KVArr, Done} = util;
 const {propertiesSymbol} = require('./properties');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
@@ -69,9 +69,8 @@ function deriveCoreProtocols() {
 								const n = this.i ++;
 								const kvn = coll.*nthKVN( n );
 								assert( kvn, `${Collection.name}.nth(${n}) not there?! :F` );
-								return new KVNArr( kvn.key, kvn.value, kvn.n );
+								return kvn;
 							}
-							return new Done();
 						}
 					};
 				};
@@ -94,15 +93,15 @@ function deriveCoreProtocols() {
 						rit.resume();
 					};
 					rit.resume = ()=>{
-						while( ! next.done ) {
-							const [key, value] = next.value;
+						while( next ) {
+							const {key, value} = next;
 							next = it.next();
 
 							rit.pushNext( new ReorderedIterator.KV(key, value) );
 						}
 					};
 					rit.stop = ()=>{
-						next.done = true; // ugly hack just to spare an extra var and check, lol
+						next = undefined; // ugly hack just to spare an extra var and check, lol
 					};
 
 					return rit;
@@ -121,20 +120,15 @@ function deriveCoreProtocols() {
 						it: this.*kvIterator(),
 						next() {
 							const next = this.it.next();
-							if( next.done ) {
-								return next;
+							if( ! next ) {
+								return new Done();
 							}
 
-							const [key, value] = next.value;
-							return { value:[key, value], done:false };
+							const {key, value} = next;
+							return new KVArr( key, value );
 						}
 					};
 				};
-				/*
-				return function iterator() {
-					this.*kvIterator();
-				}
-				*/
 			}
 		},
 	});
@@ -157,8 +151,8 @@ function deriveProtocols() {
 				return function forEach( fn ) {
 					const it = this.*kvIterator();
 					let next = it.next();
-					while( ! next.done ) {
-						const [value, key, n] = next.value;
+					while( next ) {
+						const {value, key, n} = next;
 						fn( value, key, n );
 						next = it.next();
 					}
@@ -177,10 +171,10 @@ function deriveProtocols() {
 				return function forEach( fn ) {
 					const it = this.*kvIterator();
 					let next = it.next();
-					while( ! next.done ) {
-						const [value, key, n] = next.value;
+					while( next ) {
+						const {value, key, n} = next;
 						if( ! fn( value, key, n ) ) {
-							return next.value;
+							return next;
 						}
 						next = it.next();
 					}
@@ -240,9 +234,9 @@ function deriveProtocols() {
 			return function only() {
 				const it = this.*kvIterator();
 				let next = it.next();
-				assert( ! next.done, `${this}.only()'s collection is empty` );
-				assert( it.next().done, `${this}.only()'s collection has multiple items` );
-				return next.value;
+				assert( next, `${this}.only()'s collection is empty` );
+				assert( ! it.next(), `${this}.only()'s collection has multiple items` );
+				return next;
 			};
 		},
 		first() {
@@ -312,14 +306,17 @@ function deriveProtocols() {
 				return function reduceFirst( fn ) {
 					const it = this.*kvIterator();
 					let next = it.next();
-					let state = next.value[1];
+					if( ! next ) {
+						return;
+					}
 
-					while( ! next.done ) {
-						const [value, key, n] = next.value;
+					let state = next.value;
+					next = it.next();
+ 					while( next ) {
+						const {value, key, n} = next;
 						state = fn( state, value, key, n );
 						next = it.next();
 					}
-
 					return state;
 				};
 			}
@@ -652,9 +649,8 @@ function deriveProtocolsForRootType( configuration={} ) {
 								const coll = this.collection;
 								if( this.i < coll.*len() ) {
 									const n = this.i ++;
-									return new KVNArr( coll.*nToKey(n), coll::nthUnchecked(n), n );
+									return new KVN( coll.*nToKey(n), coll::nthUnchecked(n), n );
 								}
-								return new Done();
 							}
 						};
 					};
@@ -786,22 +782,20 @@ function deriveProtocolsForTransformation( configuration={} ) {
 					return {
 						next() {
 							const next = it.next();
-							if( next.done ) {
-								return next;
+							if( ! next ) {
+								return;
 							}
 
-							const [key, value] = next.value;
-							const parentKV = new ReorderedIterator.KV( key, value );
-							const kv = self::kStage( parentKV );
-							if( ! kv ) {
+							const kvn = self::kStage( next );
+							if( ! kvn ) {
 								return this.next();
 							}
 
 							if( false ) {
-								TODO(`handle the situation wehn ${kv} is an iterator`);
+								TODO(`handle the situation wehn ${kvn} is an iterator`);
 							}
 
-							return new KVNArr( kv.key, kv.value, kv.n );
+							return new KVN( kvn.key, kvn.value, kvn.n );
 						}
 					};
 				};

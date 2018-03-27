@@ -44,7 +44,7 @@ class ReorderedIterator {
 
 		assert( kv instanceof ReorderedIterator.KV, `${kv}` );
 		this.onNextFn( kv );
-		if( kv.done ) {
+		if( ! kv ) {
 			this.stop();
 		}
 		return kv;
@@ -58,7 +58,6 @@ ReorderedIterator.KV = class KV {
 		this.key = key;
 		this.value = value;
 		this.skip = false;
-		this.done = false;
 	}
 };
 

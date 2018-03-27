@@ -3,6 +3,7 @@
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
 const {len, kvIterator} = require('../symbols');
+const {KArr, Done} = require('../util.js');
 
 module.exports = {
 	canProduce( ParentCollection ) {
@@ -62,12 +63,12 @@ module.exports = {
 						it: this.wrapped.*kvIterator(),
 						next() {
 							const next = this.it.next();
-							if( next.done ) {
-								return next;
+							if( ! next ) {
+								return new Done();
 							}
 
-							const [key, value] = next.value;
-							return { value, done:false };
+							const {value} = next;
+							return new KArr( value );
 						}
 					};
 				};

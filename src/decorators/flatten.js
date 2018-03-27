@@ -34,18 +34,18 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 					jt: null,
 					processJt() {
 						if( ! this.jt ) {
-							return { done:true };
+							return;
 						}
 						return this.jt.next();
 					},
 					processIt() {
 						const iNext = this.it.next();
-						if( iNext.done ) {
+						if( ! iNext ) {
 							return iNext;
 						}
 
-						const [key, value] = iNext.value;
-						if( value.*count ) {
+						const {value} = iNext;
+						if( value.*kvIterator ) {
 							this.jt = value.*kvIterator();
 							return this.next();
 						}
@@ -53,7 +53,7 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 					},
 					next() {
 						const next = this.processJt();
-						if( next.done ) {
+						if( ! next ) {
 							return this.processIt();
 						}
 						return next;

@@ -5,6 +5,7 @@ const assert = require('assert');
 const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
+const {KVN} = require('../util.js');
 
 use protocols from subminus.symbols;
 
@@ -34,25 +35,36 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 			};
 		}
 
-		/*
 		kvIterator() {
 			return function* kvIterator() {
 				for( let key in this.wrapped ) {
 					if( this.*hasKey(key) ) {
-						yield [key, this[key]];
+						yield new KVN( key, this.wrapped[key] );
 					}
 				}
 			};
 		}
-		*/
-		kvIterator() {
-			return function* kvIterator() {
+		iterator() {
+			return function* iterator() {
 				for( let key in this.wrapped ) {
 					if( this.*hasKey(key) ) {
-						yield [key, this.wrapped[key]];
+						yield [ key, this.wrapped[key] ];
 					}
 				}
 			};
+		}
+		kvIterator() {
+			return function kvIterator() {
+				return {
+					it: this.*iterator(),
+					next() {
+						const next = this.it.next();
+						if( ! next.done ) {
+							return new KVN( next.value[0], next.value[1] );
+						}
+					}
+				};
+			}
 		}
 
 		toString( ) {

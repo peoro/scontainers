@@ -4,6 +4,7 @@
 const protocols = require('js-protocols');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
+const {KVN} = require('../util.js');
 
 use protocols from subminus.symbols;
 
@@ -23,20 +24,17 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 					fn: this.fn,
 					it: this.wrapped.*kvIterator(),
 					next() {
-						while( true ) {
-							const next = this.it.next();
-							if( next.done ) {
-								return next;
-							}
-
-							const [key, value] = next.value;
-							if( this.fn(value, key, this.collection) ) {
-								return next;
-							}
-
-							this.next = function next() { return {done:true}; };
-							return {done:true};
+						const next = this.it.next();
+						if( ! next ) {
+							return;
 						}
+
+						const {key, value, n} = next;
+						if( this.fn(value, key, n) ) {
+							return next;
+						}
+
+						this.next = function next() {};
 					}
 				};
 			};

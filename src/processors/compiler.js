@@ -7,7 +7,7 @@ const generatorSymbols = require('../generator_symbols');
 const compilerSymbol = Symbol('compiler');
 const {propertiesSymbol} = require('./properties');
 const {grammar, builders, semantics, codegen, FunctionCompiler} = require('../compiler/index.js');
-const {extractKeys, assignProtocols, assignProtocolFactories, KVN, KVNArr, Done} = require('../util.js');
+const {extractKeys, assignProtocols, assignProtocolFactories, KVN} = require('../util.js');
 
 
 function defaultGet( key, defaultConstructor ) {
@@ -509,7 +509,7 @@ function deriveProtocolsFromGenerators() {
 			kvIterator() {
 				if( Type[nthKVN] ) {
 					return function() {
-						const fns = this.registerConstants({ KVNArr, Done });
+						const fns = this.registerConstants({KVN});
 						const Iterator = this.createUniqueVariable( `Iterator` );
 						const i = semantics.this().member( this.createUniqueVariable(`i`) );
 						const lenVar = semantics.this().member( this.createUniqueVariable(`len`) );
@@ -532,9 +532,9 @@ function deriveProtocolsFromGenerators() {
 								this.pushStatement(
 									semantics.if(
 										i.ge( lenVar ),
-										fns.Done.new().return()
+										semantics.return()
 									),
-									fns.KVNArr.new( kvn.key, kvn.value, i.increment() ).return()
+									fns.KVN.new( kvn.key, kvn.value, i.increment() ).return()
 								);
 							});
 
