@@ -304,9 +304,11 @@ class NewCompiler {
 		grammar.Program.check( program );
 
 		const code = codegen( program );
-		console.log(`>>>>>>>>>>>>>>>>>>>>> ${this.functionName}(${constantIdentifiers}):`);
-		console.log( code );
-		console.log(`<<<<<<<<<<<<<<<<<<<<<`);
+		if( false ) {
+			console.log(`>>>>>>>>>>>>>>>>>>>>> ${this.functionName}(${constantIdentifiers}):`);
+			console.log( code );
+			console.log(`<<<<<<<<<<<<<<<<<<<<<`);
+		}
 
 		const fFactory = new Function(
 			...constantIdentifiers,
@@ -525,13 +527,14 @@ function deriveProtocolsFromGenerators() {
 							const nextFunction = this.subFunction( null, [], function(){
 								const frameWithMemberArgs = this.mapArgs( arg=>semantics.this().member(arg.variable) );
 
+								const kvn = frameWithMemberArgs.protocols.nthKVN( i );
+
 								this.pushStatement(
 									semantics.if(
 										i.ge( lenVar ),
 										fns.Done.new().return()
 									),
-									value.declare( frameWithMemberArgs.protocols.nthKVN(i).value ),
-									fns.KVNArr.new( frameWithMemberArgs.protocols.nToKey(i), value, i.increment() ).return()
+									fns.KVNArr.new( kvn.key, kvn.value, i.increment() ).return()
 								);
 							});
 
@@ -682,7 +685,8 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			nthKVN() {
 				if( nStage && ParentType[nthKVN] ) {
 					return function( n ) {
-						const parentKVN = this.inner.nthKVN( n );
+						const parentN = this::nToParentN( n );
+						const parentKVN = this.inner.nthKVN( parentN );
 						return this::nStage( parentKVN );
 					};
 				}
@@ -690,7 +694,8 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			getKVN() {
 				if( kStage && ParentType[getKVN] ) {
 					return function( key ) {
-						const parentKVN = this.inner.getKVN( key );
+						const parentKey = this::keyToParentKey( key );
+						const parentKVN = this.inner.getKVN( parentKey );
 						return this::kStage( parentKVN );
 					};
 				}
@@ -698,7 +703,8 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			hasKey() {
 				if( kStage && ParentType[getKVN] ) {
 					return function( key ) {
-						const parentKVN = this.inner.getKVN( key );
+						const parentKey = this::keyToParentKey( key );
+						const parentKVN = this.inner.getKVN( parentKey );
 						this::kStage( parentKVN );
 						return true;
 					};

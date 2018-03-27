@@ -1,43 +1,45 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const subminus = require('../index.js');
+const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {kvIterator} = require('../symbols');
 
-use protocols from subminus.symbols;
+module.exports = {
+	canProduce( ParentCollection ) {
+		return !! subminus.DEBUG;
+	},
+	factory( ParentCollection ) {
+		class IterableOnly {
+			static get name() { return `${ParentCollection.name}::IterableOnly`; }
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
+			constructor( coll ) {
+				this.wrapped = coll;
+			}
 
-	if( ! subminus.DEBUG ) {
-		return ;
-	}
-
-	class IterableOnly {
-		constructor( coll ) {
-			this.wrapped = coll;
+			toString( ) {
+				return `${this.wrapped}.iter()`;
+			}
 		}
 
-		toString( ) {
-			return `${this.wrapped}.iter()`;
-		}
-	};
-	IterableOnly.Propagator = {
-		parentCollection( ) {
-			return this.wrapped;
-		},
-		// start() { return state; },
-		next( kv/*, state*/ ) {
-			// state.xxx = ...
-			return kv;
-		},
-		// end( state ) { return state.xxx },
-		alwaysPropagate: true,
-		propagateMulti: false,
-		needState: false,
-		reorder: false
-	}
+		IterableOnly::defineProperties({
+			ParentType: ParentCollection,
+			parentCollectionKey: id`wrapped`,
+			argKeys: [],
 
-	return IterableOnly;
-});
+			propagateEveryElement: true,
+			propagateMultipleElements: false,
+			createsNewElements: false,
+		});
+
+		IterableOnly::deriveProtocolsForTransformation({
+			kvIterator() {
+				return function() {
+					return this.wrapped.*kvIterator();
+				}
+			}
+		});
+
+		return IterableOnly;
+	}
+};

@@ -1,36 +1,45 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const subminus = require('../index.js');
+const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {kvReorderedIterator} = require('../symbols');
 
-use protocols from subminus.symbols;
+module.exports = {
+	canProduce( ParentCollection ) {
+		return !! subminus.DEBUG;
+	},
+	factory( ParentCollection ) {
+		class Reordered {
+			static get name() { return `${ParentCollection.name}::Reordered`; }
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
+			constructor( coll ) {
+				this.wrapped = coll;
+			}
 
-	if( ! subminus.DEBUG ) {
-		return ;
-	}
-
-	class Reordered {
-		constructor( coll ) {
-			this.wrapped = coll;
+			toString( ) {
+				return `${this.wrapped}.reordered()`;
+			}
 		}
 
-		toString( ) {
-			return `${this.wrapped}.reordered()`;
-		}
-	};
-	Reordered.Propagator = {
-		parentCollection( ) { return this.wrapped; },
-		next( kv ) { return kv; },
-		alwaysPropagate: true,
-		propagateMulti: false,
-		needState: false,
-		reorder: true
-	}
+		Reordered::defineProperties({
+			ParentType: ParentCollection,
+			parentCollectionKey: id`wrapped`,
+			argKeys: [],
 
-	return Reordered;
-});
+			propagateEveryElement: true,
+			propagateMultipleElements: false,
+			createsNewElements: false,
+		});
+
+		Reordered::deriveProtocolsForTransformation({
+			kvReorderedIterator() {
+				return function() {
+					return this.wrapped.*kvReorderedIterator();
+				}
+			}
+		});
+
+		return Reordered;
+	}
+};

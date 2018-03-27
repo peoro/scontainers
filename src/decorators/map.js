@@ -1,24 +1,16 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const symbols = require('../symbols');
-const generatorSymbols = require('../generator_symbols');
-const {compileProtocolsForTransformation, implementProtocolsForTransformation, implementCoreProtocolsFromPropagator, defineProperties, parentCoreSymbols, deriveProtocolsForTransformation} = require('../processors/index.js')
-const {implementSymbolsFromFactory} = require('../util.js');
-
-const {len, nth, nToKey, hasKey, get} = symbols;
+const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {len} = require('../symbols');
 
 module.exports = {
-	canProduce( Type ) {
+	canProduce( ParentCollection ) {
 		return true;
 	},
-	factory( Type ) {
-		const proto = Type.prototype;
-
+	factory( ParentCollection ) {
 		class Map {
-			static get name() { return `${Type.name}::Map`; }
+			static get name() { return `${ParentCollection.name}::Map`; }
 
 			constructor( coll, mapFn ) {
 				this.wrapped = coll;
@@ -30,8 +22,10 @@ module.exports = {
 			}
 		}
 
+		const parentProto = ParentCollection.prototype;
+
 		Map::defineProperties({
-			ParentType: Type,
+			ParentType: ParentCollection,
 			parentCollectionKey: id`wrapped`,
 			argKeys: [id`mapFn`],
 
@@ -40,44 +34,39 @@ module.exports = {
 			createsNewElements: false,
 		});
 
-		{
-			const ParentType = Type;
-			const parentProto = ParentType.prototype;
+		Map::compileProtocolsForTransformation({
+			stage( kvn ) {
+				const {mapFn} = this.args;
+				kvn.value = mapFn.call( kvn.value, kvn.key, kvn.n );
+				return kvn;
+			},
+			indexToParentIndex( index ) {
+				return index;
+			},
 
-			Map::compileProtocolsForTransformation({
-				stage( kvn ) {
-					const {mapFn} = this.args;
-					kvn.value = mapFn.call( kvn.value, kvn.key, kvn.n );
-					return kvn;
-				},
-				indexToParentIndex( index ) {
-					return index;
-				},
-
-				len() {
-					if( parentProto[len] ) {
-						return function() {
-							return this.inner.len();
-						}
+			len() {
+				if( parentProto[len] ) {
+					return function() {
+						return this.inner.len();
 					}
-				},
-			});
+				}
+			},
+		});
 
-			Map::deriveProtocolsForTransformation({
-				stage( kvn ) {
-					kvn.value = this.mapFn( kvn.value, kvn.key, kvn.n );
-					return kvn;
-				},
-				indexToParentIndex( index ) { return index; },
-				len() {
-					if( parentProto[len] ) {
-						return function( ) {
-							return this.wrapped[len]();
-						}
+		Map::deriveProtocolsForTransformation({
+			stage( kvn ) {
+				kvn.value = this.mapFn( kvn.value, kvn.key, kvn.n );
+				return kvn;
+			},
+			indexToParentIndex( index ) { return index; },
+			len() {
+				if( parentProto[len] ) {
+					return function( ) {
+						return this.wrapped[len]();
 					}
-				},
-			});
-		}
+				}
+			},
+		});
 
 		return Map;
 	}

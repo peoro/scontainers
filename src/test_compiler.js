@@ -5,7 +5,7 @@ Error.stackTraceLimit = Infinity;
 
 const assert = require('assert');
 const {symbols, Range} = require('./');
-const {get, nthKVN, getKVN, toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, reduce, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach, len} = require('./bound.js');
+const {get, hasKey, set, nthKVN, getKVN, toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, reduce, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach, len} = require('./bound.js');
 
 function log() {
 	console.log( this::toString() );
@@ -39,10 +39,21 @@ function sumFn( a, b ) { return a+b; }
 		console.log();
 	}
 
+	quickTest: {
+		// break quickTest;
+		process.exit( 0 );
+	}
 
 	{
 		const collection = new Range(3, 12)::map( square );
 		collection::get( 3 )::log();
+
+		for( const kv of collection ) {
+			console.log( kv );
+		}
+		for( let kv of new Range(3)::map(n=>n+1)::iter()::map(n=>n*n) ) {
+			console.log( kv );
+		}
 	}
 
 	/*

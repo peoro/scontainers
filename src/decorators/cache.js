@@ -1,83 +1,75 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {len, nthKVN, getKVN, get, hasKey, nToKey, set} = require('../symbols');
+const {KVN} = require('../util.js');
 
-const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
+module.exports = {
+	canProduce( ParentCollection ) {
+		return ParentCollection.prototype.*hasKey;
+	},
+	factory( ParentCollection ) {
+		class Cache {
+			static get name() { return `${ParentCollection.name}::Cache`; }
 
-use protocols from subminus.symbols;
+			constructor( coll, CacheType=Map ) {
+				this.wrapped = coll;
+				this.cache = new CacheType();
+			}
 
-/*
-TODO: Just like `cow`, `cache` should specialize on `CacheType`
-*/
-
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
-
-	class Cache {
-		constructor( coll, CacheType=Map ) {
-			this.wrapped = coll;
-			this.cache = new CacheType();
-		}
-
-		len() {
-			if( proto.*len ) {
-				return function len() {
-					return this.*len();
-				};
+			toString( ) {
+				return `${this.wrapped}.cache(${this.cache.constructor.name})`;
 			}
 		}
-		nth() {
-			if( proto.*nth ) {
-				return function nth( n ) {
-					const key = this.*nToKey( n );
-					return this.*get( key );
-				};
-			}
-		}
-		get() {
-			if( proto.*get && proto.*hasKey ) {
-				return function get( key ) {
-					if( this.cache.has(key) ) {
-						return this.cache.get( key );
+
+		const parentProto = ParentCollection.prototype;
+
+		Cache::defineProperties({
+			ParentType: ParentCollection,
+			parentCollectionKey: id`wrapped`,
+			argKeys: [id`mapFn`],
+
+			propagateEveryElement: true,
+			propagateMultipleElements: false,
+			createsNewElements: false,
+		});
+
+		Cache::deriveProtocolsForTransformation({
+			stage( kvn ) {
+				return kvn;
+			},
+			indexToParentIndex( index ) { return index; },
+			nthKVN() {
+				if( parentProto.*nthKVN ) {
+					return function( n ) {
+						return this.*getKVN( this.*nToKey(n) );
+					};
+				}
+			},
+			getKVN() {
+				if( parentProto.*getKVN ) {
+					return function( key ) {
+						if( this.cache.*hasKey(key) ) {
+							const kvn = this.cache.*get( key );
+							return new KVN( kvn.key, kvn.value, kvn.n );
+						}
+
+						const kvn = this.wrapped.*getKVN( key );
+						this.cache.*set( key, kvn );
+						return new KVN( kvn.key, kvn.value, kvn.n );
 					}
-					if( this.wrapped.*hasKey(key) ) {
-						const value = this.wrapped.*get( key );
-						this.cache.set( key, value );
-						return value;
+				}
+			},
+			len() {
+				if( parentProto.*len ) {
+					return function( ) {
+						return this.wrapped.*len();
 					}
-				};
-			}
-		}
-		hasKey() {
-			if( proto.*hasKey ) {
-				return function hasKey( key ) {
-					return this.cache.has( key ) || this.wrapped.*hasKey( key );
-				};
-			}
-		}
+				}
+			},
+		});
 
-		kvIterator() {
-			return function kvIterator() {
-				return this.wrapped.*kvIterator();
-			};
-		}
-		reverse() {
-			if( proto.*reverse ) {
-				return this.wrapped.*reverse().*cache();
-			}
-		}
-
-		toString( ) {
-			return `${this.wrapped}.cache(⋯)`;
-		}
+		return Cache;
 	}
-	Cache::implementCoreProtocolsFromPropagator( Type, {
-		parentCollection() { return this.wrapped; },
-		nToParentN( n ) { return n; },
-	});
-
-	return Cache;
-});
+};

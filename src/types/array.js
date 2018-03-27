@@ -2,19 +2,19 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
-const {assignProtocols, KVN} = require('../util.js');
+const {assignProtocols, KVN, toString} = require('../util.js');
 const symbols = require('../symbols');
-const {forEach, values} = symbols;
+const {forEach, values, map, collect} = symbols;
 
 symbols::assignProtocols( Array, {
 	from( collection ) {
 		// TODO: this function should be specialized, just like the rest of what this lib does...
-		if( collection[values] ) {
-			return Array.from( collection[values]() );
+		if( collection.*values ) {
+			return Array.from( collection.*values() );
 		}
-		else if( collection[forEach] ) {
+		else if( collection.*forEach ) {
 			const array = new Array();
-			collection[forEach]( (value)=>void array.push(value) );
+			collection.*forEach( (value)=>void array.push(value) );
 			return array;
 		}
 		assert.fail( `${collection} not iterable` );
@@ -54,6 +54,10 @@ Array::deriveProtocolsForRootType({
 	clear() { this.length = 0; },
 
 	forEach( fn ) { this.forEach( fn ); },
+
+	toString() {
+		return `[${this.*map( value=>value::toString() ).*collect(Array).join(', ')}]`;
+	}
 });
 
 module.exports = Array;

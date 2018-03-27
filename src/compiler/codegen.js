@@ -83,7 +83,7 @@ const Compiler = module.exports = function( grammar ) {
 					}
 				},
 				LogicalExpression(){
-					switch( this.operator ) {
+					switch( node.operator ) {
 						case '&&': return 6;
 						case '||': return 5;
 					}
@@ -136,10 +136,10 @@ const Compiler = module.exports = function( grammar ) {
 					}
 				},
 				LogicalExpression() {
-					switch( this.operator ) {
-					case '&&':
-					case '||':
-						return LTR;
+					switch( node.operator ) {
+						case '&&':
+						case '||':
+							return LTR;
 					}
 				},
 				ConditionalExpression() { return RTL; },

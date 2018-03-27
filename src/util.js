@@ -11,10 +11,38 @@ function toString() {
 		return this[symbols.toString]();
 	}
 
+	/*
 	throw new Error(`Nothing, besides null and undefined, should lack ::toString()...`);
 	if( this.toString ) {
 		return this.toString();
 	}
+	return `unknown`;
+	*/
+	if( this.toString === Object.prototype.toString ) {
+		const {properties, map, collect} = symbols;
+
+		const out = this.*properties()
+			.*map( (value, key)=>`${key::toString()}:${value::toString()}` )
+			.*collect( Array );
+			return `{${out.join(', ')}}`;
+	}
+
+	if( typeof this === 'string' ) {
+		return this
+			.replace(/\\n/g, "\\n")
+			.replace(/\\'/g, "\\'")
+			.replace(/\\"/g, '\\"')
+			.replace(/\\&/g, "\\&")
+			.replace(/\\r/g, "\\r")
+			.replace(/\\t/g, "\\t")
+			.replace(/\\b/g, "\\b")
+			.replace(/\\f/g, "\\f");
+	}
+
+	if( this.toString !== toString ) {
+		return this.toString();
+	}
+
 	return `unknown`;
 }
 

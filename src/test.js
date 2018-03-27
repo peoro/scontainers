@@ -4,9 +4,29 @@
 const {symbols, Range} = require('./');
 const {toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg} = require('./bound.js');
 
-Error.stackTraceLimit = 25;
+Error.stackTraceLimit = Infinity;
+
+function overrideFunctionName( name ) {
+	Object.defineProperty( this, 'name', { get(){ return name; } });
+}
 
 function square( n ) { return n*n; }
+square::overrideFunctionName( `n²` );
+
+function multipleOf( k ) {
+	function multipleOfK( n ) {
+		return n % k === 0;
+	};
+	multipleOfK::overrideFunctionName( `n|${k}` );
+	return multipleOfK;
+}
+function lessThan( k ) {
+	function lessThanK( n ) {
+		return n < k;
+	};
+	lessThanK::overrideFunctionName( `n<${k}` );
+	return lessThanK;
+}
 
 {
 	function print( str, coll ) {
@@ -53,7 +73,7 @@ function square( n ) { return n*n; }
 		new Range(21)
 			::chunk(5)
 			::flatten()
-			::map( (x)=>x*x )
+			::map( square )
 	);
 
 	print(
@@ -89,7 +109,6 @@ function square( n ) { return n*n; }
 		print( coll );
 
 		{
-			console.log( `${coll}:` );
 			const rit = coll::kvReorderedIterator();
 			rit.onNext( (kv)=>{
 					const groupKey = kv.key;
@@ -144,7 +163,7 @@ function square( n ) { return n*n; }
 		new Range(21)
 			::chunk(5)
 			::flatten()
-			::map( (x)=>x*x )
+			::map( square )
 			::keys()
 	);
 
@@ -152,7 +171,7 @@ function square( n ) { return n*n; }
 		new Range(21)
 			::chunk(5)
 			::flatten()
-			::map( (x)=>x*x )
+			::map( square )
 			::values()
 	);
 
@@ -164,10 +183,10 @@ function square( n ) { return n*n; }
 
 	print(
 		new Range(50)
-			::map( (n)=>n*n )
-			::slice(10, 40)
-			::filter( (n)=>!(n%2) )
-			::filter( (n)=>!(n%3) )
+			::map( square )
+			::slice( 10, 40 )
+			::filter( multipleOf(2) )
+			::filter( multipleOf(3) )
 			::chunk( 3 )
 	);
 
@@ -178,27 +197,27 @@ function square( n ) { return n*n; }
 	);
 
 	const fib = new Range()
-			::map( (i)=>{
-				switch( i ) {
-					case 0: return 0;
-					case 1: return 1;
-					default: return fib::nth(i-1) + fib::nth(i-2);
-				}
-			})
-			::cache();
+		::map( function fibonacci(i){
+			switch( i ) {
+				case 0: return 0;
+				case 1: return 1;
+				default: return fib::nth(i-2) + fib::nth(i-1);
+			}
+		})
+		::cache(Array);
 
 	print( `fib.take( 10 )`,
 		fib::take( 10 )
 	);
 
 	print( `fib.takeWhile( x<100 )`,
-		fib::takeWhile( (x)=>x<100 )
+		fib::takeWhile( lessThan(100) )
 	);
 
 	print( `fib.skipWhile( x<100 ).takeWhile( x<1000 )`,
 		fib
-			::skipWhile( (x)=>x<100 )
-			::takeWhile( (x)=>x<1000 )
+			::skipWhile( lessThan(100) )
+			::takeWhile( lessThan(1000) )
 	);
 
 	console.log();

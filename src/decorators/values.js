@@ -1,62 +1,62 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {len, kvIterator} = require('../symbols');
 
-const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
+module.exports = {
+	canProduce( ParentCollection ) {
+		return ParentCollection.prototype.*kvIterator;
+	},
+	factory( ParentCollection ) {
+		class Values {
+			static get name() { return `${ParentCollection.name}::Values`; }
 
-use protocols from subminus.symbols;
+			constructor( coll ) {
+				this.wrapped = coll;
+			}
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
-
-	class Values {
-		constructor( coll ) {
-			this.wrapped = coll;
-		}
-
-		// TODO: most of these functions can be easily optimized by returning a `{factory:...}` instead of a function
-		len() {
-			if( proto.*len ) {
-				return function len() {
-					return this.wrapped.*len();
-				};
+			toString( ) {
+				return `${this.wrapped}.values()`;
 			}
 		}
-		nth() {
-			if( proto.*nth ) {
-				return function nth( n ) { return this.wrapped.*nth( n ); };
-			}
-		}
-		get() {
-			if( proto.*get ) {
-				return function get( key ) { return this.wrapped.*get( key ); };
-			}
-		}
-		hasKey() {
-			if( proto.*hasKey ) {
-				return function hasKey( key ) { return this.wrapped.*hasKey( key ); };
-			}
-		}
-		has() {
-			if( proto.*has ) {
-				return function has( item ) { return this.wrapped.*has( item ); };
-			}
-		}
-		keyToN() { if( proto.*keyToN ) { return function( key ) { return this.wrapped.*keyToN( key ); }; } }
-		nToKey() { if( proto.*nToKey ) { return function( n ) { return this.wrapped.*nToKey( n ); }; } }
 
-		/*
-		kvIterator() {
-			if( proto.*kvIterator ) {
-				return function kvIterator( ) { return this.wrapped.*kvIterator(); };
-			}
-		}
-		*/
-		iterator() {
-			if( proto.*kvIterator ) {
+		const parentProto = ParentCollection.prototype;
+
+		Values::defineProperties({
+			ParentType: ParentCollection,
+			parentCollectionKey: id`wrapped`,
+			argKeys: [],
+
+			propagateEveryElement: true,
+			propagateMultipleElements: false,
+			createsNewElements: false,
+		});
+
+		Values::compileProtocolsForTransformation({
+			stage( kvn ) { return kvn; },
+			indexToParentIndex( index ) { return index; },
+
+			len() {
+				if( parentProto[len] ) {
+					return function() {
+						return this.inner.len();
+					}
+				}
+			},
+		});
+
+		Values::deriveProtocolsForTransformation({
+			stage( kvn ) { return kvn; },
+			indexToParentIndex( index ) { return index; },
+			len() {
+				if( parentProto[len] ) {
+					return function( ) {
+						return this.wrapped[len]();
+					}
+				}
+			},
+			iterator() {
 				return function iterator( ) {
 					return {
 						it: this.wrapped.*kvIterator(),
@@ -71,28 +71,9 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 						}
 					};
 				};
-			}
-		}
-		reverse() {
-			if( proto.*reverse ) {
-				return this.wrapped.*reverse().*values();
-			}
-		}
+			},
+		});
 
-		toString( ) {
-			return `${this.wrapped}.values()`;
-		}
+		return Values;
 	}
-
-	Values::implementCoreProtocolsFromPropagator( Type, {
-		parentCollection() { return this.wrapped; },
-		nToParentN( n ) { return n; },
-		next( kv ) { return kv; },
-		alwaysPropagate: true,
-		propagateMulti: false,
-		needState: false,
-		reorder: false
-	});
-
-	return Values;
-});
+};

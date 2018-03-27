@@ -1,44 +1,54 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
+const {assignProtocols, KVN, toString} = require('../util.js');
+const symbols = require('../symbols');
+const {forEach, entries, map, collect} = symbols;
 
-use protocols from subminus.symbols;
-
-module.exports = subminus.implementForExistingType( Map, class MapWrapper {
-	static from( collection ) {
-		if( collection.*kvIterator && collection.*entries ) {
+symbols::assignProtocols( Map, {
+	from( collection ) {
+		if( collection.*entries ) {
 			return Map.from( collection.*entries() );
 		}
-		else if( collection.*kvReorderedIterator ) {
+		else if( collection.*forEach ) {
 			const map = new Map();
 			collection.*forEach( (value, key)=>void map.set(key, value) );
 			return map;
 		}
 		assert( false );
 	}
-	constructor( map ) {
-		this.wrapped = map;
-	}
+});
 
-	len() { return this.size; }
-	get( key ) { return this.get( key ); }
-	set( key, value ) { this.set( key, value ); }
-	hasKey( key ) { return this.has(key); }
-	clear() { this.clear(); }
+Map::defineProperties({
+	argKeys: []
+});
+
+Map::compileProtocolsForRootType({
+	getKVN( key ) {
+		return new KVN( key, this.self.member(`get`).call( key ) );
+	},
+	len( compiler ) {
+		return this.self.member(`size`);
+	},
+});
+
+Map::deriveProtocolsForRootType({
+	len() { return this.size; },
+	getUnchecked( key ) { return this.get( key ); },
+	hasKey( key ) { return this.has( key ); },
+	set( key, value ) { this.set( key, value ); },
+	clear() { this.clear(); },
 
 	kvIterator() {
 		return this[Symbol.iterator]();
-	}
-
-	entries() { return this; }
-	forEach( fn ) {
-		this.forEach( fn );
-	}
+	},
+	entries() { return this; },
+	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
-		return `Map{${this.*map( (value, key)=>`${subminus.toString(key)}:${subminus.toString(value)}` ).*collect(Array).join(', ')}}`;
+		return `Map{${this.*map( (value, key)=>`${key::toString()}:${value::toString()}` ).*collect(Array).join(', ')}}`;
 	}
 });
+
+module.exports = Map;

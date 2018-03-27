@@ -3,6 +3,7 @@
 
 const assert = require('assert');
 const protocols = require('js-protocols');
+const util = require('../util.js');
 const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
 
@@ -59,7 +60,7 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 		}
 
 		toString( ) {
-			return `${this.wrapped.*toString()}.properties()`;
+			return `${this.wrapped::util.toString()}.properties()`;
 		}
 	}
 

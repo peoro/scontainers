@@ -2,83 +2,71 @@
 'use strict';
 
 const assert = require('assert');
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {len, nth} = require('../symbols');
 
-const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
+module.exports = {
+	canProduce( ParentCollection ) {
+		return ParentCollection.prototype.*nth;
+	},
+	factory( ParentCollection ) {
+		class Slice {
+			static get name() { return `${ParentCollection.name}::Slice`; }
 
-use protocols from subminus.symbols;
-
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
-
-	if( ! proto.*nth ) {
-		// TODO: improve error logging :F
-		// console.log( new Error(`No slice for ${Type}`) );
-		// it's ok: `Filter` won't have no `.slice()`
-		return;
-	}
-
-	class Slice {
-		constructor( coll, begin, end ) {
-			this.wrapped = coll;
-			if( begin !== undefined ) {
+			constructor( coll, begin, end=coll.*len() ) {
+				this.wrapped = coll;
 				this.begin = begin;
-			}
-			if( end !== undefined ) {
-				Object.defineProperties( this, {
-					end: {
-						configurable: true,
-						enumerable: true,
-						writable: true,
-						value: end
-					}
-				});
+				this.end = end;
+
+				assert( this.begin >= 0 && this.end <= coll.*len() && this.end >= this.begin );
 			}
 
-			assert( this.begin >= 0 && this.end >= 0 && this.end >= this.begin );
-		}
-
-		get end() { return this.wrapped.*len(); }
-
-		len() {
-			return function len() { return this.end - this.begin; };
-		}
-
-		nth() {
-			return function nth( n ) {
-				return this.wrapped.*nth( this.begin+n );
-			};
-		}
-		setNth() {
-			if( proto.*setNth ) {
-				return function setNth( n, value ) {
-					return this.wrapped.*setNth( this.begin+n, value );
-				};
+			toString( ) {
+				return `${this.wrapped}[${this.begin}:${this.end}]`;
 			}
 		}
 
-		whileEach() {
-			return function whileEach( fn ) {
-				for( let i = this.begin; i < this.end; ++i ) {
-					const value = this.wrapped.*nth( i );
-					if( ! fn(value, i, this) ) {
-						return [i, value];
+		const parentProto = ParentCollection.prototype;
+
+		Slice::defineProperties({
+			ParentType: ParentCollection,
+			parentCollectionKey: id`wrapped`,
+			argKeys: [id`begin`, id`end`],
+
+			propagateEveryElement: true,
+			propagateMultipleElements: false,
+			createsNewElements: false,
+		});
+
+		Slice::compileProtocolsForTransformation({
+			stage( kvn ) { return kvn; },
+			indexToParentIndex( index ) {
+				return index.plus( this.args.begin );
+			},
+
+			len() {
+				if( parentProto[len] ) {
+					return function() {
+						return this.args.end.minus( this.args.begin );
 					}
 				}
-			};
-		}
+			},
+		});
 
-		toString() {
-			return `${this.wrapped}[${this.begin}:${this.end}]`;
-		}
+		Slice::deriveProtocolsForTransformation({
+			stage( kvn ) {return kvn; },
+			indexToParentIndex( index ) {
+				return index + this.begin;
+			},
+			len() {
+				if( parentProto[len] ) {
+					return function( ) {
+						return this.end - this.begin;
+					}
+				}
+			},
+		});
+
+		return Slice;
 	}
-
-	Slice::implementCoreProtocolsFromPropagator( Type, {
-		parentCollection() { return this.wrapped; },
-		nToParentN( n ) { if( n >= 0 && n < this.*len() ) { return this.begin + n; } },
-	});
-
-	return Slice;
-});
+};

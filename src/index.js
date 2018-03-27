@@ -70,7 +70,6 @@ function makeDecoratorFactory( factory ) {
 		}
 
 		const Decorator = factory( Type );
-		Decorator.fullName = `${Type.fullName || Type.name}::${Decorator.name}`
 		implementDecorator( Decorator, Type );
 		factoryCache.set( Type, Decorator );
 		return Decorator;

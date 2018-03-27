@@ -166,6 +166,7 @@ module.exports = function( grammar, builders ) {
 			return new Expression( builders.CallExpression( this.id(), args::ast() ) );
 		}
 		new( ...args ) {
+			args = args.map( arg=>arg === undefined ? id(`undefined`) : arg );
 			return new Expression( builders.NewExpression( this.id(), args::ast() ) );
 		}
 		return() {

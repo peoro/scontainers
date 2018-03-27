@@ -18,6 +18,7 @@ Object.prototype::implementSymbolsFromFactory( {
 	ownProperties: Object::decorate( require('../decorators/object_own_properties') ),
 	properties: Object::decorate( require('../decorators/object_enumerable_properties') ),
 	// TODO: override `toString`, but force its overriddance
+	/*
 	toString() {
 		return function toString() {
 			if( this.toString !== Object.prototype.toString ) {
@@ -30,6 +31,7 @@ Object.prototype::implementSymbolsFromFactory( {
 			return `{${out.join(', ')}}`;
 		}
 	}
+	*/
 });
 
 // requiring bound at the end, as it needs our `ownProperties` functions etc

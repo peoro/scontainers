@@ -11,7 +11,7 @@ function bindSymbol( sym, symName ) {
 			throw new Error(`${symName} called on undefined`);
 		}
 		if( ! this[sym] ) {
-			throw new Error(`${symName} called on ${this} (${this::toString()}), that doesn't implement it.`);
+			throw new Error(`${symName} called on ${this}, that doesn't implement it.`);
 		}
 
 		try {

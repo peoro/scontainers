@@ -13,53 +13,12 @@ const {
 } = symbols;
 
 const util = require('../util.js');
-const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols} = util;
+const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVNArr, Done} = util;
 const {propertiesSymbol} = require('./properties');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
 
 const toStr = util.toString;
-
-
-function implementDerivedProtocols() {
-	assert( this, `implementDerivedProtocols() must be called on an object` );
-
-	const Collection = this;
-	const proto = Collection.prototype;
-
-	// running a quick validity check on `this`
-	{
-		if( proto.*nth && proto.*nToKey ) {
-			assert( proto.*nToKey, `${Collection.name} misses .\*nToKey()` );
-			assert( proto.*len, `${Collection.name} misses .\*len()` );
-			// assert( proto.*get, `${Collection.name} misses .\*get()` );
-		}
-		//assert( proto.*kvIterator || proto.*kvReorderedIterator, `${Collection.name} is not iterable` );
-	}
-
-	proto::implementSymbolsFromFactory({
-	});
-
-	proto::implementSymbolsFromFactory({
-		iterator() {
-			if( proto.*nth || proto.*has ) {
-				return function() {
-					return this.*values().*iterator();
-				};
-			}
-
-			if( proto.*kvIterator ) {
-				return function() {
-					return this.*kvIterator();
-				};
-			}
-		},
-	});
-}
-
-
-
-
 
 
 function deriveCoreProtocols() {
@@ -89,11 +48,32 @@ function deriveCoreProtocols() {
 				}
 			}
 		},
-		iterator() {
-			if( proto.*kvIterator ) {
-				return function iterator() {
-					return this.*kvIterator();
+		set() {
+			if( proto.*setNth ) {
+				return function( key, value ) {
+					const n = this.*keyToN( key );
+					this.*setNth( n, value );
 				}
+			}
+		},
+		kvIterator() {
+			if( proto.*nthKVN ) {
+				return function kvIterator() {
+					return {
+						collection: this,
+						i: 0,
+						next() {
+							const coll = this.collection;
+							if( this.i < coll.*len() ) {
+								const n = this.i ++;
+								const kvn = coll.*nthKVN( n );
+								assert( kvn, `${Collection.name}.nth(${n}) not there?! :F` );
+								return new KVNArr( kvn.key, kvn.value, kvn.n );
+							}
+							return new Done();
+						}
+					};
+				};
 			}
 		},
 		kvReorderedIterator() {
@@ -128,6 +108,34 @@ function deriveCoreProtocols() {
 				};
 			}
 		},
+		iterator() {
+			if( proto.*nth || proto.*has ) {
+				return function() {
+					return this.*values().*iterator();
+				};
+			}
+			if( proto.*kvIterator ) {
+				return function iterator( ) {
+					return {
+						it: this.*kvIterator(),
+						next() {
+							const next = this.it.next();
+							if( next.done ) {
+								return next;
+							}
+
+							const [key, value] = next.value;
+							return { value:[key, value], done:false };
+						}
+					};
+				};
+				/*
+				return function iterator() {
+					this.*kvIterator();
+				}
+				*/
+			}
+		},
 	});
 
 }
@@ -149,7 +157,7 @@ function deriveProtocols() {
 					const it = this.*kvIterator();
 					let next = it.next();
 					while( ! next.done ) {
-						const [value, key, n] = next;
+						const [value, key, n] = next.value;
 						fn( value, key, n );
 						next = it.next();
 					}
@@ -233,7 +241,7 @@ function deriveProtocols() {
 				let next = it.next();
 				assert( ! next.done, `${this}.only()'s collection is empty` );
 				assert( it.next().done, `${this}.only()'s collection has multiple items` );
-				return next;
+				return next.value;
 			};
 		},
 		first() {
@@ -306,7 +314,7 @@ function deriveProtocols() {
 					let state = next.value[1];
 
 					while( ! next.done ) {
-						const [value, key, n] = next;
+						const [value, key, n] = next.value;
 						state = fn( state, value, key, n );
 						next = it.next();
 					}
@@ -395,6 +403,11 @@ function deriveProtocols() {
 		toString() {
 			if( proto.*nth ) {
 				return function toString() {
+					//this.*map( (value)=>value::toStr() ).*collect( Array );
+					// this.*iterator();
+					// console.log( this.*len(), this.constructor.name );
+					// console.log( this.*kvIterator.toString() );
+
 					const out = this.*map( (value)=>value::toStr() ).*collect( Array );
 					return `*[${out.join(', ')}]`;
 				};
@@ -438,7 +451,7 @@ function deriveProtocols() {
 					const Decorator = decoratorFactory.factory ?
 						decoratorFactory.factory( Collection ) :
 						decoratorFactory( Collection );
-					assert( Decorator, `${decoratorFactory.name} can be produced, but go no decorator factory?!` );
+					assert( Decorator, `${decoratorFactory.name} can be produced, but has no decorator factory?!` );
 					return function() {
 						const args = [this, ...arguments];
 						return Reflect.construct( Decorator, args );
@@ -455,7 +468,7 @@ function deriveProtocols() {
 	symbols::assignProtocolFactories( proto, {
 		keys() {
 			return function keys() {
-				return this.*map( (value, key)=>key ).*values();
+				return this.*map( function key(value, key){return key;} ).*values();
 			};
 		},
 		values: requireDecorator('values'),
@@ -483,9 +496,11 @@ function deriveProtocols() {
 		cow: requireDecorator('cow'),
 		flatten: requireDecorator('flatten'),
 		flattenDeep() {
-			return function flattenDeep() {
-				return this.*map( (value)=>value.*count ? value.*flattenDeep() : value ).*flatten();
-			};
+			if( this.*map ) {
+				return function() {
+					return this.*map( (value)=>value.*flattenDeep ? value.*flattenDeep() : value ).*flatten();
+				};
+			}
 		},
 		concat() {
 			return function concat( ...collections ) {
@@ -565,7 +580,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
-		symbols::assignProtocols( this.prototype, {
+		symbols::assignProtocolFactories( this.prototype, {
 			hasKey() {
 				if( nthUnchecked ) {
 					return function( key ) {
@@ -686,97 +701,139 @@ function deriveProtocolsForTransformation( configuration={} ) {
 	symbols::assignProtocolFactories( this.prototype, configuration );
 
 	// deriving the other core protocol factories we can derive from the non-protocol data
-	{
-		symbols::assignProtocolFactories( this.prototype, {
-			nToKey() {
-				if( nToParentN && parentProto[nToKey] ) {
-					return function( n ) {
-						const parentN = this::nToParentN( n );
-						return this[parentKey][nToKey]( parentN );
-					}
-				}
-			},
-			keyToN() {
-				if( keyToParentKey && parentProto[keyToN] ) {
-					return function( key ) {
-						const parentKey = this::keyToParentKey( key );
-						return this[parentKey][keyToN]( parentKey );
-					}
-				}
-			},
-
-			nthKVN() {
-				if( nStage && parentProto[nthKVN] ) {
-					return function( n ) {
-						const parentN = this::nToParentN( n );
-						const parentKVN = this[parentKey][nthKVN]( parentN );
-						if( parentKVN ) {
-							return this::nStage( parentKVN );
-						}
-					}
-				}
-			},
-			getKVN() {
-				if( kStage && parentProto[getKVN] ) {
-					return function( key ) {
-						const parentKey = this::keyToParentKey( key );
-						const parentKVN = this[parentKey][getKVN]( parentKey );
-						if( parentKVN ) {
-							return this::nStage( parentKVN );
-						}
-					}
-				}
-			},
-
-			hasKey() {
-				if( kStage && parentProto[nth] ) {
-					return function( key ) {
-						return this::kStage( (c)=>{
-							this[parentKey][nth]( c, c.key );
-						});
-						return true;
-					}
-				}
-			},
-
-			kvIterator() {
-				if( parentProto[kvIterator] ) {
-					return function() {
-						const self = this;
-						const parentCollection = this[parentKey];
-
-						const it = parentCollection[kvIterator]();
-						return {
-							next() {
-								const next = it.next();
-								if( next.done ) {
-									return next;
-								}
-
-								const [key, value] = next.value;
-								const parentKV = new ReorderedIterator.KV( key, value );
-								const kv = self::kStage( parentKV );
-								if( ! kv ) {
-									return this.next();
-								}
-
-								if( false ) {
-									TODO(`handle the situation wehn ${kv} is an iterator`);
-								}
-
-								return {
-									done: false,
-									value: [kv.key, kv.value]
-								};
-							}
-						};
-					};
+	symbols::assignProtocolFactories( this.prototype, {
+		nToKey() {
+			if( nToParentN && parentProto[nToKey] ) {
+				return function( n ) {
+					const parentN = this::nToParentN( n );
+					return this[parentKey][nToKey]( parentN );
 				}
 			}
-		});
-	}
+		},
+		keyToN() {
+			if( keyToParentKey && parentProto[keyToN] ) {
+				return function( key ) {
+					const parentKey = this::keyToParentKey( key );
+					return this[parentKey][keyToN]( parentKey );
+				}
+			}
+		},
+
+		nthKVN() {
+			if( nStage && parentProto[nthKVN] ) {
+				return function( n ) {
+					const parentN = this::nToParentN( n );
+					const parentKVN = this[parentKey][nthKVN]( parentN );
+					if( parentKVN ) {
+						return this::nStage( parentKVN );
+					}
+				}
+			}
+		},
+		getKVN() {
+			if( kStage && parentProto[getKVN] ) {
+				return function( key ) {
+					const parentKey = this::keyToParentKey( key );
+					const parentKVN = this[parentKey][getKVN]( parentKey );
+					if( parentKVN ) {
+						return this::nStage( parentKVN );
+					}
+				}
+			}
+		},
+
+		hasKey() {
+			if( kStage && parentProto[nth] ) {
+				return function( key ) {
+					return this::kStage( (c)=>{
+						this[parentKey][nth]( c, c.key );
+					});
+					return true;
+				}
+			}
+		},
+	});
 
 	// deriving all the remaining core protocols
+	this::deriveCoreProtocols();
+
+	// if there are no iterators, we can derived them starting from the parent collection...
+	// TODO NOTE FIXME: BROKEN
+	// 1. we have no way to say when to start and when to stop for `Slice`
+	// get rid of the above `this::deriveCoreProtocols()` to see whether it's fixed
+	symbols::assignProtocolFactories( this.prototype, {
+		kvIterator() {
+			if( parentProto[kvIterator] && kStage ) {
+				return function() {
+					const self = this;
+					const parentCollection = this[parentKey];
+
+					const it = parentCollection[kvIterator]();
+					return {
+						next() {
+							const next = it.next();
+							if( next.done ) {
+								return next;
+							}
+
+							const [key, value] = next.value;
+							const parentKV = new ReorderedIterator.KV( key, value );
+							const kv = self::kStage( parentKV );
+							if( ! kv ) {
+								return this.next();
+							}
+
+							if( false ) {
+								TODO(`handle the situation wehn ${kv} is an iterator`);
+							}
+
+							return new KVNArr( kv.key, kv.value, kv.n );
+						}
+					};
+				};
+			}
+		},
+		kvReorderedIterator() {
+			if( parentProto[kvReorderedIterator] && kStage ) {
+				return function() {
+					const prit = this[parentKey].*kvReorderedIterator();
+					const rit = new ReorderedIterator({
+						alwaysPropagate: true,
+						propagateMulti: false,
+						needState: false,
+						reorder: false
+					});
+
+					rit.proceed = ()=>{
+						// onNext:
+						prit.onNext( (kv)=>{
+								rit.pushNext( this::kStage(kv) );
+							})
+							.proceed();
+
+						// onEnd:
+						finish();
+					};
+					rit.resume = ()=>{
+						prit.resume();
+						finish();
+					};
+					rit.stop = ()=>{
+						prit.stop();
+					};
+
+					let finished = false;
+					const finish = ()=>{
+						if( finished ) { return; } finished = true;
+					};
+
+					return rit;
+				};
+			}
+		},
+	});
+
+	// deriving all the core protocols again, in case something depends on the newly added iterators...
 	this::deriveCoreProtocols();
 
 	// deriving non-core protocols
