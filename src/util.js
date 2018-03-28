@@ -11,22 +11,6 @@ function toString() {
 		return this[symbols.toString]();
 	}
 
-	/*
-	throw new Error(`Nothing, besides null and undefined, should lack ::toString()...`);
-	if( this.toString ) {
-		return this.toString();
-	}
-	return `unknown`;
-	*/
-	if( this.toString === Object.prototype.toString ) {
-		const {properties, map, collect} = symbols;
-
-		const out = this.*properties()
-			.*map( (value, key)=>`${key::toString()}:${value::toString()}` )
-			.*collect( Array );
-			return `{${out.join(', ')}}`;
-	}
-
 	if( typeof this === 'string' ) {
 		return this
 			.replace(/\\n/g, "\\n")
@@ -195,18 +179,23 @@ function setSymbolCompilers( src ) {
 // TODO: this stuff should come from 'js-protocols/util'...
 // `this` is an object made of symbols; keys of `symbolObj` are keys of `this`. assigns the protocols in `symbolObj` to `target`.
 function assignProtocols( target, symbolObj ) {
+	assert( symbolObj );
 	for (let name in symbolObj) {
 		const sym = this[name];
-		assert( sym, `No protocol \`${name}\`` );
+		assert( sym, `Trying to set non existing protocol \`${name}\` to \`${target}\`` );
 
-		if( target[sym] ) {
+		if( target.hasOwnProperty(sym) ) {
 			// already implemented...
 			continue;
 		}
 
 		const value = symbolObj[name];
 		target[sym] = value;
-		target[sym].factory = ()=>value;
+
+		// TODO: this shouldn't happen here...
+		if( target[sym] && typeof target[sym] === 'object' ) {
+			target[sym].factory = ()=>value;
+		}
 	};
 }
 
@@ -218,7 +207,7 @@ function assignProtocolFactories( dest, symbolObj ) {
 
 		assert( sym, `No protocol \`${symName}\`` );
 
-		if( dest[sym] ) {
+		if( dest.hasOwnProperty(sym) ) {
 			// already implemented...
 			continue;
 		}

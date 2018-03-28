@@ -34,13 +34,11 @@ module.exports = {
 		}
 
 		Filter::defineProperties({
-			ParentType: Type,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: Type,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [id`filterFn`],
 
-			propagateEveryElement: false,
-			propagateMultipleElements: false,
-			createsNewElements: false,
+			transformStream: true,
 		});
 
 		{

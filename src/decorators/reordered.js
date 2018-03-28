@@ -23,13 +23,9 @@ module.exports = {
 		}
 
 		Reordered::defineProperties({
-			ParentType: ParentCollection,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [],
-
-			propagateEveryElement: true,
-			propagateMultipleElements: false,
-			createsNewElements: false,
 		});
 
 		Reordered::deriveProtocolsForTransformation({

@@ -18,20 +18,30 @@ Object.prototype::implementSymbolsFromFactory( {
 	ownProperties: Object::decorate( require('../decorators/object_own_properties') ),
 	properties: Object::decorate( require('../decorators/object_enumerable_properties') ),
 	// TODO: override `toString`, but force its overriddance
-	/*
 	toString() {
 		return function toString() {
 			if( this.toString !== Object.prototype.toString ) {
 				return this.toString();
 			}
 
+			/*
 			const out = this::properties()
 				::map( (value, key)=>`${key::toString()}:${value::toString()}` )
 				::collect( Array );
 			return `{${out.join(', ')}}`;
+			*/
+			let out = '';
+			for( let key in this ) {
+				const value = this[key];
+
+				if( out ) {
+					out += `, `;
+				}
+				out += `${key::toString()}:${value::toString()}`;
+			}
+			return `${this.constructor.name}{${out}}`;
 		}
 	}
-	*/
 });
 
 // requiring bound at the end, as it needs our `ownProperties` functions etc

@@ -23,13 +23,9 @@ module.exports = {
 		}
 
 		IterableOnly::defineProperties({
-			ParentType: ParentCollection,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [],
-
-			propagateEveryElement: true,
-			propagateMultipleElements: false,
-			createsNewElements: false,
 		});
 
 		IterableOnly::deriveProtocolsForTransformation({

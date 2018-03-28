@@ -5,9 +5,11 @@ const symbols = require('../symbols');
 const generatorSymbols = require('../generator_symbols');
 
 const compilerSymbol = Symbol('compiler');
-const {propertiesSymbol} = require('./properties');
+const properties = require('./properties');
 const {grammar, builders, semantics, codegen, FunctionCompiler} = require('../compiler/index.js');
 const {extractKeys, assignProtocols, assignProtocolFactories, KVN} = require('../util.js');
+
+const {InnerCollection, innerCollectionKey, argKeys, mappingOnly} = properties.symbols;
 
 
 function defaultGet( key, defaultConstructor ) {
@@ -53,7 +55,7 @@ class CompilationFrame {
 
 
 		this.args = {}
-		Type[propertiesSymbol].argKeys.forEach( argKey=>{
+		Type.*argKeys.forEach( argKey=>{
 			// this.args[argKey] = typeArgMapFn( compiler.getArg(Type, argKey) );
 			Object.defineProperty( this.args, argKey, {
 				get(){
@@ -79,7 +81,7 @@ class CompilationFrame {
 			}
 		}
 
-		const InnerType = Type[propertiesSymbol].ParentType;
+		const InnerType = Type.*InnerCollection;
 		if( InnerType ) {
 			this.inner = new CompilationFrame( compiler, InnerType, typeArgMapFn, body, parameters, this, methods ).protocols;
 		}
@@ -202,9 +204,9 @@ class NewCompiler {
 		let expr = semantics.this();
 
 		while( Type !== TargetType ) {
-			const parentKey = Type[propertiesSymbol].parentCollectionKey;
+			const parentKey = Type.*innerCollectionKey;
 
-			Type = Type[propertiesSymbol].ParentType;
+			Type = Type.*InnerCollection;
 			expr = expr.member( parentKey );
 		}
 
@@ -232,7 +234,7 @@ class NewCompiler {
 		return argKeys.map( argKey=>this.getArg(Type, argKey) );
 	}
 	getParent( Type, parentKey ) {
-		const ParentType = Type[propertiesSymbol].ParentType;
+		const ParentType = Type.*InnerCollection;
 		const parent = this.getSelf( ParentType );
 
 		const typeArgs = this.getTypeArguments( Type );
@@ -263,7 +265,7 @@ class NewCompiler {
 			if( ! Type ) { return []; }
 
 			return [].concat(
-				getTypeArgRec( Type[propertiesSymbol].ParentType ),
+				getTypeArgRec( Type.*InnerCollection ),
 				Array.from( this.getTypeArguments(Type).values() ),
 			);
 		};
@@ -278,7 +280,7 @@ class NewCompiler {
 			const typeArgs = this.getTypeArguments(Type);
 
 			// const parent = typeArgs.parent;
-			const parentKey = Type[propertiesSymbol].parentCollectionKey;
+			const parentKey = Type.*innerCollectionKey;
 			if( ! parentKey ) {
 				return Array.from( typeArgs.values() ).map( arg=>instance::arg.fn() );
 			}
@@ -287,7 +289,7 @@ class NewCompiler {
 			const parentInstance = instance[parentKey];
 
 			return [].concat(
-				getTypeArgRec( Type[propertiesSymbol].ParentType, parentInstance ),
+				getTypeArgRec( Type.*InnerCollection, parentInstance ),
 				Array.from( typeArgs.values() ).map( arg=>instance::arg.fn() ),
 			);
 		};
@@ -643,7 +645,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 		assert( cond, `${this.name}.compileProtocolsForTransformation(): ${err}` );
 	};
 
-	const ParentType = this[propertiesSymbol].ParentType;
+	const ParentType = this.*InnerCollection;
 	check( ParentType, `need to specify the ParentType` );
 
 	// taking the non-protocol data from `compilerConfiguration` (e.g.  `nStage` and `stage`)
@@ -679,9 +681,17 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
-		const {nthKVN, getKVN, nToKey, keyToN, loop} = generatorSymbols;
+		const {len, nthKVN, getKVN, nToKey, keyToN, loop} = generatorSymbols;
 
 		generatorSymbols::assignProtocolFactories( this, {
+			len() {
+				if( this.*mappingOnly && ParentType.*len ) {
+					return function() {
+						return this.inner.len();
+					}
+				}
+			},
+
 			nToKey() {
 				if( nToParentN && ParentType[nToKey] ) {
 					return function( n ) {

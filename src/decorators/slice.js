@@ -29,13 +29,9 @@ module.exports = {
 		const parentProto = ParentCollection.prototype;
 
 		Slice::defineProperties({
-			ParentType: ParentCollection,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [id`begin`, id`end`],
-
-			propagateEveryElement: true,
-			propagateMultipleElements: false,
-			createsNewElements: false,
 		});
 
 		Slice::compileProtocolsForTransformation({

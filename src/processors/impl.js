@@ -7,7 +7,7 @@ const {
 	from, nth, nthKVN, setNth, nToKey, keyToN, get, getKVN, set, hasKey, has, add, len, reverse, clear, kvIterator,
 	kvReorderedIterator, forEach, whileEach, untilEach, count, isEmpty, only, first, last, random, swapNs, swapKeys, swap,
 	reduce, reduceFirst, sum, avg, min, max, every, some, find, findLast, toString, collect, consume, keys, values,
-	entries, properties, ownProperties, enumerate, filter, uniq, slice, chunk, map, mapKey, cache, iter, reordered,
+	entries, enumerate, filter, uniq, slice, chunk, map, mapKey, cache, iter, reordered,
 	flatten, flattenDeep, concat, skipWhile, takeWhile, skip, take, groupBy, cow, remap, kvMap, unmap, unmapKeys, sort,
 	shuffle, permute, groupWhile, allProperties, assign, defaults, collectInto, repeat, loop, iterator
 } = symbols;
@@ -15,7 +15,7 @@ const {
 
 const util = require('../util.js');
 const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVN, KVArr, Done} = util;
-const {propertiesSymbol} = require('./properties');
+const properties = require('./properties');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
 
@@ -143,6 +143,9 @@ function deriveProtocols() {
 
 	// checking that the collection is OK
 	{
+		if( proto.*nth ) {
+			assert( proto.*len, `${Collection.name} enumerable, but unknown \`len\`` );
+		}
 	}
 
 	symbols::assignProtocolFactories( proto, {
@@ -673,12 +676,13 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		assert( cond, `${this.name}.compileProtocolsForTransformation(): ${err}` );
 	};
 
+	const {InnerCollection, innerCollectionKey, mappingOnly, transformStream} = properties.symbols;
 	const Collection = this;
 	const proto = this;
-	const ParentCollection = this[propertiesSymbol].ParentType;
+	const ParentCollection = this.*InnerCollection;
 	check( ParentCollection, `need to specify the ParentType` );
 	const parentProto = ParentCollection.prototype;
-	const parentKey = this[propertiesSymbol].parentCollectionKey;
+	const innerKey = this.*innerCollectionKey;
 
 	// TODO: `stage` (and its specializations) could be improved...
 	// most collections don't do anything *before* `stage` returns from recursion.
@@ -712,19 +716,27 @@ function deriveProtocolsForTransformation( configuration={} ) {
 
 	// deriving the other core protocol factories we can derive from the non-protocol data
 	symbols::assignProtocolFactories( this.prototype, {
+		len() {
+			if( Collection.*mappingOnly && parentProto.*len ) {
+				return function() {
+					return this[innerKey].len();
+				}
+			}
+		},
+
 		nToKey() {
 			if( nToParentN && parentProto[nToKey] ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
-					return this[parentKey][nToKey]( parentN );
+					return this[innerKey][nToKey]( parentN );
 				}
 			}
 		},
 		keyToN() {
 			if( keyToParentKey && parentProto[keyToN] ) {
 				return function( key ) {
-					const parentKey = this::keyToParentKey( key );
-					return this[parentKey][keyToN]( parentKey );
+					const innerKey = this::keyToParentKey( key );
+					return this[innerKey][keyToN]( innerKey );
 				}
 			}
 		},
@@ -733,7 +745,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( nStage && parentProto[nthKVN] ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
-					const parentKVN = this[parentKey][nthKVN]( parentN );
+					const parentKVN = this[innerKey][nthKVN]( parentN );
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
@@ -743,8 +755,8 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		getKVN() {
 			if( kStage && parentProto[getKVN] ) {
 				return function( key ) {
-					const parentKey = this::keyToParentKey( key );
-					const parentKVN = this[parentKey][getKVN]( parentKey );
+					const innerKey = this::keyToParentKey( key );
+					const parentKVN = this[innerKey][getKVN]( innerKey );
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
@@ -756,9 +768,14 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( kStage && parentProto[nth] ) {
 				return function( key ) {
 					return this::kStage( (c)=>{
-						this[parentKey][nth]( c, c.key );
+						this[innerKey][nth]( c, c.key );
 					});
 					return true;
+				}
+			}
+			if( Collection.*mappingOnly && parentProto.*hasKey ) {
+				return function( key ) {
+					return this[innerKey].*hasKey( keyToParentKey(key) );
 				}
 			}
 		},
@@ -773,10 +790,10 @@ function deriveProtocolsForTransformation( configuration={} ) {
 	// get rid of the above `this::deriveCoreProtocols()` to see whether it's fixed
 	symbols::assignProtocolFactories( this.prototype, {
 		kvIterator() {
-			if( parentProto[kvIterator] && kStage ) {
+			if( Collection.*transformStream && parentProto[kvIterator] && kStage ) {
 				return function() {
 					const self = this;
-					const parentCollection = this[parentKey];
+					const parentCollection = this[innerKey];
 
 					const it = parentCollection[kvIterator]();
 					return {
@@ -804,7 +821,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		kvReorderedIterator() {
 			if( parentProto[kvReorderedIterator] && kStage ) {
 				return function() {
-					const prit = this[parentKey].*kvReorderedIterator();
+					const prit = this[innerKey].*kvReorderedIterator();
 					const rit = new ReorderedIterator({
 						alwaysPropagate: true,
 						propagateMulti: false,

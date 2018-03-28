@@ -26,13 +26,9 @@ module.exports = {
 		const parentProto = ParentCollection.prototype;
 
 		Cache::defineProperties({
-			ParentType: ParentCollection,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [id`mapFn`],
-
-			propagateEveryElement: true,
-			propagateMultipleElements: false,
-			createsNewElements: false,
 		});
 
 		Cache::deriveProtocolsForTransformation({

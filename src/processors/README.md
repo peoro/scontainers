@@ -53,10 +53,7 @@ The special functions are:
 
 # TODOs
  - `Collection` or `Container`?
- - I should get rid of `Propagator`, but rather do something similar to `core generators`: the object passed to the impl processor should be allowed to contain stuff which is not a core protocol (e.g. `nToParentN`, `parentCollection`, `stage`, `nStage`), and this should be used to generate `core protocols` when necessary.
- - both the compiler and the impl (which includes propagator) processor, should use the same collection properties. These should also include stuff like writable.
  - `core protocols` should include a function to access the parent collection (for decorators) and the root one... Or not?
- - instead of `propertiesSymbol`, we should have a whole set of symbols used for properties, like we're doing for collection protocols and collection protocol generators.
 
 
 ## For Decorators
@@ -93,9 +90,6 @@ p = placeholder
 new Range( 10, p(0) )::map( squareFn )::filter( p(1) )::reduce::compile( sumFn )
 ```
 
-When compiling, If we detect that the same non-Literal-nor-Identifier expression is used in multiple places,
-we should store that in a variable.
-
 Stuff like `sorted` should have `len`, `get`, maybe(?) `nth` (it's log n, hmmm, maybe another name? logNth? lol), but no iteration etc.
 
 ### Properties:
@@ -112,10 +106,6 @@ Decorators:
  - `reorder`
  - `changeKey`
  - `changeValue`
-
-## TODOs
-
- - get rid of `forAny` and the others: `forEach` should do it -- TODO: should we??
 
 ## NOTEs
 
@@ -147,28 +137,3 @@ Add a `DefaultMap` type: it works like a `Map`, except it needs a `defaultConstr
 Instead of `extractKeys`, use object deconstructors!!!
 
 Rename `parent` to `inner`
-
-To check whether a protocol/type implements a protocol, we could create an object that has got a key for each protocol...
-```
-protoHas = symbols::buildHasObject( Type.proto )
-protoHas.len() // returns `true` or `false`
-```
-
-
-
-`Compiler` should be abstracted in a better way...
-We need `Compiler` to handle...
- - AST
- - VarDB
-   - parameters, constants
- - type arguments
- - compilation
-
-All these stuff should be kept in mostly-independent modules that can be easily replaced.
-We need to change the AST root because of stuff like `loop`, type arguments because of stuff like `kvIterator` etc...
-
-Instead of `Compiler` it could be called `Compilation Frame`: it represents the state of compilation for a specific generator.
-It'll be the `this` object for generators, and it has everything the generator needs: functions to...
- - register constants, parameters, variables etc (manipulate the VarDB)
- - push code, modifying the AST
- - access type arguments, member protocols and parent's protocols

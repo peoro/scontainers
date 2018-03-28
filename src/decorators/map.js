@@ -25,13 +25,11 @@ module.exports = {
 		const parentProto = ParentCollection.prototype;
 
 		Map::defineProperties({
-			ParentType: ParentCollection,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [id`mapFn`],
 
-			propagateEveryElement: true,
-			propagateMultipleElements: false,
-			createsNewElements: false,
+			mappingOnly: true,
 		});
 
 		Map::compileProtocolsForTransformation({
@@ -43,14 +41,6 @@ module.exports = {
 			indexToParentIndex( index ) {
 				return index;
 			},
-
-			len() {
-				if( parentProto[len] ) {
-					return function() {
-						return this.inner.len();
-					}
-				}
-			},
 		});
 
 		Map::deriveProtocolsForTransformation({
@@ -59,13 +49,6 @@ module.exports = {
 				return kvn;
 			},
 			indexToParentIndex( index ) { return index; },
-			len() {
-				if( parentProto[len] ) {
-					return function( ) {
-						return this.wrapped[len]();
-					}
-				}
-			},
 		});
 
 		return Map;

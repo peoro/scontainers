@@ -24,38 +24,21 @@ module.exports = {
 		const parentProto = ParentCollection.prototype;
 
 		Entries::defineProperties({
-			ParentType: ParentCollection,
-			parentCollectionKey: id`wrapped`,
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
 			argKeys: [],
 
-			propagateEveryElement: true,
-			propagateMultipleElements: false,
-			createsNewElements: false,
+			mappingOnly: true,
 		});
 
 		Entries::compileProtocolsForTransformation({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) { return index; },
-
-			len() {
-				if( parentProto[len] ) {
-					return function() {
-						return this.inner.len();
-					}
-				}
-			},
 		});
 
 		Entries::deriveProtocolsForTransformation({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) { return index; },
-			len() {
-				if( parentProto[len] ) {
-					return function( ) {
-						return this.wrapped[len]();
-					}
-				}
-			},
 		});
 
 		return Entries;

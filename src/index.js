@@ -15,14 +15,15 @@ function identity( arg ) {
 
 
 // a function to extend collections, implementing all the derivable protocols
-function extendCollection( Type, ParentType ) {
+function extendCollection( Type, InnerCollection ) {
 	const {deriveCoreProtocols, deriveProtocols} = require('./processors/impl.js');
-	const {propertiesSymbol, defineProperties} = require('./processors/properties');
+	const {defineProperties} = require('./processors/properties');
 
+	// TODO: ugly, broken and temporary U_U
 	Type::defineProperties({
 		argKeys: [],
-		ParentType,
-		parentCollectionKey: ParentType ? `wrapped` : null,
+		InnerCollection,
+		innerCollectionKey: InnerCollection ? `wrapped` : null,
 	});
 
 	Type::deriveCoreProtocols();

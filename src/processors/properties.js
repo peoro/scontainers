@@ -1,16 +1,42 @@
 
 const assert = require('assert');
 
-const propertiesSymbol = Symbol('properties');
+const protocols = require('js-protocols');
+const utilSymbols = protocols.util.symbols;
+const util = require('../util.js');
+
+const symbols = new protocols.util.Protocol();
+
+// core protocol generators: static methods, explicitely implemented by a collection
+// these are used to dynamically generate core and derived protocols for higher performance
+symbols[utilSymbols.defineAndAssign]( {}, {
+	InnerCollection: Object,
+	innerCollectionKey: '',
+	argKeys: [''],
+
+	mappingOnly: false,	// the decorator is just a map-like function
+	transformStream: false,	// the decorator can transform the inner collection as a stream
+});
+
+
+const {mappingOnly} = symbols;
+
 
 function defineProperties( props ) {
 	assert( props.argKeys );
-	assert( (!!props.parentCollectionKey)===(!!props.ParentType), this );
+	assert( (!!props.innerCollectionKey)===(!!props.InnerCollection), this );
 
-	this[propertiesSymbol] = props;
+	// setting properties
+	symbols::util.assignProtocols( this, props );
+
+	// setting default property values
+	symbols::util.assignProtocols( this, {
+		mappingOnly: false,
+		transformStream: this.*mappingOnly ? true : false,
+	});
 }
 
 module.exports = {
-	propertiesSymbol,
+	symbols,
 	defineProperties,
 };
