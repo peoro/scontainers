@@ -38,9 +38,7 @@ module.exports = {
 				kvn.value = mapFn.call( kvn.value, kvn.key, kvn.n );
 				return kvn;
 			},
-			indexToParentIndex( index ) {
-				return index;
-			},
+			indexToParentIndex( index ) { return index; },
 		});
 
 		Map::deriveProtocolsForTransformation({
