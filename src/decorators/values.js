@@ -2,8 +2,9 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-use protocols from require('../symbols');
 const {KArr, Done} = require('../util.js');
+
+use protocols from require('../symbols');
 
 module.exports = {
 	canProduce( ParentCollection ) {

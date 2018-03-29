@@ -64,26 +64,25 @@ class CompilationFrame {
 			});
 		});
 
-		this.protocols = {};
 		for( let symName in generatorSymbols ) {
 			const genSym = generatorSymbols[symName];
 			const sym = symbols[symName];
 
 			const compilationFrame = this;
-			this.protocols[symName] = function( ...args ) {
-				const Type = compilationFrame.Type;
-				if( Type[genSym] ) {
-					return compilationFrame::Type[genSym]( ...args );
+			this.*[sym] = this.*[genSym] = function( ...args ) {
+				const Type = this.Type;
+				if( Type.*[genSym] ) {
+					return this::Type.*[genSym]( ...args );
 				}
 
-				const symVar = compiler.registerConstant( sym, `${symName}Sym` );
+				const symVar = this.compiler.registerConstant( sym, `${symName}Sym` );
 				return compiler.getSelf( Type ).member( symVar, true ).call( ...args );
 			}
 		}
 
 		const InnerType = Type.*InnerCollection;
 		if( InnerType ) {
-			this.inner = new CompilationFrame( compiler, InnerType, typeArgMapFn, body, parameters, this, methods ).protocols;
+			this.inner = new CompilationFrame( compiler, InnerType, typeArgMapFn, body, parameters, this, methods );
 		}
 	}
 
@@ -359,20 +358,19 @@ function deriveCoreProtocolGenerators() {
 		getKVN() {
 			if( this.*nthKVN && this.*keyToN ) {
 				return function( key ) {
-					const n = this.protocols.keyToN( key );
-					// return new KVN( key, this.protocols.nth(n), n );
-					return this.protocols.nthKVN( n );
+					const n = this.*keyToN( key );
+					return this.*nthKVN( n );
 				}
 			}
 		},
 		hasKey() {
 			if( this.*keyToN ) {
 				return function( key ) {
-					const n = this.protocols.keyToN( key );
+					const n = this.*keyToN( key );
 					return semantics.and(
 						semantics.id(`Number`).member(`isInteger`).call( n ),
 						n.ge( 0 ),
-						n.lt( this.protocols.len() )
+						n.lt( this.*len() )
 					);
 				}
 			}
@@ -380,8 +378,8 @@ function deriveCoreProtocolGenerators() {
 		set() {
 			if( this.*setNth && this.*keyToN ) {
 				return function( key, value ) {
-					const n = this.protocols.keyToN( key );
-					return this.protocols.setNth( n, value );
+					const n = this.*keyToN( key );
+					return this.*setNth( n, value );
 				}
 			}
 		},
@@ -393,7 +391,7 @@ function deriveCoreProtocolGenerators() {
 					};
 
 					const i = this.createUniqueVariable(`i`);
-					const lenVar = this.protocols.len();
+					const lenVar = this.*len();
 
 					return [
 						semantics.for(
@@ -403,7 +401,7 @@ function deriveCoreProtocolGenerators() {
 
 							this.block( { skip:semantics.continue }, function(){
 								this.pushStatement(
-									...this::generator( this.protocols.nthKVN(i) )
+									...this::generator( this.*nthKVN(i) )
 								);
 							})
 						)
@@ -459,7 +457,7 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const KVNVar = this.registerConstant( KVN, `KVN` );
 						const n = this.registerParameter(`n`);
-						const kvn = this.protocols.nthKVN( n );
+						const kvn = this.*nthKVN( n );
 						return KVNVar.new( kvn.key, kvn.value, kvn.n );
 					}
 				}
@@ -469,7 +467,7 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const KVNVar = this.registerConstant( KVN, `KVN` );
 						const n = this.registerParameter(`n`);
-						const kvn = this.protocols.getKVN( n );
+						const kvn = this.*getKVN( n );
 						return KVNVar.new( kvn.key, kvn.value, kvn.n );
 					}
 				}
@@ -481,10 +479,10 @@ function deriveProtocolsFromGenerators() {
 						this.pushStatement(
 							this.compiler.assert( semantics.id(`Number`).member(`isInteger`).call( n ) ),
 							semantics.if(
-								semantics.or( n.lt( 0 ), n.ge( this.protocols.len() ) ),
+								semantics.or( n.lt( 0 ), n.ge( this.*len() ) ),
 								semantics.return()
 							),
-							semantics.return( this.protocols.nthKVN(n).value ),
+							semantics.return( this.*nthKVN(n).value ),
 						);
 					}
 				}
@@ -494,8 +492,8 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const key = this.registerParameter(`key`);
 						this.pushStatement(
-							semantics.if( this.protocols.hasKey(key),
-								semantics.return( this.protocols.getKVN(key).value )
+							semantics.if( this.*hasKey(key),
+								semantics.return( this.*getKVN(key).value )
 							),
 						);
 					}
@@ -504,7 +502,7 @@ function deriveProtocolsFromGenerators() {
 			len() {
 				if( Type.*len ) {
 					return function() {
-						return this.protocols.len();
+						return this.*len();
 					}
 				}
 			},
@@ -529,7 +527,7 @@ function deriveProtocolsFromGenerators() {
 									return argVarMap::defaultGet( arg, ()=>semantics.this().member( this.createUniqueVariable(arg.name) ) );
 								});
 
-								const kvn = frameWithMemberArgs.protocols.nthKVN( i );
+								const kvn = frameWithMemberArgs.*nthKVN( i );
 
 								this.pushStatement(
 									semantics.if(
@@ -558,7 +556,7 @@ function deriveProtocolsFromGenerators() {
 
 								this.pushStatement(
 									i.assign( 0 ),
-									lenVar.assign( frameWithCollectionArgs.protocols.len() ),
+									lenVar.assign( frameWithCollectionArgs.*len() ),
 									...args.map( arg=>argVarMap.get(arg).assign( rebase(arg.variable) ) ),
 								);
 							});
@@ -586,7 +584,7 @@ function deriveProtocolsFromGenerators() {
 						const forEachFn = this.registerParameter(`forEachFn`);
 
 						this.pushStatement(
-							...this.protocols.loop( function(kvn){
+							...this.*loop( function(kvn){
 								return [ forEachFn.call( kvn.value, kvn.key, kvn.n ) ];
 							})
 						);
@@ -604,7 +602,7 @@ function deriveProtocolsFromGenerators() {
 						this.pushStatement(
 							state.declare( initialValue ),
 
-							...this.protocols.loop( function(kvn){
+							...this.*loop( function(kvn){
 								return [ state.assign( reduceFn.call(state, kvn.value, kvn.key, kvn.n) ) ];
 							}),
 
@@ -687,7 +685,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			len() {
 				if( this.*mappingOnly && ParentType.*len ) {
 					return function() {
-						return this.inner.len();
+						return this.inner.*len();
 					}
 				}
 			},
@@ -696,7 +694,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				if( nToParentN && ParentType.*nToKey ) {
 					return function( n ) {
 						const parentN = this::nToParentN( n );
-						return this.inner.nToKey( parentN );
+						return this.inner.*nToKey( parentN );
 					};
 				}
 			},
@@ -704,7 +702,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				if( nStage && ParentType.*nthKVN ) {
 					return function( n ) {
 						const parentN = this::nToParentN( n );
-						const parentKVN = this.inner.nthKVN( parentN );
+						const parentKVN = this.inner.*nthKVN( parentN );
 						return this::nStage( parentKVN );
 					};
 				}
@@ -713,7 +711,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				if( kStage && ParentType.*getKVN ) {
 					return function( key ) {
 						const parentKey = this::keyToParentKey( key );
-						const parentKVN = this.inner.getKVN( parentKey );
+						const parentKVN = this.inner.*getKVN( parentKey );
 						return this::kStage( parentKVN );
 					};
 				}
@@ -722,7 +720,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				if( kStage && ParentType.*getKVN ) {
 					return function( key ) {
 						const parentKey = this::keyToParentKey( key );
-						const parentKVN = this.inner.getKVN( parentKey );
+						const parentKVN = this.inner.*getKVN( parentKey );
 						this::kStage( parentKVN );
 						return true;
 					};
@@ -732,14 +730,14 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				if( keyToParentKey && ParentType.*keyToN ) {
 					return function( key ) {
 						const parentKey = this::keyToParentKey( key );
-						return this.inner.keyToN( parentKey );
+						return this.inner.*keyToN( parentKey );
 					};
 				}
 			},
 			loop() {
 				if( ParentType.*loop ) {
 					return function( generator ) {
-						return this.inner.loop( function(parentKVN){
+						return this.inner.*loop( function(parentKVN){
 							return this.outer::generator( this.outer::kStage(parentKVN) );
 						});
 					};

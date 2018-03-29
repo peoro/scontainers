@@ -61,7 +61,7 @@ module.exports = {
 				len() {
 					if( parentProto.*len ) {
 						return function( compiler ) {
-							return this.inner.len( compiler );
+							return this.inner.*len( compiler );
 						}
 					}
 				},

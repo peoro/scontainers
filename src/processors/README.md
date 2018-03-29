@@ -135,9 +135,3 @@ Add a `DefaultMap` type: it works like a `Map`, except it needs a `defaultConstr
 ...Actually it could be a decorator! `Collection::default( defaultConstructor )` - only works with writable collections
 
 Instead of `extractKeys`, use object deconstructors!!!
-
-Rename `parent` to `inner`
-
-CompilationFrame shouldn't have a weird `protocols` property with functions named like symbol that generate the symbol-calling code, ugh!
-It should directly have the symbols, implemented to generate the symbol-calling code.
-This way the code generator becomes easier to read, the symbol-call generators don't need to capture anything, and `frame.inner` can return the lower compilation frame, rather than the weird thing it currently returns...

@@ -4,6 +4,8 @@
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
 const {implementSymbols, KVN} = require('../util.js');
 
+use protocols from require('../symbols.js');;
+
 class Range {
 	constructor( begin, end ) {
 		if( end !== undefined ) {
@@ -40,7 +42,7 @@ Range::compileProtocolsForRootType({
 	keyToN( key ) { return key.minus( this.args.begin ); },
 	nthKVN( n ) {
 		return new KVN(
-			this.protocols.nToKey( n ),
+			this.*nToKey( n ),
 			n.plus( this.args.begin ),
 			n
 		);
