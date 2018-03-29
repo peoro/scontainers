@@ -2,7 +2,7 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {len, kvIterator} = require('../symbols');
+use protocols from require('../symbols');
 const {KArr, Done} = require('../util.js');
 
 module.exports = {

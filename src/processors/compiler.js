@@ -9,7 +9,7 @@ const properties = require('./properties');
 const {grammar, builders, semantics, codegen, FunctionCompiler} = require('../compiler/index.js');
 const {extractKeys, assignProtocols, assignProtocolFactories, KVN} = require('../util.js');
 
-const {InnerCollection, innerCollectionKey, argKeys, mappingOnly} = properties.symbols;
+use protocols from properties.symbols;
 
 
 function defaultGet( key, defaultConstructor ) {
@@ -353,11 +353,11 @@ function deriveCoreProtocolGenerators() {
 
 	const Type = this;
 
-	const {nthKVN, len, keyToN, nToKey, setNth, nToParentN} = generatorSymbols;
+	use protocols from generatorSymbols;
 
 	generatorSymbols::assignProtocolFactories( this, {
 		getKVN() {
-			if( this[nthKVN] && this[keyToN] ) {
+			if( this.*nthKVN && this.*keyToN ) {
 				return function( key ) {
 					const n = this.protocols.keyToN( key );
 					// return new KVN( key, this.protocols.nth(n), n );
@@ -366,7 +366,7 @@ function deriveCoreProtocolGenerators() {
 			}
 		},
 		hasKey() {
-			if( this[keyToN] ) {
+			if( this.*keyToN ) {
 				return function( key ) {
 					const n = this.protocols.keyToN( key );
 					return semantics.and(
@@ -378,7 +378,7 @@ function deriveCoreProtocolGenerators() {
 			}
 		},
 		set() {
-			if( this[setNth] && this[keyToN] ) {
+			if( this.*setNth && this.*keyToN ) {
 				return function( key, value ) {
 					const n = this.protocols.keyToN( key );
 					return this.protocols.setNth( n, value );
@@ -386,7 +386,7 @@ function deriveCoreProtocolGenerators() {
 			}
 		},
 		loop() {
-			if( this[nthKVN] ) {
+			if( this.*nthKVN ) {
 				return function( generator ) {
 					this.skip = function() {
 						return semantics.continue();
@@ -421,7 +421,7 @@ function deriveProtocolsFromGenerators() {
 
 	// implementing core protocols from generators
 	{
-		const {getKVN, hasKey, nthKVN, len, loop} = generatorSymbols;
+		use protocols from generatorSymbols;
 
 		const proto = this.prototype;
 
@@ -455,7 +455,7 @@ function deriveProtocolsFromGenerators() {
 		// deriving core protocols from protocol generators
 		deriveProtocols({
 			nthKVN() {
-				if( Type[nthKVN] ) {
+				if( Type.*nthKVN ) {
 					return function() {
 						const KVNVar = this.registerConstant( KVN, `KVN` );
 						const n = this.registerParameter(`n`);
@@ -465,7 +465,7 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			getKVN() {
-				if( Type[getKVN] ) {
+				if( Type.*getKVN ) {
 					return function() {
 						const KVNVar = this.registerConstant( KVN, `KVN` );
 						const n = this.registerParameter(`n`);
@@ -475,7 +475,7 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			nth() {
-				if( Type[nthKVN] ) {
+				if( Type.*nthKVN ) {
 					return function() {
 						const n = this.registerParameter(`n`);
 						this.pushStatement(
@@ -490,7 +490,7 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			get() {
-				if( Type[getKVN] && Type[hasKey] ) {
+				if( Type.*getKVN && Type.*hasKey ) {
 					return function() {
 						const key = this.registerParameter(`key`);
 						this.pushStatement(
@@ -502,14 +502,14 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			len() {
-				if( Type[len] ) {
+				if( Type.*len ) {
 					return function() {
 						return this.protocols.len();
 					}
 				}
 			},
 			kvIterator() {
-				if( Type[nthKVN] ) {
+				if( Type.*nthKVN ) {
 					return function() {
 						const fns = this.registerConstants({KVN});
 						const Iterator = this.createUniqueVariable( `Iterator` );
@@ -581,7 +581,7 @@ function deriveProtocolsFromGenerators() {
 		// deriving derived protocols
 		deriveProtocols({
 			forEach() {
-				if( Type[loop] ) {
+				if( Type.*loop ) {
 					return function() {
 						const forEachFn = this.registerParameter(`forEachFn`);
 
@@ -594,7 +594,7 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			reduce() {
-				if( Type[loop] ) {
+				if( Type.*loop ) {
 					return function() {
 						const reduceFn = this.registerParameter(`reduceFn`);
 						const initialValue = this.registerParameter(`initialValue`);
@@ -681,7 +681,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
-		const {len, nthKVN, getKVN, nToKey, keyToN, loop} = generatorSymbols;
+		use protocols from generatorSymbols;
 
 		generatorSymbols::assignProtocolFactories( this, {
 			len() {
@@ -693,7 +693,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			},
 
 			nToKey() {
-				if( nToParentN && ParentType[nToKey] ) {
+				if( nToParentN && ParentType.*nToKey ) {
 					return function( n ) {
 						const parentN = this::nToParentN( n );
 						return this.inner.nToKey( parentN );
@@ -701,7 +701,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				}
 			},
 			nthKVN() {
-				if( nStage && ParentType[nthKVN] ) {
+				if( nStage && ParentType.*nthKVN ) {
 					return function( n ) {
 						const parentN = this::nToParentN( n );
 						const parentKVN = this.inner.nthKVN( parentN );
@@ -710,7 +710,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				}
 			},
 			getKVN() {
-				if( kStage && ParentType[getKVN] ) {
+				if( kStage && ParentType.*getKVN ) {
 					return function( key ) {
 						const parentKey = this::keyToParentKey( key );
 						const parentKVN = this.inner.getKVN( parentKey );
@@ -719,7 +719,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				}
 			},
 			hasKey() {
-				if( kStage && ParentType[getKVN] ) {
+				if( kStage && ParentType.*getKVN ) {
 					return function( key ) {
 						const parentKey = this::keyToParentKey( key );
 						const parentKVN = this.inner.getKVN( parentKey );
@@ -729,7 +729,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				}
 			},
 			keyToN() {
-				if( keyToParentKey && ParentType[keyToN] ) {
+				if( keyToParentKey && ParentType.*keyToN ) {
 					return function( key ) {
 						const parentKey = this::keyToParentKey( key );
 						return this.inner.keyToN( parentKey );
@@ -737,7 +737,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				}
 			},
 			loop() {
-				if( ParentType[loop] ) {
+				if( ParentType.*loop ) {
 					return function( generator ) {
 						return this.inner.loop( function(parentKVN){
 							return this.outer::generator( this.outer::kStage(parentKVN) );

@@ -2,7 +2,8 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {len} = require('../symbols');
+
+use protocols from require('../symbols');
 
 module.exports = {
 	canProduce( ParentCollection ) {

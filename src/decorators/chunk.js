@@ -7,8 +7,6 @@ const utilSymbols = protocols.util.symbols;
 const subminus = require('../');
 const {KVN} = require('../util.js');
 
-const {implementCoreProtocolsFromPropagator} = require('../processors/index.js');
-
 use protocols from subminus.symbols;
 
 module.exports = subminus.makeDecoratorFactory( (Type)=>{
@@ -70,13 +68,13 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 		reverse() {
 			if( proto.*reverse && proto.*len ) {
 				return function reverse() {
-					const remainder = this.*wrapped.*len() % this.n;
+					const remainder = this.wrapped.*len() % this.n;
 					if( remainder === 0 ) {
-						return new Chunk( this.*wrapped.*reverse(), this.n );
+						return new Chunk( this.wrapped.*reverse(), this.n );
 					} else {
 						return new Chunk(
 							new Array(remainder)
-								.*concat( this.*wrapped.*reverse() )
+								.*concat( this.wrapped.*reverse() )
 								.*map( (chunk, i)=>{
 									if( i === 0 ) {
 										return chunk.skip( remainder );
@@ -93,10 +91,6 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 			return `${this.wrapped}.chunk(${this.n})`;
 		}
 	}
-	Chunk::implementCoreProtocolsFromPropagator( Type, {
-		parentCollection() { return this.wrapped; },
-		nToParentN( n ) { return n*this.n; },
-	});
 
 	return Chunk;
 });

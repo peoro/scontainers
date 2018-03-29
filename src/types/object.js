@@ -6,9 +6,9 @@ const {hasSymbols, decorate, implementSymbolsFromFactory} = require('../util.js'
 
 Object[symbols.from] = function from( collection ) {
 	// TODO: this function should be specialized, just like the rest of what this lib does...
-	if( collection::hasSymbols(symbols.forAny) ) {
+	if( collection::hasSymbols(symbols.forEach) ) {
 		const object = {};
-		collection[symbols.forAny]( (value, key)=>void (object[key] = value) );
+		collection[symbols.forEach]( (value, key)=>void (object[key] = value) );
 		return object;
 	}
 	assert( false );

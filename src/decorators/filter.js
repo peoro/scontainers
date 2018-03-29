@@ -9,11 +9,9 @@ const symbols = require('../symbols');
 
 use protocols from subminus.symbols;
 
-const {compileProtocolsForTransformation, implementProtocolsForTransformation, implementCoreProtocolsFromPropagator, defineProperties, parentCoreSymbols, deriveProtocolsForTransformation} = require('../processors/index.js')
+const {compileProtocolsForTransformation, implementProtocolsForTransformation, defineProperties, parentCoreSymbols, deriveProtocolsForTransformation} = require('../processors/index.js')
 const {implementSymbolsFromFactory} = require('../util.js');
 const {semantics} = require('../compiler/index.js');
-
-const {len, nth, nToKey, hasKey, get} = symbols;
 
 module.exports = {
 	canProduce( Type ) {
@@ -61,7 +59,7 @@ module.exports = {
 				},
 
 				len() {
-					if( parentProto[len] ) {
+					if( parentProto.*len ) {
 						return function( compiler ) {
 							return this.inner.len( compiler );
 						}
@@ -77,9 +75,9 @@ module.exports = {
 				},
 				keyToParentKey( key ) { return key; },
 				len() {
-					if( parentProto[len] ) {
+					if( parentProto.*len ) {
 						return function( ) {
-							return this.wrapped[len]();
+							return this.wrapped.*len();
 						}
 					}
 				},

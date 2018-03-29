@@ -19,7 +19,7 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 });
 
 
-const {mappingOnly} = symbols;
+use protocols from symbols;
 
 
 function defineProperties( props ) {

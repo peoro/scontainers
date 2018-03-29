@@ -2,8 +2,9 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {len, nthKVN, getKVN, get, hasKey, nToKey, set} = require('../symbols');
 const {KVN} = require('../util.js');
+
+use protocols from require('../symbols');
 
 module.exports = {
 	canProduce( ParentCollection ) {

@@ -3,7 +3,8 @@
 
 const assert = require('assert');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {len, nth} = require('../symbols');
+
+use protocols from require('../symbols');
 
 module.exports = {
 	canProduce( ParentCollection ) {
@@ -41,7 +42,7 @@ module.exports = {
 			},
 
 			len() {
-				if( parentProto[len] ) {
+				if( parentProto.*len ) {
 					return function() {
 						return this.args.end.minus( this.args.begin );
 					}
@@ -55,7 +56,7 @@ module.exports = {
 				return index + this.begin;
 			},
 			len() {
-				if( parentProto[len] ) {
+				if( parentProto.*len ) {
 					return function( ) {
 						return this.end - this.begin;
 					}

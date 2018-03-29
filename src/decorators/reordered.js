@@ -3,7 +3,8 @@
 
 const subminus = require('../index.js');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {kvReorderedIterator} = require('../symbols');
+
+use protocols from require('../symbols');
 
 module.exports = {
 	canProduce( ParentCollection ) {

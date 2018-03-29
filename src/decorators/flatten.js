@@ -83,7 +83,7 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 			if( proto.*reverse ) {
 				return function reverse() {
 					return new Flatten(
-						this.*wrapped
+						this.wrapped
 							.*reverse()
 							.*map( (value)=>value.*count ? value.*reverse() : value )
 						);

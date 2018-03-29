@@ -141,11 +141,3 @@ Rename `parent` to `inner`
 CompilationFrame shouldn't have a weird `protocols` property with functions named like symbol that generate the symbol-calling code, ugh!
 It should directly have the symbols, implemented to generate the symbol-calling code.
 This way the code generator becomes easier to read, the symbol-call generators don't need to capture anything, and `frame.inner` can return the lower compilation frame, rather than the weird thing it currently returns...
-
-I need to reintroduce a `use protocols from ${EXPR}` symbol, and resume using `.*` strictly.
-With a regex I translate this stuff to regular JavaScript that can be parsed:
- - `.*${ID}` => `[_jsProtocol(ID)]`
- - `use protocols from ${EXPR}` => `_jsProtocolProvider(EXPR)`
- - `.*(${ID})` => `[ID]`
-Then I can manipulate the AST, using e.g. a Babel plugin:
-I find all the `_jsProtocolProvider` identifiers. I recurse the AST from them to the root, marking all the traversed `BlockStatement`s and the root's `Program` but the first one (note: the first traversed node needs to be one of them) with all the `EXPR` found in `_jsProtocolProvider` - this marking tell us that our `use protocols from` can be affected by others...

@@ -3,14 +3,7 @@ const assert = require('assert');
 
 const symbols = require('../symbols');
 
-const {
-	from, nth, nthKVN, setNth, nToKey, keyToN, get, getKVN, set, hasKey, has, add, len, reverse, clear, kvIterator,
-	kvReorderedIterator, forEach, whileEach, untilEach, count, isEmpty, only, first, last, random, swapNs, swapKeys, swap,
-	reduce, reduceFirst, sum, avg, min, max, every, some, find, findLast, toString, collect, consume, keys, values,
-	entries, enumerate, filter, uniq, slice, chunk, map, mapKey, cache, iter, reordered,
-	flatten, flattenDeep, concat, skipWhile, takeWhile, skip, take, groupBy, cow, remap, kvMap, unmap, unmapKeys, sort,
-	shuffle, permute, groupWhile, allProperties, assign, defaults, collectInto, repeat, loop, iterator
-} = symbols;
+use protocols from symbols;
 
 
 const util = require('../util.js');
@@ -32,7 +25,7 @@ function deriveCoreProtocols() {
 		nth() {
 			if( proto.*nthKVN ) {
 				return function( n ) {
-					const kvn = this[nthKVN]( n );
+					const kvn = this.*nthKVN( n );
 					if( kvn ) {
 						return kvn.value;
 					}
@@ -42,7 +35,7 @@ function deriveCoreProtocols() {
 		get() {
 			if( proto.*getKVN ) {
 				return function( key ) {
-					const kvn = this[getKVN]( key );
+					const kvn = this.*getKVN( key );
 					if( kvn ) {
 						return kvn.value;
 					}
@@ -183,7 +176,7 @@ function deriveProtocols() {
 					}
 				};
 				if( proto.*kvReorderedIterator ) {
-					return function whileAny( fn ) {
+					return function( fn ) {
 						let result;
 						{
 							const rit = this.*kvReorderedIterator();
@@ -218,7 +211,7 @@ function deriveProtocols() {
 			if( proto.*len ) {
 				return function isEmpty() { return ! this.*len(); };
 			}
-			return function isEmpty() { return ! this.*whileAny( ()=>false ); };
+			return function isEmpty() { return ! this.*whileEach( ()=>false ); };
 		},
 
 		only() {
@@ -392,12 +385,12 @@ function deriveProtocols() {
 
 		every() {
 			return function every( fn ) {
-				return ! this.*whileAny( fn );
+				return ! this.*whileEach( fn );
 			};
 		},
 		some() {
 			return function some( fn ) {
-				return !! this.*untilAny( fn );
+				return !! this.*untilEach( fn );
 			};
 		},
 
@@ -583,7 +576,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 		if( nthUnchecked ) {
 			check( !getUnchecked, `either supply \`nthUnchecked\` or \`getUnchecked\`` );
 			getUnchecked = function( key ) {
-				const n = this[keyToN]( key );
+				const n = this.*keyToN( key );
 				return nthUnchecked( n );
 			}
 		}
@@ -594,12 +587,14 @@ function deriveProtocolsForRootType( configuration={} ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
+		const proto = this.prototype;
+
 		symbols::assignProtocolFactories( this.prototype, {
 			hasKey() {
 				if( nthUnchecked ) {
 					return function( key ) {
-						const n = this[keyToN]( key );
-						return Number.isInteger(n) && n >= 0 && n < this[len]();
+						const n = this.*keyToN( key );
+						return Number.isInteger(n) && n >= 0 && n < this.*len();
 					}
 				}
 			},
@@ -607,7 +602,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 			nthKVN() {
 				if( nthUnchecked ) {
 					return function( n ) {
-						return new KVN( this[nToKey]( n ), this::nthUnchecked( n ), n );
+						return new KVN( this.*nToKey( n ), this::nthUnchecked( n ), n );
 					}
 				}
 			},
@@ -615,7 +610,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 				if( getUnchecked ) {
 					return function( key ) {
 						if( this::hasKey( key ) ) {
-							return new KVN( key, this::getUnchecked( key ), this[keyToN]( key ) );
+							return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
 						}
 					}
 				}
@@ -625,16 +620,16 @@ function deriveProtocolsForRootType( configuration={} ) {
 				if( nthUnchecked ) {
 					return function( n ) {
 						assert( Number.isInteger(n), `${Collection.name}.nth(${n}): ${n} not valid` );
-						if( n >= 0 && n < this[len]() ) {
+						if( n >= 0 && n < this.*len() ) {
 							return this::nthUnchecked( n );
 						}
 					}
 				}
 			},
 			get() {
-				if( getUnchecked && hasKey ) {
+				if( getUnchecked && proto.*hasKey ) {
 					return function( key ) {
-						if( ! this[hasKey]( key ) ) {
+						if( ! this.*hasKey( key ) ) {
 							return;
 						}
 						return this::getUnchecked( key );
@@ -676,7 +671,8 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		assert( cond, `${this.name}.compileProtocolsForTransformation(): ${err}` );
 	};
 
-	const {InnerCollection, innerCollectionKey, mappingOnly, transformStream} = properties.symbols;
+	use protocols from properties.symbols;
+
 	const Collection = this;
 	const proto = this;
 	const ParentCollection = this.*InnerCollection;
@@ -725,27 +721,27 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		},
 
 		nToKey() {
-			if( nToParentN && parentProto[nToKey] ) {
+			if( nToParentN && parentProto.*nToKey ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
-					return this[innerKey][nToKey]( parentN );
+					return this[innerKey].*nToKey( parentN );
 				}
 			}
 		},
 		keyToN() {
-			if( keyToParentKey && parentProto[keyToN] ) {
+			if( keyToParentKey && parentProto.*keyToN ) {
 				return function( key ) {
 					const innerKey = this::keyToParentKey( key );
-					return this[innerKey][keyToN]( innerKey );
+					return this[innerKey].*keyToN( innerKey );
 				}
 			}
 		},
 
 		nthKVN() {
-			if( nStage && parentProto[nthKVN] ) {
+			if( nStage && parentProto.*nthKVN ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
-					const parentKVN = this[innerKey][nthKVN]( parentN );
+					const parentKVN = this[innerKey].*nthKVN( parentN );
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
@@ -753,10 +749,10 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			}
 		},
 		getKVN() {
-			if( kStage && parentProto[getKVN] ) {
+			if( kStage && parentProto.*getKVN ) {
 				return function( key ) {
 					const innerKey = this::keyToParentKey( key );
-					const parentKVN = this[innerKey][getKVN]( innerKey );
+					const parentKVN = this[innerKey].*getKVN( innerKey );
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
@@ -765,10 +761,10 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		},
 
 		hasKey() {
-			if( kStage && parentProto[nth] ) {
+			if( kStage && parentProto.*nth ) {
 				return function( key ) {
 					return this::kStage( (c)=>{
-						this[innerKey][nth]( c, c.key );
+						this[innerKey].*nth( c, c.key );
 					});
 					return true;
 				}
@@ -790,12 +786,12 @@ function deriveProtocolsForTransformation( configuration={} ) {
 	// get rid of the above `this::deriveCoreProtocols()` to see whether it's fixed
 	symbols::assignProtocolFactories( this.prototype, {
 		kvIterator() {
-			if( Collection.*transformStream && parentProto[kvIterator] && kStage ) {
+			if( Collection.*transformStream && parentProto.*kvIterator && kStage ) {
 				return function() {
 					const self = this;
 					const parentCollection = this[innerKey];
 
-					const it = parentCollection[kvIterator]();
+					const it = parentCollection.*kvIterator();
 					return {
 						next() {
 							const next = it.next();
@@ -819,7 +815,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			}
 		},
 		kvReorderedIterator() {
-			if( parentProto[kvReorderedIterator] && kStage ) {
+			if( parentProto.*kvReorderedIterator && kStage ) {
 				return function() {
 					const prit = this[innerKey].*kvReorderedIterator();
 					const rit = new ReorderedIterator({

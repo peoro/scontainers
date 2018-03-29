@@ -28,12 +28,13 @@
 		"js-protocols-babylon": "file:../js-protocols-babylon"
 	},
 	"babel": {
-		"plugins": [
-			"transform-strict-mode",
-			"transform-function-bind"
-		],
 		"parserOpts": {
 			"parser": "js-protocols-babylon"
-		}
+		},
+		"plugins": [
+			"js-protocols-babylon/plugin",
+			"transform-strict-mode",
+			"transform-function-bind"
+		]
 	}
 }

@@ -3,8 +3,9 @@
 
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
 const {assignProtocols, KVN, toString} = require('../util.js');
+
 const symbols = require('../symbols');
-const {forEach, values, map, collect} = symbols;
+use protocols from symbols;
 
 symbols::assignProtocols( Array, {
 	from( collection ) {
