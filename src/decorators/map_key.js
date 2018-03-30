@@ -7,35 +7,38 @@ const subminus = require('../');
 
 use protocols from subminus.symbols;
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
 
-	class MapKey {
-		constructor( coll, fn ) {
-			this.wrapped = coll;
-			this.fn = fn;
-		}
+module.exports = function( ParentCollection ) {
+	return function() {
+		const parentProto = ParentCollection.prototype;
 
-		reverse() {
-			if( proto.*reverse ) {
-				return this.wrapped.*reverse().*mapKey( this.fn );
+		class MapKey {
+			constructor( coll, fn ) {
+				this.wrapped = coll;
+				this.fn = fn;
+			}
+
+			reverse() {
+				if( parentProto.*reverse ) {
+					return this.wrapped.*reverse().*mapKey( this.fn );
+				}
+			}
+
+			toString( ) {
+				return `${this.wrapped}.map(⋯)`;
 			}
 		}
-
-		toString( ) {
-			return `${this.wrapped}.map(⋯)`;
-		}
-	}
-	MapKey.Propagator = {
-		parentCollection() { return this.wrapped; },
-		next( kv ) {
-			kv.key = this.fn( kv.value, kv.key );
-			return kv;
-		},
-		alwaysPropagate: true,
-		propagateMulti: false,
-		needState: false,
-		reorder: false
+		MapKey.Propagator = {
+			parentCollection() { return this.wrapped; },
+			next( kv ) {
+				kv.key = this.fn( kv.value, kv.key );
+				return kv;
+			},
+			alwaysPropagate: true,
+			propagateMulti: false,
+			needState: false,
+			reorder: false
+		};
+		return MapKey;
 	};
-	return MapKey;
-});
+};

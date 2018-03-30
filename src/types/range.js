@@ -6,6 +6,7 @@ const {implementSymbols, KVN} = require('../util.js');
 
 use protocols from require('../symbols.js');;
 
+
 class Range {
 	constructor( begin, end ) {
 		if( end !== undefined ) {

@@ -1,16 +1,18 @@
 
 'use strict';
 
-const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
 const {KVN} = require('../util.js');
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return ParentCollection.prototype.*hasKey;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+	if( ! ParentCollection.prototype.*hasKey ) {
+		return;
+	}
+
+	return function() {
 		class Cache {
 			static get name() { return `${ParentCollection.name}::Cache`; }
 
@@ -68,5 +70,5 @@ module.exports = {
 		});
 
 		return Cache;
-	}
+	};
 };

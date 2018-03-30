@@ -7,6 +7,7 @@ const {assignProtocols, KVN, toString} = require('../util.js');
 const symbols = require('../symbols');
 use protocols from symbols;
 
+
 symbols::assignProtocols( Map, {
 	from( collection ) {
 		if( collection.*entries ) {

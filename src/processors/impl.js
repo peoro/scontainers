@@ -7,7 +7,7 @@ use protocols from symbols;
 
 
 const util = require('../util.js');
-const {implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVN, KVArr, Done} = util;
+const {decorate, implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVN, KVArr, Done} = util;
 const properties = require('./properties');
 
 const {ReorderedIterator} = require('./reordered_iterator.js');
@@ -437,29 +437,6 @@ function deriveProtocols() {
 		},
 	});
 
-
-	function decorator( decoratorFactory ) {
-		if( decoratorFactory.canProduce(Collection) ) {
-			return {
-				factory() {
-					const Decorator = decoratorFactory.factory ?
-						decoratorFactory.factory( Collection ) :
-						decoratorFactory( Collection );
-					assert( Decorator, `${decoratorFactory.name} can be produced, but has no decorator factory?!` );
-					return function( ...args ) {
-						return new Decorator( this, ...args );
-						// const args = [this, ...arguments];
-						// return Reflect.construct( Decorator, args );
-						// return Reflect.construct( Decorator, arguments );
-					};
-				}
-			};
-		}
-	}
-	function requireDecorator( moduleName ) {
-		return decorator( require(`../decorators/${moduleName}.js`) );
-	}
-
 	const Values = require('../decorators/values.js');
 	const Entries = require('../decorators/entries.js');
 	const Filter = require('../decorators/filter.js');
@@ -482,8 +459,8 @@ function deriveProtocols() {
 				return this.*map( function key(value, key){return key;} ).*values();
 			};
 		},
-		values: decorator(Values),
-		entries: decorator(Entries),
+		values: Collection::decorate(Values),
+		entries: Collection::decorate(Entries),
 		enumerate() {
 			return function enumerate() {
 				TODO();
@@ -491,17 +468,17 @@ function deriveProtocols() {
 				return this.*map( (value)=>[count++, value] );
 			};
 		},
-		filter: decorator(Filter),
-		slice: decorator(Slice),
-		chunk: decorator(Chunk),
-		map: decorator(Map),
-		mapKey: decorator(MapKey),
-		cache: decorator(Cache),
-		iter: decorator(Iter),
-		reordered: decorator(Reordered),
-		groupBy: decorator(GroupBy),
-		cow: decorator(Cow),
-		flatten: decorator(Flatten),
+		filter: Collection::decorate(Filter),
+		slice: Collection::decorate(Slice),
+		chunk: Collection::decorate(Chunk),
+		map: Collection::decorate(Map),
+		mapKey: Collection::decorate(MapKey),
+		cache: Collection::decorate(Cache),
+		iter: Collection::decorate(Iter),
+		reordered: Collection::decorate(Reordered),
+		groupBy: Collection::decorate(GroupBy),
+		cow: Collection::decorate(Cow),
+		flatten: Collection::decorate(Flatten),
 		flattenDeep() {
 			if( this.*map ) {
 				return function() {
@@ -526,8 +503,8 @@ function deriveProtocols() {
 				};
 			}
 		},
-		skipWhile: decorator(SkipWhile),
-		takeWhile: decorator(TakeWhile),
+		skipWhile: Collection::decorate(SkipWhile),
+		takeWhile: Collection::decorate(TakeWhile),
 		skip() {
 			if( proto.*slice ) {
 				return function skip( n ) { return this.*slice(n); };

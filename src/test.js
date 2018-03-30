@@ -28,6 +28,13 @@ function lessThan( k ) {
 	return lessThanK;
 }
 
+function groupBy23( n ) {
+	return (n%2===0) + (n%3===0);
+}
+groupBy23::overrideFunctionName( `n|2+n|3` );
+
+
+
 {
 	function print( str, coll ) {
 		if( ! coll ) {
@@ -104,7 +111,7 @@ function lessThan( k ) {
 		console.log( `GroupBy {` );
 		const coll = new Range(1, 10)
 			::map( square )
-			::groupBy( (v,k)=>(v%2===0) + (v%3===0) );
+			::groupBy( groupBy23 );
 
 		print( coll );
 

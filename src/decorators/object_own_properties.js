@@ -2,59 +2,60 @@
 'use strict';
 
 const assert = require('assert');
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
-const {KVN} = require('../util.js');
+const {defineProperties, deriveProtocolsForRootType} = require('../processors/index.js');
+const {KVN, toString} = require('../util.js');
 
-use protocols from subminus.symbols;
+use protocols from require('../symbols');
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	assert( Type === Object, `ObjectOwnProperties is only needed by Object...` );
-	const proto = Type.prototype;
 
-	class OwnProperties {
-		constructor( coll ) {
-			this.wrapped = coll;
+module.exports = function( ParentCollection ) {
+	assert( ParentCollection === Object, `ObjectOwnProperties is only needed by Object...` );
+	const parentProto = ParentCollection.prototype;
+
+	return function() {
+		class OwnProperties {
+			static get name() { return `ObjectOwnProperties`; }
+
+			constructor( coll ) {
+				this.wrapped = coll;
+			}
+
+			toString( ) {
+				return `${this.wrapped::toString()}::ownProperties()`;
+			}
 		}
 
-		get() {
-			return function get( key ) {
+		OwnProperties::defineProperties({
+			argKeys: [],
+		});
+
+		OwnProperties::deriveProtocolsForRootType({
+			get( key ) {
 				return this.*hasKey(key) && this.wrapped[key];
-			};
-		}
-		set() {
-			return function set( key, value ) {
+			},
+			set( key, value ) {
 				// return Object.defineProperty( this.wrapped, key, {value, writable:true, enumerable:true, configurable:true} ); // no need for this - unless `this.wrapper[key]` is a getter :x
 				this.wrapped[key] = value;
-			};
-		}
-		hasKey() {
-			return function hasKey( key ) {
+			},
+			hasKey( key ) {
 				return this.wrapped.hasOwnProperty( key );
-			};
-		}
+			},
 
-		kvIterator() {
-			return function* kvIterator() {
+			*kvIterator() {
 				for( let key in this.wrapped ) {
 					if( this.*hasKey(key) ) {
 						yield new KVN( key, this.wrapped[key] );
 					}
 				}
-			};
-		}
-		iterator() {
-			return function* iterator() {
+			},
+			*iterator() {
 				for( let key in this.wrapped ) {
 					if( this.*hasKey(key) ) {
 						yield [ key, this.wrapped[key] ];
 					}
 				}
-			};
-		}
-		kvIterator() {
-			return function kvIterator() {
+			},
+			kvIterator() {
 				return {
 					it: this.*iterator(),
 					next() {
@@ -64,27 +65,9 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 						}
 					}
 				};
-			}
-		}
+			},
+		});
 
-		toString( ) {
-			return `${this.wrapped.*toString()}.ownProperties()`;
-		}
-	}
-	/*
-	OwnProperties.Propagator = {
-		parentCollection() { return this.wrapped; },
-		next( kv ) {
-			if( ! this.*hasKey(kv.key) ) {
-				kv.skip = true;
-			}
-		},
-		alwaysPropagate: false,
-		propagateMulti: false,
-		needState: false,
-		reorder: false
+		return OwnProperties;
 	};
-	*/
-
-	return OwnProperties;
-});
+};

@@ -6,11 +6,13 @@ const {KArr, Done} = require('../util.js');
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return ParentCollection.prototype.*kvIterator;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+	if( ! ParentCollection.prototype.*kvIterator ) {
+		return;
+	}
+
+	return function() {
 		class Values {
 			static get name() { return `${ParentCollection.name}::Values`; }
 
@@ -60,5 +62,5 @@ module.exports = {
 		});
 
 		return Values;
-	}
+	};
 };

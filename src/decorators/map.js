@@ -5,11 +5,9 @@ const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTr
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return true;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+	return function() {
 		class Map {
 			static get name() { return `${ParentCollection.name}::Map`; }
 
@@ -51,5 +49,5 @@ module.exports = {
 		});
 
 		return Map;
-	}
+	};
 };

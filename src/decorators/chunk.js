@@ -2,95 +2,105 @@
 'use strict';
 
 const assert = require('assert');
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
 const {KVN} = require('../util.js');
 
-use protocols from subminus.symbols;
+use protocols from require('../symbols');
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
 
-	if( ! proto.*whileEach ) {
+module.exports = function( ParentCollection ) {
+	const parentProto = ParentCollection.prototype;
+	if( ! parentProto.*whileEach ) {
 		return;
 	}
 
-	class Chunk {
-		constructor( coll, n ) {
-			this.wrapped = coll;
-			this.n = n;
+	return function() {
+		class Chunk {
+			static get name() { return `${ParentCollection.name}::Chunk`; }
 
-			assert( this.n > 0, `Invalid parameter for chunk()` );
-		}
+			constructor( coll, n ) {
+				this.wrapped = coll;
+				this.n = n;
 
-		len() {
-			if( proto.*len ) {
-				return function len(){ return Math.ceil( this.wrapped.*len() / this.n ); };
+				assert( this.n > 0, `Invalid parameter for chunk()` );
 			}
-		}
-		nth() {
-			if( proto.*nth && proto.*len ) {
-				return function( n ) {
-					return this.wrapped.*slice( n*this.n, Math.min(this.wrapped.*len(),  (n+1)*this.n) );
-				};
+
+			toString( ) {
+				return `${this.wrapped}.chunk(${this.n})`;
 			}
 		}
 
-		kvIterator() {
-			// TODO: don't allocate a `Map`: use a reordered iterator
-			// TODO: if you can clone the iterator on `this.wrapped`, do it!
-			return function kvIterator() {
-				return {
-					n: this.n,
-					count: 0,
-					it: this.wrapped.*kvIterator(),
-					next() {
-						const chunk = new Map();
-						for( let i = 0; i < this.n; ++i ) {
-							const next = this.it.next();
-							if( ! next ) {
-								break;
+		Chunk::defineProperties({
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
+			argKeys: [id`n`],
+		});
+
+		Chunk::deriveProtocolsForTransformation({
+			len() {
+				if( parentProto.*len ) {
+					return function len(){ return Math.ceil( this.wrapped.*len() / this.n ); };
+				}
+			},
+			nth() {
+				if( parentProto.*nth && parentProto.*len ) {
+					return function( n ) {
+						return this.wrapped.*slice( n*this.n, Math.min(this.wrapped.*len(),  (n+1)*this.n) );
+					};
+				}
+			},
+
+			kvIterator() {
+				// TODO: don't allocate a `Map`: use a reordered iterator
+				// TODO: if you can clone the iterator on `this.wrapped`, do it!
+				return function kvIterator() {
+					return {
+						n: this.n,
+						count: 0,
+						it: this.wrapped.*kvIterator(),
+						next() {
+							const chunk = new Map();
+							for( let i = 0; i < this.n; ++i ) {
+								const next = this.it.next();
+								if( ! next ) {
+									break;
+								}
+
+								const {key, value, n} = next;
+								chunk.set( key, value, n );
 							}
 
-							const {key, value, n} = next;
-							chunk.set( key, value, n );
+							if( chunk.size ) {
+								return new KVN( this.count++, chunk );
+							}
 						}
-
-						if( chunk.size ) {
-							return new KVN( this.count++, chunk );
-						}
-					}
+					};
 				};
-			};
-		}
+			},
 
-		reverse() {
-			if( proto.*reverse && proto.*len ) {
-				return function reverse() {
-					const remainder = this.wrapped.*len() % this.n;
-					if( remainder === 0 ) {
-						return new Chunk( this.wrapped.*reverse(), this.n );
-					} else {
-						return new Chunk(
-							new Array(remainder)
-								.*concat( this.wrapped.*reverse() )
-								.*map( (chunk, i)=>{
-									if( i === 0 ) {
-										return chunk.skip( remainder );
-									}
-									return chunk;
-								})
-							, this.n );
+			reverse() {
+				if( parentProto.*reverse && parentProto.*len ) {
+					return function reverse() {
+						const remainder = this.wrapped.*len() % this.n;
+						if( remainder === 0 ) {
+							return new Chunk( this.wrapped.*reverse(), this.n );
+						} else {
+							return new Chunk(
+								new Array(remainder)
+									.*concat( this.wrapped.*reverse() )
+									.*map( (chunk, i)=>{
+										if( i === 0 ) {
+											return chunk.skip( remainder );
+										}
+										return chunk;
+									})
+								, this.n );
+						}
 					}
 				}
-			}
-		}
+			},
+		});
 
-		toString( ) {
-			return `${this.wrapped}.chunk(${this.n})`;
-		}
-	}
-
-	return Chunk;
-});
+		return Chunk;
+	};
+};

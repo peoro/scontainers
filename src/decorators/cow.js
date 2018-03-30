@@ -7,6 +7,7 @@ const subminus = require('../');
 
 use protocols from subminus.symbols;
 
+
 /*
 TODO: decide how to do this thing...
 
@@ -15,65 +16,67 @@ and instantiates a variable of that type when it needs to copy :F
 by default it's map \o,o/
 
 Yes, it's a good idea, buuut...
-`CopyType` needs to be part of the `Type`, because stuff like `add` needs to depend on it.
+`CopyType` needs to be part of the `ParentCollection`, because stuff like `add` needs to depend on it.
 So, maybe `CopyType` dynamically gets a new Collection? not sure \o,o/
 */
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
+module.exports = function( ParentCollection ) {
+	const parentProto = ParentCollection.prototype;
 
-	return class Cow {
-		constructor( coll, CopyType=Map ) {
-			this.wrapped = coll;
-			this.copy = null;
-			this.CopyType = CopyType;
-		}
+	return function() {
+		return class Cow {
+			constructor( coll, CopyType=Map ) {
+				this.wrapped = coll;
+				this.copy = null;
+				this.CopyType = CopyType;
+			}
 
-		nth() {
-			if( proto.*nth ) {
-				return function nth( n ) { return this.wrapped.*nth( n ); };
+			nth() {
+				if( parentProto.*nth ) {
+					return function nth( n ) { return this.wrapped.*nth( n ); };
+				}
 			}
-		}
-		setNth() {
-			if( proto.*nth ) {
-				return function setNth( n, value ) { TODO(); };
+			setNth() {
+				if( parentProto.*nth ) {
+					return function setNth( n, value ) { TODO(); };
+				}
 			}
-		}
-		get() {
-			if( proto.*get ) {
-				return function get( key ) { return this.wrapped.*get( key ); };
+			get() {
+				if( parentProto.*get ) {
+					return function get( key ) { return this.wrapped.*get( key ); };
+				}
 			}
-		}
-		set() {
-			if( proto.*get ) {
-				return function set( key, value ) { TODO(); };
+			set() {
+				if( parentProto.*get ) {
+					return function set( key, value ) { TODO(); };
+				}
 			}
-		}
-		hasKey() {
-			if( proto.*hasKey ) {
-				return function hasKey( key ) { return this.wrapped.*hasKey( key ); };
+			hasKey() {
+				if( parentProto.*hasKey ) {
+					return function hasKey( key ) { return this.wrapped.*hasKey( key ); };
+				}
 			}
-		}
-		/* TODO
-		add() {
-			if( this.
+			/* TODO
+			add() {
+				if( this.
 
-		}
-		*/
-
-		kvIterator() {
-			return function kvIterator() {
-				return this.wrapped.*kvIterator();
-			};
-		}
-		reverse() {
-			if( proto.*reverse ) {
-				return this.wrapped.*reverse().*cow();
 			}
-		}
+			*/
 
-		toString( ) {
-			return `${this.wrapped}.cow()`;
-		}
+			kvIterator() {
+				return function kvIterator() {
+					return this.wrapped.*kvIterator();
+				};
+			}
+			reverse() {
+				if( parentProto.*reverse ) {
+					return this.wrapped.*reverse().*cow();
+				}
+			}
+
+			toString( ) {
+				return `${this.wrapped}.cow()`;
+			}
+		};
 	};
-});
+};

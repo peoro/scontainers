@@ -1,25 +1,16 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
-
-const symbols = require('../symbols');
-
-use protocols from subminus.symbols;
-
-const {compileProtocolsForTransformation, implementProtocolsForTransformation, defineProperties, parentCoreSymbols, deriveProtocolsForTransformation} = require('../processors/index.js')
-const {implementSymbolsFromFactory} = require('../util.js');
+const {defineProperties, deriveProtocolsForTransformation, compileProtocolsForTransformation} = require('../processors/index.js')
 const {semantics} = require('../compiler/index.js');
 
-module.exports = {
-	canProduce( Type ) {
-		return true;
-	},
-	factory( Type ) {
+use protocols from require('../symbols');
+
+
+module.exports = function( ParentCollection ) {
+	return function() {
 		class Filter {
-			static get name() { return `${Type.name}::Filter`; }
+			static get name() { return `${ParentCollection.name}::Filter`; }
 
 			constructor( coll, filterFn ) {
 				this.wrapped = coll;
@@ -32,7 +23,7 @@ module.exports = {
 		}
 
 		Filter::defineProperties({
-			InnerCollection: Type,
+			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`filterFn`],
 
@@ -40,15 +31,13 @@ module.exports = {
 		});
 
 		{
-			const ParentType = Type;
-			const parentProto = ParentType.prototype;
+			const parentProto = ParentCollection.prototype;
 
 			Filter::compileProtocolsForTransformation({
 				kStage( kvn ) {
 					this.pushStatement(
 						semantics.if(
 							this.args.filterFn.call( kvn.value, kvn.key, kvn.n ).not(),
-
 							this.skip()
 						)
 					);
@@ -85,5 +74,5 @@ module.exports = {
 		}
 
 		return Filter;
-	}
+	};
 };

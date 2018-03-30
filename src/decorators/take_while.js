@@ -1,52 +1,64 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
-const {KVN} = require('../util.js');
+const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
 
-use protocols from subminus.symbols;
+use protocols from require('../symbols');
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
 
-	return class TakeWhile {
-		constructor( coll, fn ) {
-			this.wrapped = coll;
-			this.fn = fn;
-		}
+module.exports = function( ParentCollection ) {
+	const parentProto = ParentCollection.prototype;
 
-		kvIterator() {
-			return function kvIterator() {
-				return {
-					collection: this.wrapped,
-					fn: this.fn,
-					it: this.wrapped.*kvIterator(),
-					next() {
-						const next = this.it.next();
-						if( ! next ) {
-							return;
-						}
+	return function() {
+		class TakeWhile {
+			static get name() { return `${ParentCollection.name}::TakeWhile`; }
 
-						const {key, value, n} = next;
-						if( this.fn(value, key, n) ) {
-							return next;
-						}
+			constructor( coll, fn ) {
+				this.wrapped = coll;
+				this.fn = fn;
+			}
 
-						this.next = function next() {};
-					}
-				};
-			};
-		}
-		reverse() {
-			if( proto.*reverse ) {
-				return this.wrapped.*reverse().*takeWhile( this.fn );
+			toString( ) {
+				return `${this.wrapped}.takeWhile(${this.fn.name || 'ƒ'})`;
 			}
 		}
 
-		toString( ) {
-			return `${this.wrapped}.skipWhile(⋯)`;
-		}
+		TakeWhile::defineProperties({
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
+			argKeys: [id`fn`],
+		});
+
+		TakeWhile::deriveProtocolsForTransformation({
+			kvIterator() {
+				return function kvIterator() {
+					return {
+						collection: this.wrapped,
+						fn: this.fn,
+						it: this.wrapped.*kvIterator(),
+						next() {
+							const next = this.it.next();
+							if( ! next ) {
+								return;
+							}
+
+							const {key, value, n} = next;
+							if( this.fn(value, key, n) ) {
+								return next;
+							}
+
+							this.next = function next() {};
+						}
+					};
+				};
+			},
+			reverse() {
+				if( parentProto.*reverse ) {
+					return this.wrapped.*reverse().*takeWhile( this.fn );
+				}
+			}
+		});
+
+		return TakeWhile;
 	};
-});
+};

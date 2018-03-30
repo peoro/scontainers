@@ -6,11 +6,13 @@ const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTr
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return ParentCollection.prototype.*nth;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+	if( ! ParentCollection.prototype.*nth ) {
+		return;
+	}
+
+	return function() {
 		class Slice {
 			static get name() { return `${ParentCollection.name}::Slice`; }
 
@@ -65,5 +67,5 @@ module.exports = {
 		});
 
 		return Slice;
-	}
+	};
 };

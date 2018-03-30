@@ -6,11 +6,13 @@ const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTr
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return !! subminus.DEBUG;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+ 	if( ! subminus.DEBUG ) {
+		return;
+	}
+
+	return function() {
 		class IterableOnly {
 			static get name() { return `${ParentCollection.name}::IterableOnly`; }
 
@@ -38,5 +40,5 @@ module.exports = {
 		});
 
 		return IterableOnly;
-	}
+	};
 };

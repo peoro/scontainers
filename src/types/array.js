@@ -7,6 +7,7 @@ const {assignProtocols, KVN, toString} = require('../util.js');
 const symbols = require('../symbols');
 use protocols from symbols;
 
+
 symbols::assignProtocols( Array, {
 	from( collection ) {
 		// TODO: this function should be specialized, just like the rest of what this lib does...

@@ -1,33 +1,53 @@
 
 'use strict';
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
+const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
+const {assignProtocols, KVN, toString} = require('../util.js');
 
-use protocols from subminus.symbols;
+const symbols = require('../symbols');
+use protocols from symbols;
 
-module.exports = subminus.implementForExistingType( Set, class SetWrapper {
-	static from( collection ) {
-		return Set.from( collection.*values() );
-	}
-	constructor( set ) {
-		this.wrapped = set;
-	}
 
-	len() { return this.size; }
-	has( item ) { return this.has( item ); }
-	add( item ) { return this.add( item ); }
-	clear() { this.clear(); }
+symbols::assignProtocols( Set, {
+	from( collection ) {
+		if( collection.*values ) {
+			return Set.from( collection.*values() );
+		}
+		else if( collection.*forEach ) {
+			const set = new Set();
+			collection.*forEach( value=>void set.add(value) );
+			return set;
+		}
+		assert( false );
+	}
+});
 
-	entries( fn ) {
-		return this.wrapped[Symbol.iterator]();
-	}
-	forEach( fn ) {
-		this.forEach( fn );
-	}
+Set::defineProperties({
+	argKeys: []
+});
+
+
+Set::deriveProtocolsForRootType({
+	len() { return this.size; },
+	has( item ) { return this.has( item ); },
+	add( item ) { return this.add( item ); },
+	clear() { this.clear(); },
+
+	kvIterator() {
+		return {
+			it: this[Symbol.iterator](),
+			next() {
+				const next = this.it.next();
+				if( ! next.done ) {
+					return new KVN( next.value );
+				}
+			}
+		};
+	},
+	values() { return this; },
+	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
-		return `Set{${this.*map( (value)=>subminus.toString(value) ).*collect(Array).join(', ')}}`;
+		return `Set{${this.*map( value=>value::toString() ).*collect(Array).join(', ')}}`;
 	}
 });

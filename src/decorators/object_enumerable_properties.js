@@ -2,48 +2,50 @@
 'use strict';
 
 const assert = require('assert');
-const protocols = require('js-protocols');
-const util = require('../util.js');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
-const {KVN} = util;
+const {defineProperties, deriveProtocolsForRootType} = require('../processors/index.js');
+const {KVN, toString} = require('../util.js');
 
-use protocols from subminus.symbols;
+use protocols from require('../symbols');
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	assert( Type === Object, `ObjectOwnProperties is only needed by Object...` );
-	const proto = Type.prototype;
 
-	class EnumerableProperties {
-		constructor( coll ) {
-			this.wrapped = coll;
+module.exports = function( ParentCollection ) {
+	assert( ParentCollection === Object, `EnumerableProperties is only needed by Object...` );
+	const parentProto = ParentCollection.prototype;
+
+	return function() {
+		class EnumerableProperties {
+			static get name() { return `ObjectProperties`; }
+
+			constructor( coll ) {
+				this.wrapped = coll;
+			}
+
+			toString( ) {
+				return `${this.wrapped::toString()}::properties()`;
+			}
 		}
 
-		get() {
-			return function get( key ) {
+		EnumerableProperties::defineProperties({
+			argKeys: [],
+		});
+
+		EnumerableProperties::deriveProtocolsForRootType({
+			get( key ) {
 				return this.*hasKey(key) && this.wrapped[key];
-			};
-		}
-		set() {
-			return function set( key, value ) {
+			},
+			set( key, value ) {
 				this.wrapped[key] = value;
-			};
-		}
-		hasKey() {
-			return function hasKey( key ) {
+			},
+			hasKey( key ) {
 				return this.wrapped.propertyIsEnumerable( key );
-			};
-		}
+			},
 
-		iterator() {
-			return function* iterator() {
+			*iterator() {
 				for( let key in this.wrapped ) {
 					yield [ key, this.wrapped[key] ];
 				}
-			};
-		}
-		kvIterator() {
-			return function kvIterator() {
+			},
+			kvIterator() {
 				return {
 					it: this.*iterator(),
 					next() {
@@ -53,30 +55,22 @@ module.exports = subminus.makeDecoratorFactory( (Type)=>{
 						}
 					}
 				};
-			}
-		}
-		forEach() {
-			return function forEach( fn ) {
+			},
+			forEach( fn ) {
 				for( let key in this.wrapped ) {
 					fn( this.wrapped[key], key );
 				}
-			};
-		}
-		whileEach() {
-			return function whileEach( fn ) {
+			},
+			whileEach( fn ) {
 				for( let key in this.wrapped ) {
 					const value = this.wrapped[key];
 					if( ! fn(value, key, this) ) {
 						return [key, value];
 					}
 				}
-			};
-		}
+			},
+		});
 
-		toString( ) {
-			return `${this.wrapped::util.toString()}.properties()`;
-		}
-	}
-
-	return EnumerableProperties;
-});
+		return EnumerableProperties;
+	};
+};

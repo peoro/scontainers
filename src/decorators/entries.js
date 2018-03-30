@@ -5,11 +5,13 @@ const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTr
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return ParentCollection.prototype.*kvIterator;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+	if( ! ParentCollection.prototype.*kvIterator ) {
+		return;
+	}
+
+	return function() {
 		class Entries {
 			static get name() { return `${ParentCollection.name}::Entries`; }
 
@@ -43,5 +45,5 @@ module.exports = {
 		});
 
 		return Entries;
-	}
+	};
 };

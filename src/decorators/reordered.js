@@ -6,11 +6,13 @@ const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTr
 
 use protocols from require('../symbols');
 
-module.exports = {
-	canProduce( ParentCollection ) {
-		return !! subminus.DEBUG;
-	},
-	factory( ParentCollection ) {
+
+module.exports = function( ParentCollection ) {
+	if( ! subminus.DEBUG ) {
+		return;
+	}
+
+	return function() {
 		class Reordered {
 			static get name() { return `${ParentCollection.name}::Reordered`; }
 
@@ -38,5 +40,5 @@ module.exports = {
 		});
 
 		return Reordered;
-	}
+	};
 };

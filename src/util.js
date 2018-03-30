@@ -2,13 +2,16 @@
 const assert = require('assert');
 const symbols = require('./symbols.js');
 
+use protocols from symbols;
+
+
 function toString() {
 	switch( this ) {
 		case null: return `null`;
 		case undefined: return `undefined`;
 	}
-	if( this[symbols.toString] ) {
-		return this[symbols.toString]();
+	if( this.*toString ) {
+		return this.*toString();
 	}
 
 	if( typeof this === 'string' ) {
@@ -40,22 +43,27 @@ function hasSymbols( ...syms ) {
 }
 
 // return a function factory for the decorator `decoratorFactory` built on `this`
-function decorate( decoratorFactory ) {
-	const Type = this;
-	assert( this, `decorator() must be called on an object` );
+function decorate( decoratorFactoryFactory ) {
+	const Collection = this;
 
-	if( decoratorFactory.canProduce(Type) ) {
-		return {
-			factory() {
-				const Decorator = decoratorFactory( Type );
-				assert( Decorator, `${decoratorFactory.name} can be produced, but go no decorator factory?!` );
-				return function( ...args ) {
-					return new Decorator( this, ...args );
-				};
-			}
-		};
+	const decoratorFactory = decoratorFactoryFactory( Collection );
+	if( ! decoratorFactory ) {
+		// this decorator can't be implemented on `Type`
+		return;
 	}
+
+	return {
+		factory() {
+			const Decorator = decoratorFactory( Collection );
+			assert( Decorator, `${decoratorFactory.name} is broken.` );
+
+			return function( ...args ) {
+				return new Decorator( this, ...args );
+			};
+		}
+	};
 }
+
 
 function forEachCollectionSymbol( fn ) {
 	assert( this, `forEachValidSymbol() must be called on an object` );
@@ -66,7 +74,7 @@ function forEachCollectionSymbol( fn ) {
 			continue;
 		}
 
-		const sym = symbols.hasOwnProperty(symName) && symbols[symName];
+		const sym = symbols.hasOwnProperty(symName) && symbols.*[symName];
 		if( ! sym ) {
 			console.log(`Unknown symbol ${symName}`);
 			continue;
@@ -180,9 +188,9 @@ function setSymbolCompilers( src ) {
 // `this` is an object made of symbols; keys of `symbolObj` are keys of `this`. assigns the protocols in `symbolObj` to `target`.
 function assignProtocols( target, symbolObj ) {
 	assert( symbolObj );
-	for (let name in symbolObj) {
+	for( let name in symbolObj ) {
 		const sym = this[name];
-		assert( sym, `Trying to set non existing protocol \`${name}\` to \`${target}\`` );
+		assert( sym, `No protocol \`${name}\`` );
 
 		if( target.hasOwnProperty(sym) ) {
 			// already implemented...

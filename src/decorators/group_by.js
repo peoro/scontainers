@@ -2,123 +2,86 @@
 'use strict';
 
 const assert = require('assert');
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const subminus = require('../');
-const {ReorderedIterator} = subminus;
+const {defineProperties, deriveProtocolsForTransformation, deriveProtocolsForRootType} = require('../processors/index.js');
+const {ReorderedIterator} = require('../');
 
-use protocols from subminus.symbols;
+use protocols from require('../symbols');
 
-module.exports = subminus.makeDecoratorFactory( (Type)=>{
-	const proto = Type.prototype;
 
-	if( ! proto.*kvReorderedIterator ) {
+module.exports = function( ParentCollection ) {
+	const parentProto = ParentCollection.prototype;
+	if( ! parentProto.*kvReorderedIterator ) {
 		return;
 	}
 
-	class GroupBy {
-		constructor( coll, fn ) {
-			this.wrapped = coll;
-			this.fn = fn;
+	return function() {
+		class GroupBy {
+			static get name() { return `${ParentCollection.name}::GroupBy`; }
+
+			constructor( coll, fn ) {
+				this.wrapped = coll;
+				this.fn = fn;
+			}
+
+			toString( ) {
+				return `${this.wrapped}.groupBy(${this.fn.name || 'ƒ'})`;
+			}
 		}
 
-		kvReorderedIterator() {
-			if( proto.*kvReorderedIterator ) {
-				return function kvReorderedIterator() {
-					const prit = this.wrapped.*kvReorderedIterator();
-					const groups = new Map();
-					const rit = new ReorderedIterator({
-						alwaysPropagate: true,
-						propagateMulti: false
-					});
+		GroupBy::defineProperties({
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
+			argKeys: [id`fn`],
+		});
 
-					rit.proceed = ()=>{
-						prit.onNext( (kv)=>{
-							const groupName = this.fn( kv.value, kv.key );
-							// console.log(`group by: ${kv.key}:${kv.value}=>${groupName}`);
-
-							if( ! groups.*hasKey(groupName) ) {
-								const group = new Group( prit, kv.key, kv.value );
-								groups.*set( groupName, group );
-
-								const groupKV = new ReorderedIterator.KV( groupName, group );
-								rit.pushNext( groupKV );
-							}
-							else {
-								const group = groups.*get( groupName );
-								group.__push( kv.value, kv.key );
-							}
-
-							/*
-							let git;
-							if( ! groups.*hasKey(groupName) ) {
-								// creating a new reordered iterator for this group
-								// TODO: should return an iterable collection, not an iterator!
-								git = {}; // new ReorderedIterator();
-								git.proceed = ()=>{
-									git.onNext( {key:kv.key, value:kv.value} );
-									prit.resume();
-								};
-								git.resume = ()=>{
-									prit.resume();
-								};
-								groups.*set( groupName, git );
-								rit.onNext( {key:groupName, value:git} );
-							}
-							else {
-								git = groups.*get( groupName );
-								git.onNext( {key:kv.key, value:kv.value} );
-							}
-							*/
+		GroupBy::deriveProtocolsForTransformation({
+			kvReorderedIterator() {
+				if( parentProto.*kvReorderedIterator ) {
+					return function kvReorderedIterator() {
+						const prit = this.wrapped.*kvReorderedIterator();
+						const groups = new Map();
+						const rit = new ReorderedIterator({
+							alwaysPropagate: true,
+							propagateMulti: false
 						});
-						prit.proceed();
+
+						rit.proceed = ()=>{
+							prit.onNext( (kv)=>{
+								const groupName = this.fn( kv.value, kv.key );
+								// console.log(`group by: ${kv.key}:${kv.value}=>${groupName}`);
+
+								if( ! groups.*hasKey(groupName) ) {
+									const group = new Group( prit, kv.key, kv.value );
+									groups.*set( groupName, group );
+
+									const groupKV = new ReorderedIterator.KV( groupName, group );
+									rit.pushNext( groupKV );
+								}
+								else {
+									const group = groups.*get( groupName );
+									group.__push( kv.value, kv.key );
+								}
+							});
+							prit.proceed();
+						};
+						rit.resume = ()=>prit.resume();
+						rit.stop = ()=>{ TODO(); };
+
+						return rit;
 					};
-					rit.resume = ()=>prit.resume();
-					rit.stop = ()=>{ TODO(); };
-
-					return rit;
-				};
+				}
 			}
-		}
+		});
 
-		toString( ) {
-			return `${this.wrapped}.groupBy(⋯)`;
-		}
+		return GroupBy;
 	};
-	/*
-	GroupBy.Propagator = {
-		parentCollection( iter ) {
-			return iter.wrapped;
-		},
-		// start( state ) { return state; },
-		next( kv, state ) {
-			const group = this.fn( kv.key, kv.value );
+};
 
-			let git; // group iterator
-			if( ! state[group] ) {
-				git = state[group] = {}; // new ReorderedIterator();
-				git.proceed = ()=>{
-					// a single `proceed` is needed for the `groupBy` and all its groups, but...
-					// TODO: when called, the `groupBy` iterator should immediately resume proceeding
-				};
-			} else {
-				git = state[group];
-			}
-			// state.xxx = ...
-			return kv;
-		},
-		// end( state ) { return state.xxx },
-		alwaysPropagate: false,
-		propagateMulti: false,
-		needState: true,
-		reorder: true
-	}
-	*/
 
-	return GroupBy;
-});
 
-const Group = subminus.implementForNewType( class Group {
+class Group {
+	static get name() { return `GroupBy.Group`; }
+
 	constructor( baseIterator, firstKey, firstValue ) {
 		this.state = Group.State.inactive;
 
@@ -161,7 +124,7 @@ const Group = subminus.implementForNewType( class Group {
 			this.state = Group.State.proceeding;
 		};
 	}
-	// this is not part of the Collection interface
+
 	__push( value, key ) {
 		assert( this.state !== Group.State.preproceeding, `After taking a group's iterator, you're supposed to call \`iterator.proceed()\`` );
 
@@ -174,6 +137,22 @@ const Group = subminus.implementForNewType( class Group {
 		}
 	}
 
+	toString( ) {
+		return `GroupBy.Group{state:${this.state.*toString()}}`;
+	}
+}
+Group.State = {
+	inactive: Symbol(`inactive`),
+	preproceeding: Symbol(`preproceeding`),
+	proceeding: Symbol(`proceeding`),
+	stopped: Symbol(`stopped`),
+};
+
+Group::defineProperties({
+	argKeys: [id`state`],
+});
+
+Group::deriveProtocolsForRootType({
 	/*
 	// TODO: GroupBy needs to support this thing in GroupBy.*map etc
 	reduce() {
@@ -198,14 +177,4 @@ const Group = subminus.implementForNewType( class Group {
 			return this.it;
 		//};
 	}
-
-	toString( ) {
-		return `GroupBy.Group`;
-	}
 });
-Group.State = {
-	inactive: 0,
-	preproceeding: 1,
-	proceeding: 2,
-	stopped: 3
-};

@@ -2,19 +2,24 @@
 'use strict';
 
 const symbols = require('../symbols.js');
-const {hasSymbols, decorate, implementSymbolsFromFactory} = require('../util.js');
+const {decorate, implementSymbolsFromFactory, assignProtocols, assignProtocolFactories} = require('../util.js');
 
-Object[symbols.from] = function from( collection ) {
-	// TODO: this function should be specialized, just like the rest of what this lib does...
-	if( collection::hasSymbols(symbols.forEach) ) {
-		const object = {};
-		collection[symbols.forEach]( (value, key)=>void (object[key] = value) );
-		return object;
+use protocols from symbols;
+
+
+symbols::assignProtocols( Object, {
+	from( collection ) {
+		// TODO: this function should be specialized, just like the rest of what this lib does...
+		if( collection.*forEach ) {
+			const object = {};
+			collection.*forEach( (value, key)=>void (object[key] = value) );
+			return object;
+		}
+		assert( false );
 	}
-	assert( false );
-};
+});
 
-Object.prototype::implementSymbolsFromFactory( {
+symbols::assignProtocolFactories( Object.prototype, {
 	ownProperties: Object::decorate( require('../decorators/object_own_properties') ),
 	properties: Object::decorate( require('../decorators/object_enumerable_properties') ),
 	// TODO: override `toString`, but force its overriddance
@@ -24,12 +29,6 @@ Object.prototype::implementSymbolsFromFactory( {
 				return this.toString();
 			}
 
-			/*
-			const out = this::properties()
-				::map( (value, key)=>`${key::toString()}:${value::toString()}` )
-				::collect( Array );
-			return `{${out.join(', ')}}`;
-			*/
 			let out = '';
 			for( let key in this ) {
 				const value = this[key];
@@ -37,10 +36,16 @@ Object.prototype::implementSymbolsFromFactory( {
 				if( out ) {
 					out += `, `;
 				}
-				out += `${key::toString()}:${value::toString()}`;
+				out += `${key.*toString()}:${value.*toString()}`;
 			}
 			return `${this.constructor.name}{${out}}`;
 		}
+	}
+});
+
+symbols::assignProtocols( Symbol.prototype, {
+	toString() {
+		return `[[${String(this).slice( 7, -1 )}]]`;
 	}
 });
 
