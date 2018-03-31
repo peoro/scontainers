@@ -96,6 +96,9 @@ module.exports = function( grammar, builders ) {
 	Statement.for = function( init, test, update, body ) {
 		return new Statement( builders.ForStatement( init::ast(), test::ast(), update::ast(), body::asStatement()::ast() ) );
 	}
+	Statement.forIn = function( left, right, body ) {
+		return new Statement( builders.ForInStatement( left::ast(), right::ast(), body::asStatement()::ast() ) );
+	}
 	Statement.while = function( test, body ) {
 		return new Statement( builders.WhileStatement( test::ast(), body::asStatement()::ast() ) );
 	}
@@ -206,6 +209,9 @@ module.exports = function( grammar, builders ) {
 		not( arg ) {
 			return this.unaryExpression( '!', true );
 		}
+		asBool( arg ) {
+			return this.not().not();
+		}
 
 		updateExpression( op, prefix ) {
 			return new Expression( builders.UpdateExpression( op, this.id(), !!prefix ) );
@@ -291,6 +297,7 @@ module.exports = function( grammar, builders ) {
 		block( ...args ) { return new Block(...args); },
 		if: Statement.if,
 		for: Statement.for,
+		forIn: Statement.forIn,
 		while: Statement.while,
 		return: Statement.return,
 		function: Expression.function,

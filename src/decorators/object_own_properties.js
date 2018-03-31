@@ -2,8 +2,9 @@
 'use strict';
 
 const assert = require('assert');
-const {defineProperties, deriveProtocolsForRootType} = require('../processors/index.js');
+const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
 const {KVN, toString} = require('../util.js');
+const {semantics} = require('../compiler/index.js');
 
 use protocols from require('../symbols');
 
@@ -17,47 +18,62 @@ module.exports = function( ParentCollection ) {
 			static get name() { return `ObjectOwnProperties`; }
 
 			constructor( coll ) {
-				this.wrapped = coll;
+				this.object = coll;
 			}
 
 			toString( ) {
-				return `${this.wrapped::toString()}::ownProperties()`;
+				return `${this.object::toString()}::ownProperties()`;
 			}
 		}
 
 		OwnProperties::defineProperties({
-			argKeys: [],
+			argKeys: [id`object`],
+		});
+
+		OwnProperties::compileProtocolsForRootType({
+			getKVN( key ) {
+				return new KVN( key, this.args.object.member(key, true) );
+			},
+			hasKey( key ) {
+				return this.args.object.member(`hasOwnProperty`).call( key );
+			},
+
+			loop( generator ) {
+				const key = this.createUniqueVariable(`key`);
+
+				return [
+					semantics.forIn(
+						key.declare(),
+						this.args.object,
+
+						this.block({skip:semantics.continue}, function(){
+							const kvn = new KVN( key, this.args.object.member(key, true) );
+
+							this.pushStatement(
+								semantics.if( this.*hasKey(kvn.key).not(), this.skip() ),
+								...this::generator( kvn ),
+							);
+						})
+					)
+				];
+			},
 		});
 
 		OwnProperties::deriveProtocolsForRootType({
-			get( key ) {
-				return this.*hasKey(key) && this.wrapped[key];
-			},
-			set( key, value ) {
-				// return Object.defineProperty( this.wrapped, key, {value, writable:true, enumerable:true, configurable:true} ); // no need for this - unless `this.wrapper[key]` is a getter :x
-				this.wrapped[key] = value;
-			},
-			hasKey( key ) {
-				return this.wrapped.hasOwnProperty( key );
-			},
+			getUnchecked( key ) { return this.object[key]; },
+			hasKey( key ) { return this.object.hasOwnProperty( key ); },
+			// set( key, value ) { this.object[key] = value; },},
 
-			*kvIterator() {
-				for( let key in this.wrapped ) {
-					if( this.*hasKey(key) ) {
-						yield new KVN( key, this.wrapped[key] );
-					}
-				}
-			},
 			*iterator() {
-				for( let key in this.wrapped ) {
+				for( let key in this.object ) {
 					if( this.*hasKey(key) ) {
-						yield [ key, this.wrapped[key] ];
+						yield [ key, this.object[key] ];
 					}
 				}
 			},
 			kvIterator() {
 				return {
-					it: this.*iterator(),
+					it: this[Symbol.iterator](),
 					next() {
 						const next = this.it.next();
 						if( ! next.done ) {
