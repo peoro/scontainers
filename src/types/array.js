@@ -19,7 +19,7 @@ symbols::assignProtocols( Array, {
 			collection.*forEach( (value)=>void array.push(value) );
 			return array;
 		}
-		assert.fail( `${collection} not iterable` );
+		throw new Error( `${collection} not iterable` );
 	}
 });
 

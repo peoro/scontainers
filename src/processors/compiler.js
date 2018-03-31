@@ -434,7 +434,6 @@ function deriveProtocolsFromGenerators() {
 
 				factories[key] = {
 					factory() {
-						const sym = generatorSymbols[key];
 						const compiler = new NewCompiler( Type, key, function(){
 							// this.pushStatement( this.compiler.debug() );
 							const result = this::factory();
@@ -643,6 +642,8 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 		assert( cond, `${this.name}.compileProtocolsForTransformation(): ${err}` );
 	};
 
+	const Collection = this;
+
 	const ParentType = this.*InnerCollection;
 	check( ParentType, `need to specify the ParentType` );
 
@@ -681,9 +682,9 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 	{
 		use protocols from generatorSymbols;
 
-		generatorSymbols::assignProtocolFactories( this, {
+		generatorSymbols::assignProtocolFactories( Collection, {
 			len() {
-				if( this.*mappingOnly && ParentType.*len ) {
+				if( Collection.*mappingOnly && ParentType.*len ) {
 					return function() {
 						return this.inner.*len();
 					}

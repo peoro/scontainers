@@ -5,7 +5,10 @@ Error.stackTraceLimit = Infinity;
 
 const assert = require('assert');
 const {symbols, Range} = require('./');
-const {get, hasKey, set, nthKVN, getKVN, toString, properties, slice, map, filter, iter, reordered, chunk, flatten, groupBy, kvReorderedIterator, collect, reduce, sum, keys, values, nth, flattenDeep, cache, take, takeWhile, skipWhile, avg, forEach, len} = require('./bound.js');
+const generatorSymbols = require('./generator_symbols.js');
+const {toString} = require('./util.js');
+
+use protocols from symbols;
 
 function log() {
 	console.log( this::toString() );
@@ -17,8 +20,8 @@ function sumFn( a, b ) { return a+b; }
 
 {
 	function compile( coll, sym ) {
-		const fn = coll[sym];
-		assert( fn.factory, `No compiler for ${coll.toString()}::${sym.toString()}` );
+		const fn = coll.*[sym];
+		assert( fn.factory, `No compiler for ${coll.toString()}.*${sym.toString()}` );
 
 		const compiler = fn.factory();
 		return compiler.toString();
@@ -33,25 +36,25 @@ function sumFn( a, b ) { return a+b; }
 			console.log(str);
 		}
 		console.log( coll.toString() );
-		console.log( coll::toString() );
+		console.log( coll.*toString() );
 		// console.log( compile(coll, sym) );
 
 		console.log();
 	}
 
 	quickTest: {
-		// break quickTest;
+		break quickTest;
 		process.exit( 0 );
 	}
 
 	{
-		const collection = new Range(3, 12)::map( square );
-		collection::get( 3 )::log();
+		const collection = new Range(3, 12).*map( square );
+		collection.*get( 3 )::log();
 
 		for( const kv of collection ) {
 			console.log( kv );
 		}
-		for( let kv of new Range(3)::map(n=>n+1)::iter()::map(n=>n*n) ) {
+		for( let kv of new Range(3).*map(n=>n+1).*iter().*map(n=>n*n) ) {
 			console.log( kv );
 		}
 	}
@@ -67,47 +70,47 @@ function sumFn( a, b ) { return a+b; }
 		//	console.log( `  ${k}: ${v}` );
 		//}
 		const collection = new Range(3, 12);
-		collection::len()::log();
+		collection.*len()::log();
 
-		const it = collection[symbols.kvIterator]();
+		const it = collection.*kvIterator();
 		let next = it.next();
-		while( ! next.done ) {
+		while( next ) {
 			console.log( next.value );
 			next = it.next();
 		}
-		collection::len()::log();
+		collection.*len()::log();
 
 		console.log();
 	}
 
 	{
 		console.log();
-		const collection = new Range(3, 12)::map( square );
-		const it = collection[symbols.kvIterator]();
+		const collection = new Range(3, 12).*map( square );
+		const it = collection.*kvIterator();
 		let next = it.next();
-		while( ! next.done ) {
+		while( next ) {
 			console.log( next.value );
 			next = it.next();
 		}
 		collection::log();
 		console.log();
 
-		collection::forEach( (n, k)=>console.log(`  ${k}: ${n}`) );
+		collection.*forEach( (n, k)=>console.log(`  ${k}: ${n}`) );
 
 		console.log();
 	}
 
 	{
 		console.log();
-		const collection = [7, 3, 5, 0, 2]::map( square );
-		const it = collection[symbols.kvIterator]();
+		const collection = [7, 3, 5, 0, 2].*map( square );
+		const it = collection.*kvIterator();
 		let next = it.next();
-		while( ! next.done ) {
+		while( next ) {
 			console.log( next.value );
 			next = it.next();
 		}
 		collection::log();
-		collection::len()::log();
+		collection.*len()::log();
 
 		console.log();
 	}
@@ -115,45 +118,45 @@ function sumFn( a, b ) { return a+b; }
 	{
 		console.log();
 		const collection = [7, 3, 5, 0, 2];
-		const it = collection[symbols.kvIterator]();
+		const it = collection.*kvIterator();
 		let next = it.next();
-		while( ! next.done ) {
+		while( next ) {
 			console.log( next.value );
 			next = it.next();
 		}
 		collection::log();
-		console.log( collection[symbols.len]() );
+		console.log( collection.*len() );
 
 		console.log();
 	}
 
 	{
 		console.log();
-		const collection = new Range(3, 12)::map( square )::filter( isEven );
-		const it = collection[symbols.kvIterator]();
+		const collection = new Range(3, 12).*map( square ).*filter( isEven );
+		const it = collection.*kvIterator();
 		let next = it.next();
-		while( ! next.done ) {
+		while( next ) {
 			console.log( next.value );
 			next = it.next();
 		}
 		collection::log();
 		console.log();
 
-		collection::forEach( (n, k)=>console.log(`  ${k}: ${n}`) );
+		collection.*forEach( (n, k)=>console.log(`  ${k}: ${n}`) );
 
 		console.log();
 
-		collection::sum()::log();
+		collection.*sum()::log();
 	}
 
 	{
 		console.log();
-		const collection = new Range(3, 12)::filter( isEven )::map( square )::filter( isEven );
-		collection::sum()::log();
+		const collection = new Range(3, 12).*filter( isEven ).*map( square ).*filter( isEven );
+		collection.*sum()::log();
 
 		const range = new Range(10000);
-		range::filter( isEven )::map( square )::sum()::log();
-		range::filter( isEven )::map( square )::reduce( sumFn, 0 )::log();
-		// range::collect( Array )::filter( isEven )::map( square )::reduce( sumFn, 0 )::log();
+		range.*filter( isEven ).*map( square ).*sum()::log();
+		range.*filter( isEven ).*map( square ).*reduce( sumFn, 0 )::log();
+		// range.*collect( Array ).*filter( isEven ).*map( square ).*reduce( sumFn, 0 )::log();
 	}
 }

@@ -4,16 +4,15 @@
 
 const assert = require('assert');
 const _ = require('lodash');
-const {symbols, Range} = require('./');
-use protocols from symbols;
+const {Range} = require('./');
+const {toString} = require('./util.js');
+
+use protocols from require('./symbols');
 
 // HACK: the bad things happen here...
 {
 	// Error.stackTraceLimit = 25;
 	Array.prototype.toString = function() {
-		return JSON.stringify(this);
-	};
-	String.prototype.toString = function() {
 		return JSON.stringify(this);
 	};
 }
@@ -111,7 +110,6 @@ const objs = {
 		},
 		_groupBy: {
 			sm(coll) {
-				console.log( coll );
 				return coll.*groupBy( (v)=>`g${(v%2===0) + (v%3===0)}` )
 					.*map( (group)=>group.*collect(Array) );
 			},
@@ -169,17 +167,10 @@ const objs = {
 		only: {
 			sm(coll){
 				if( coll.*count() === 1 ) {
-					return coll.*only()[1];
+					return coll.*only().value;
 				} else {
-					let fail = false;
-					let res;
-					try {
-						res = coll.*only();
-					}
-					catch( err ) {
-						fail = true;
-					}
-					assert( fail, `.*only() not doing what it's supposed to... ${coll.*toString()}.*only() => ${res}` );
+					let only;
+					assert.throws( ()=>void( only = coll.*only() ), `.*only() not throwing... ${coll.*toString()}.*only() => ${only}` );
 				}
 			},
 			lodash(coll){ return _.size(coll) === 1 ? _.values(coll)[0] : undefined; },
@@ -188,7 +179,7 @@ const objs = {
 			sm(coll){
 				const kv = coll.*first();
 				if( kv ) {
-					return kv[1];
+					return kv.value;
 				}
 			},
 			lodash(coll){ return _.values(coll)[0]; },
@@ -229,13 +220,11 @@ _.forEach( objs.stdGens, (gen, name)=>{
 
 // actually testing...
 {
-	const assert = require('assert');
-
 	function tryTest( msg, fn ) {
 		try {
 			return fn() || 0;
 		} catch( err ) {
-			console.error( `!!! ${msg} mismatch: ${err.message}` );
+			console.log( `!!! ${msg} mismatch: ${err.message}` );
 			console.log( err );
 			return 1;
 		}
@@ -245,7 +234,9 @@ _.forEach( objs.stdGens, (gen, name)=>{
 		const {sm, lodash} = values;
 		const same = _.isEqual( sm, lodash );
 
-		assert( same, `${sm} != ${lodash}` );
+		if( ! same ) {
+			throw new Error( `${sm} != ${lodash}` );
+		}
 	};
 
 	function forEach( obj, fn ) {
@@ -432,7 +423,6 @@ _.forEach( objs.stdGens, (gen, name)=>{
 		testSeq( transform, transform ); console.log();
 		testSeq( transform, transform, transform ); console.log();
 		*/
-		console.log();
 		testAll( 3 );
 		process.exit( 0 );
 	}

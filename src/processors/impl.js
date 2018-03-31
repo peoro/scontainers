@@ -72,32 +72,7 @@ function deriveCoreProtocols() {
 		kvReorderedIterator() {
 			if( proto.*kvIterator ) {
 				return function kvReorderedIterator() {
-					const it = this.*kvIterator();
-					const rit = new ReorderedIterator({
-						alwaysPropagate: true,
-						propagateMulti: false,
-						needState: false,
-						reorder: false
-					});
-
-					let next;
-					rit.proceed = ()=>{
-						next = it.next();
-						rit.resume();
-					};
-					rit.resume = ()=>{
-						while( next ) {
-							const {key, value} = next;
-							next = it.next();
-
-							rit.pushNext( new ReorderedIterator.KV(key, value) );
-						}
-					};
-					rit.stop = ()=>{
-						next = undefined; // ugly hack just to spare an extra var and check, lol
-					};
-
-					return rit;
+					return new ReorderedIterator.FromIterator( this.*kvIterator() );
 				};
 			}
 		},
@@ -125,7 +100,6 @@ function deriveCoreProtocols() {
 			}
 		},
 	});
-
 }
 
 function deriveProtocols() {
@@ -175,28 +149,72 @@ function deriveProtocols() {
 						next = it.next();
 					}
 				};
-				if( proto.*kvReorderedIterator ) {
-					return function( fn ) {
-						let result;
-						{
-							const rit = this.*kvReorderedIterator();
-							rit.onNext( ({key, value})=>{
-								if( ! fn(value, key, n) ) {
-									result = new KVN(key, value, n);
-									rit.stop();
-								}
-							});
-							rit.proceed();
-						}
-						return result;
-					};
-				}
+			}
+			if( proto.*kvReorderedIterator ) {
+				return function( fn ) {
+					let result;
+					{
+						const rit = this.*kvReorderedIterator();
+						rit.onNext( (kvn)=>{
+							if( ! fn(kvn.value, kvn.key, kvn.n) ) {
+								result = kvn;
+								rit.stop();
+							}
+						});
+						rit.proceed();
+					}
+					return result;
+				};
 			}
 		},
 		untilEach() {
 			if( proto.*whileEach ) {
 				return function untilEach( fn ) {
-					return this.*whileEach( (value, key)=>! fn(value, key, this) );
+					return this.*whileEach( (value, key, n)=>! fn(value, key, n) );
+				};
+			}
+		},
+
+		reduce() {
+			if( proto.*forEach ) {
+				return function reduce( fn, start ) {
+					let state = start;
+					this.*forEach( (value, key)=>{
+						state = fn( state, value, key, this );
+					});
+					return state;
+				};
+			}
+		},
+		reduceFirst() {
+			if( proto.*kvIterator ) {
+				return function reduceFirst( fn ) {
+					const it = this.*kvIterator();
+					let next = it.next();
+					if( ! next ) {
+						return;
+					}
+
+					let state = next.value;
+					next = it.next();
+					while( next ) {
+						const {value, key, n} = next;
+						state = fn( state, value, key, n );
+						next = it.next();
+					}
+					return state;
+				};
+			}
+			if( proto.*reduce ) {
+				return function reduceFirst( fn ) {
+					let first = true;
+					return this.*reduce( (state, value, key, n)=>{
+						if( first ) {
+							first = false;
+							return value;
+						}
+						return fn( state, value, key, n );
+					});
 				};
 			}
 		},
@@ -205,13 +223,17 @@ function deriveProtocols() {
 			if( proto.*len ) {
 				return function count() { return this.*len(); };
 			}
-			return function count() { return this.*reduce( (n)=>n+1, 0 ); };
+			if( proto.*reduce ) {
+				return function count() { return this.*reduce( (n)=>n+1, 0 ); };
+			}
 		},
 		isEmpty() {
 			if( proto.*len ) {
 				return function isEmpty() { return ! this.*len(); };
 			}
-			return function isEmpty() { return ! this.*whileEach( ()=>false ); };
+			if( proto.*whileEach ) {
+				return function isEmpty() { return ! this.*whileEach( ()=>false ); };
+			}
 		},
 
 		only() {
@@ -227,13 +249,28 @@ function deriveProtocols() {
 					return this.*kvIterator().next();
 				};
 			}
-			return function only() {
-				const it = this.*kvIterator();
-				let next = it.next();
-				assert( next, `${this}.only()'s collection is empty` );
-				assert( ! it.next(), `${this}.only()'s collection has multiple items` );
-				return next;
-			};
+			if( proto.*kvIterator ) {
+				return function only() {
+					const it = this.*kvIterator();
+					let next = it.next();
+					assert( next, `${this}.only()'s collection is empty` );
+					assert( ! it.next(), `${this}.only()'s collection has multiple items` );
+					return next;
+				};
+			}
+			if( proto.*whileEach ) {
+				return function only() {
+					let count = 0;
+					this.*whileEach( ()=>{
+						assert( ! count, `${this}.only()'s collection has multiple items` );
+						++count;
+						return true;
+					});
+					assert( count === 1, `${this}.only()'s collection is empty` );
+
+					return this.*whileEach( ()=>false );
+				};
+			}
 		},
 		first() {
 			if( proto.*nthKVN ) {
@@ -244,6 +281,11 @@ function deriveProtocols() {
 			if( proto.*kvIterator ) {
 				return function first() {
 					return this.*kvIterator().next();
+				};
+			}
+			if( proto.*whileEach ) {
+				return function first() {
+					return this.*whileEach( ()=>false );
 				};
 			}
 		},
@@ -282,38 +324,6 @@ function deriveProtocols() {
 					const value1 = this.*get( key1 );
 					this.*set( key1, this.*get(key2) );
 					this.*set( key2, value1 );
-				};
-			}
-		},
-
-		reduce() {
-			if( proto.*forEach ) {
-				return function reduce( fn, start ) {
-					let state = start;
-					this.*forEach( (value, key)=>{
-						state = fn( state, value, key, this );
-					});
-					return state;
-				};
-			}
-		},
-		reduceFirst() {
-			if( proto.*kvIterator ) {
-				return function reduceFirst( fn ) {
-					const it = this.*kvIterator();
-					let next = it.next();
-					if( ! next ) {
-						return;
-					}
-
-					let state = next.value;
-					next = it.next();
- 					while( next ) {
-						const {value, key, n} = next;
-						state = fn( state, value, key, n );
-						next = it.next();
-					}
-					return state;
 				};
 			}
 		},
@@ -384,14 +394,18 @@ function deriveProtocols() {
 		},
 
 		every() {
-			return function every( fn ) {
-				return ! this.*whileEach( fn );
-			};
+			if( this.*whileEach ) {
+				return function every( fn ) {
+					return ! this.*whileEach( fn );
+				};
+			}
 		},
 		some() {
-			return function some( fn ) {
-				return !! this.*untilEach( fn );
-			};
+			if( this.*untilEach ) {
+				return function some( fn ) {
+					return !! this.*untilEach( fn );
+				};
+			}
 		},
 
 		toString() {
@@ -554,7 +568,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 			check( !getUnchecked, `either supply \`nthUnchecked\` or \`getUnchecked\`` );
 			getUnchecked = function( key ) {
 				const n = this.*keyToN( key );
-				return nthUnchecked( n );
+				return this::nthUnchecked( n );
 			}
 		}
 	}
@@ -586,7 +600,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 			getKVN() {
 				if( getUnchecked ) {
 					return function( key ) {
-						if( this::hasKey( key ) ) {
+						if( this.*hasKey( key ) ) {
 							return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
 						}
 					}
@@ -655,7 +669,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 	const ParentCollection = this.*InnerCollection;
 	check( ParentCollection, `need to specify the ParentType` );
 	const parentProto = ParentCollection.prototype;
-	const innerKey = this.*innerCollectionKey;
+	const innerCollectionKey = this.*innerCollectionKey;
 
 	// TODO: `stage` (and its specializations) could be improved...
 	// most collections don't do anything *before* `stage` returns from recursion.
@@ -692,7 +706,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		len() {
 			if( Collection.*mappingOnly && parentProto.*len ) {
 				return function() {
-					return this[innerKey].len();
+					return this[innerCollectionKey].*len();
 				}
 			}
 		},
@@ -701,7 +715,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( nToParentN && parentProto.*nToKey ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
-					return this[innerKey].*nToKey( parentN );
+					return this[innerCollectionKey].*nToKey( parentN );
 				}
 			}
 		},
@@ -709,7 +723,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( keyToParentKey && parentProto.*keyToN ) {
 				return function( key ) {
 					const innerKey = this::keyToParentKey( key );
-					return this[innerKey].*keyToN( innerKey );
+					return this[innerCollectionKey].*keyToN( innerKey );
 				}
 			}
 		},
@@ -718,7 +732,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( nStage && parentProto.*nthKVN ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
-					const parentKVN = this[innerKey].*nthKVN( parentN );
+					const parentKVN = this[innerCollectionKey].*nthKVN( parentN );
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
@@ -729,7 +743,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( kStage && parentProto.*getKVN ) {
 				return function( key ) {
 					const innerKey = this::keyToParentKey( key );
-					const parentKVN = this[innerKey].*getKVN( innerKey );
+					const parentKVN = this[innerCollectionKey].*getKVN( innerKey );
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
@@ -741,14 +755,14 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( kStage && parentProto.*nth ) {
 				return function( key ) {
 					return this::kStage( (c)=>{
-						this[innerKey].*nth( c, c.key );
+						this[innerCollectionKey].*nth( c, c.key );
 					});
 					return true;
 				}
 			}
 			if( Collection.*mappingOnly && parentProto.*hasKey ) {
 				return function( key ) {
-					return this[innerKey].*hasKey( keyToParentKey(key) );
+					return this[innerCollectionKey].*hasKey( keyToParentKey(key) );
 				}
 			}
 		},
@@ -766,7 +780,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( Collection.*transformStream && parentProto.*kvIterator && kStage ) {
 				return function() {
 					const self = this;
-					const parentCollection = this[innerKey];
+					const parentCollection = this[innerCollectionKey];
 
 					const it = parentCollection.*kvIterator();
 					return {
@@ -794,38 +808,8 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		kvReorderedIterator() {
 			if( parentProto.*kvReorderedIterator && kStage ) {
 				return function() {
-					const prit = this[innerKey].*kvReorderedIterator();
-					const rit = new ReorderedIterator({
-						alwaysPropagate: true,
-						propagateMulti: false,
-						needState: false,
-						reorder: false
-					});
-
-					rit.proceed = ()=>{
-						// onNext:
-						prit.onNext( (kv)=>{
-								rit.pushNext( this::kStage(kv) );
-							})
-							.proceed();
-
-						// onEnd:
-						finish();
-					};
-					rit.resume = ()=>{
-						prit.resume();
-						finish();
-					};
-					rit.stop = ()=>{
-						prit.stop();
-					};
-
-					let finished = false;
-					const finish = ()=>{
-						if( finished ) { return; } finished = true;
-					};
-
-					return rit;
+					const innerRIt = this[innerCollectionKey].*kvReorderedIterator();
+					return new ReorderedIterator.MapReorderedIterator( innerRIt, this::kStage )
 				};
 			}
 		},

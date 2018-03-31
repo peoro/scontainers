@@ -3,12 +3,15 @@
 
 const subminus = require('../index.js');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
+const {ReorderedIterator} = require('../processors/reordered_iterator.js');
 
 use protocols from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
- 	if( ! subminus.DEBUG ) {
+	const parentProto = ParentCollection.prototype;
+	// TODO: I guess I should ignore parent's `kvReorderedIterator`, but it's needed by the current `/src/lodashcmp.js`
+ 	if( ! subminus.DEBUG || ( ! parentProto.*kvIterator && ! parentProto.*kvReorderedIterator ) ) {
 		return;
 	}
 
@@ -33,10 +36,24 @@ module.exports = function( ParentCollection ) {
 
 		IterableOnly::deriveProtocolsForTransformation({
 			kvIterator() {
-				return function() {
-					return this.wrapped.*kvIterator();
+				if( parentProto.*kvIterator ) {
+					return function() {
+						return this.wrapped.*kvIterator();
+					};
 				}
-			}
+			},
+			kvReorderedIterator() {
+				if( IterableOnly.prototype.*kvIterator ) {
+					return function() {
+						return new ReorderedIterator.FromIterator( this.*kvIterator() );
+					};
+				}
+				if( parentProto.*kvReorderedIterator ) {
+					return function() {
+						return this.wrapped.*kvReorderedIterator();
+					};
+				}
+			},
 		});
 
 		return IterableOnly;

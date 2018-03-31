@@ -8,7 +8,8 @@ use protocols from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
-	if( ! subminus.DEBUG ) {
+	const parentProto = ParentCollection.prototype;
+	if( ! subminus.DEBUG || ! parentProto.*kvReorderedIterator ) {
 		return;
 	}
 

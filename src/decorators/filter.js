@@ -43,17 +43,7 @@ module.exports = function( ParentCollection ) {
 					);
 					return kvn;
 				},
-				keyToParentKey( key ) {
-					return key;
-				},
-
-				len() {
-					if( parentProto.*len ) {
-						return function( compiler ) {
-							return this.inner.*len( compiler );
-						}
-					}
-				},
+				keyToParentKey( key ) { return key; },
 			});
 
 			Filter::deriveProtocolsForTransformation({
@@ -63,13 +53,6 @@ module.exports = function( ParentCollection ) {
 					}
 				},
 				keyToParentKey( key ) { return key; },
-				len() {
-					if( parentProto.*len ) {
-						return function( ) {
-							return this.wrapped.*len();
-						}
-					}
-				},
 			});
 		}
 

@@ -225,7 +225,7 @@ function assignProtocolFactories( dest, symbolObj ) {
 		}
 
 		{
-			const fnFactory = srcFn.factory ? ::srcFn.factory : srcFn;
+			const fnFactory = srcFn.factory ? srcFn.factory : srcFn;
 
 			// functions (not factories!) may return null...
 			if( srcFn === fnFactory ) {
