@@ -292,7 +292,7 @@ function KVArr( key, value ) {
 	this.value = [key, value];
 	this.done = false;
 }
-function KArr( value ) {
+function VArr( value ) {
 	this.value = value;
 	this.done = false;
 }
@@ -311,5 +311,5 @@ module.exports = {
 	replaceSymbol,
 	extractKeys,
 	assignProtocols, assignProtocolFactories,
-	KVN, KVArr, KArr, Done,
+	KVN, KVArr, VArr, Done,
 };

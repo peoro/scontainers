@@ -2,9 +2,10 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {KArr, Done} = require('../util.js');
+const {assignProtocols, VArr, Done} = require('../util.js');
+const symbols = require('../symbols');
 
-use protocols from require('../symbols');
+use protocols from symbols;
 
 
 module.exports = function( ParentCollection ) {
@@ -24,6 +25,20 @@ module.exports = function( ParentCollection ) {
 				return `${this.wrapped}.values()`;
 			}
 		}
+		Values.Iterator = class {
+			constructor( it ) {
+				this.it = it;
+			}
+			next() {
+				const next = this.it.next();
+				if( ! next ) {
+					return new Done();
+				}
+
+				const {value} = next;
+				return new VArr( value );
+			}
+		};
 
 		const parentProto = ParentCollection.prototype;
 
@@ -35,6 +50,12 @@ module.exports = function( ParentCollection ) {
 			mappingOnly: true,
 		});
 
+		symbols::assignProtocols( Values.prototype, {
+			iterator() {
+				return new Values.Iterator( this.wrapped.*kvIterator() );
+			}
+		});
+
 		Values::compileProtocolsForTransformation({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) { return index; },
@@ -43,22 +64,6 @@ module.exports = function( ParentCollection ) {
 		Values::deriveProtocolsForTransformation({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) { return index; },
-			iterator() {
-				return function iterator( ) {
-					return {
-						it: this.wrapped.*kvIterator(),
-						next() {
-							const next = this.it.next();
-							if( ! next ) {
-								return new Done();
-							}
-
-							const {value} = next;
-							return new KArr( value );
-						}
-					};
-				};
-			},
 		});
 
 		return Values;
