@@ -3,7 +3,7 @@
 
 const assert = require('assert');
 const {defineProperties, deriveProtocolsForTransformation, deriveProtocolsForRootType} = require('../processors/index.js');
-const {ReorderedIterator} = require('../processors/reordered_iterator.js');
+const {ReorderedIterator} = require('../reordered_iterator.js');
 const {KVN} = require('../util.js');
 
 use protocols from require('../symbols');

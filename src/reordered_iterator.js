@@ -1,7 +1,7 @@
 
 const assert = require('assert');
 
-const {KVN} = require('../util.js');
+const {KVN} = require('./util.js');
 
 class ReorderedIterator {
 	constructor() {

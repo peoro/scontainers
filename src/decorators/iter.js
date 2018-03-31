@@ -3,7 +3,7 @@
 
 const subminus = require('../index.js');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {ReorderedIterator} = require('../processors/reordered_iterator.js');
+const {ReorderedIterator} = require('../reordered_iterator.js');
 
 use protocols from require('../symbols');
 

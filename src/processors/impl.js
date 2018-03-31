@@ -10,7 +10,7 @@ const util = require('../util.js');
 const {decorate, implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVN, KVArr, Done} = util;
 const properties = require('./properties');
 
-const {ReorderedIterator} = require('./reordered_iterator.js');
+const {ReorderedIterator} = require('../reordered_iterator.js');
 
 const toStr = util.toString;
 
