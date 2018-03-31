@@ -340,7 +340,10 @@ class NewCompiler {
 		return assertVar.call( expr );
 	}
 	debug() {
-		return semantics.id(`console`).member(`log`).call( semantics.lit(this.functionName), semantics.id(`arguments`) );
+		return this.log( semantics.lit(this.functionName), semantics.id(`arguments`) );
+	}
+	log( ...args ) {
+		return semantics.id(`console`).member(`log`).call( ...args );
 	}
 }
 
@@ -386,10 +389,6 @@ function deriveCoreProtocolGenerators() {
 		loop() {
 			if( this.*nthKVN ) {
 				return function( generator ) {
-					this.skip = function() {
-						return semantics.continue();
-					};
-
 					const i = this.createUniqueVariable(`i`);
 					const lenVar = this.*len();
 

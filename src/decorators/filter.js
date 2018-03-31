@@ -8,6 +8,8 @@ use protocols from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
+	const parentProto = ParentCollection.prototype;
+
 	return function() {
 		class Filter {
 			static get name() { return `${ParentCollection.name}::Filter`; }
@@ -30,31 +32,27 @@ module.exports = function( ParentCollection ) {
 			transformStream: true,
 		});
 
-		{
-			const parentProto = ParentCollection.prototype;
+		Filter::compileProtocolsForTransformation({
+			kStage( kvn ) {
+				this.pushStatement(
+					semantics.if(
+						this.args.filterFn.call( kvn.value, kvn.key, kvn.n ).not(),
+						this.skip()
+					)
+				);
+				return kvn;
+			},
+			keyToParentKey( key ) { return key; },
+		});
 
-			Filter::compileProtocolsForTransformation({
-				kStage( kvn ) {
-					this.pushStatement(
-						semantics.if(
-							this.args.filterFn.call( kvn.value, kvn.key, kvn.n ).not(),
-							this.skip()
-						)
-					);
+		Filter::deriveProtocolsForTransformation({
+			kStage( kvn ) {
+				if( this.filterFn(kvn.value, kvn.key, kvn.n) ) {
 					return kvn;
-				},
-				keyToParentKey( key ) { return key; },
-			});
-
-			Filter::deriveProtocolsForTransformation({
-				kStage( kvn ) {
-					if( this.filterFn(kvn.value, kvn.key, kvn.n) ) {
-						return kvn;
-					}
-				},
-				keyToParentKey( key ) { return key; },
-			});
-		}
+				}
+			},
+			keyToParentKey( key ) { return key; },
+		});
 
 		return Filter;
 	};

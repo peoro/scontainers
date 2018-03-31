@@ -3,6 +3,7 @@
 
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
 const {assignProtocols, KVN, toString} = require('../util.js');
+const {semantics} = require('../compiler/index.js');
 
 const symbols = require('../symbols');
 use protocols from symbols;
@@ -32,6 +33,39 @@ Map::compileProtocolsForRootType({
 	},
 	len( compiler ) {
 		return this.self.member(`size`);
+	},
+
+	loop( generator ) {
+		const it = this.createUniqueVariable(`it`);
+		const next = this.createUniqueVariable(`next`);
+
+		function skip() {
+			return semantics.block(
+				// next.assign( it.member(`next`).call() ),
+				semantics.continue(),
+			);
+		}
+
+		return [
+			it.declare(
+				this.self.member(
+					semantics.id(`Symbol`).member(`iterator`), true
+				).call()
+			),
+			next.declare(),
+			// next.declare( it.member(`next`).call() ),
+			semantics.while(
+				next.assign( it.member(`next`).call() ).member(`done`).not(),
+
+				this.block({skip}, function(){
+					const kvn = new KVN(next.member(`value`).member(0, true), next.member(`value`).member(1, true));
+					this.pushStatement(
+						...this::generator( kvn ),
+						// next.assign( it.member(`next`).call() ),
+					);
+				})
+			)
+		];
 	},
 });
 

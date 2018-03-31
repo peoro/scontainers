@@ -55,7 +55,7 @@ module.exports = function( ParentCollection ) {
 						processIt() {
 							const iNext = this.it.next();
 							if( ! iNext ) {
-								return iNext;
+								return;
 							}
 
 							const {value} = iNext;
@@ -82,7 +82,7 @@ module.exports = function( ParentCollection ) {
 						return new Flatten(
 							this.wrapped
 								.*reverse()
-								.*map( (value)=>value.*count ? value.*reverse() : value )
+								.*map( (value)=>value.*kvIterator ? value.*reverse() : value )
 							);
 					};
 				}

@@ -96,6 +96,9 @@ module.exports = function( grammar, builders ) {
 	Statement.for = function( init, test, update, body ) {
 		return new Statement( builders.ForStatement( init::ast(), test::ast(), update::ast(), body::asStatement()::ast() ) );
 	}
+	Statement.while = function( test, body ) {
+		return new Statement( builders.WhileStatement( test::ast(), body::asStatement()::ast() ) );
+	}
 	Statement.return = function( value ) {
 		return new Statement( builders.ReturnStatement( value ? value::ast() : null ) );
 	}
@@ -162,11 +165,15 @@ module.exports = function( grammar, builders ) {
 		}
 
 		call( ...args ) {
-			args = args.map( arg=>arg === undefined ? id(`undefined`) : arg );
+			args = args
+				.map( arg=>arg === undefined ? id(`undefined`) : arg )
+				.map( arg=>typeof arg === 'string' ? lit(arg) : arg );
 			return new Expression( builders.CallExpression( this.id(), args::ast() ) );
 		}
 		new( ...args ) {
-			args = args.map( arg=>arg === undefined ? id(`undefined`) : arg );
+			args = args
+				.map( arg=>arg === undefined ? id(`undefined`) : arg )
+				.map( arg=>typeof arg === 'string' ? lit(arg) : arg );
 			return new Expression( builders.NewExpression( this.id(), args::ast() ) );
 		}
 		return() {
@@ -284,6 +291,7 @@ module.exports = function( grammar, builders ) {
 		block( ...args ) { return new Block(...args); },
 		if: Statement.if,
 		for: Statement.for,
+		while: Statement.while,
 		return: Statement.return,
 		function: Expression.function,
 		Literal,
