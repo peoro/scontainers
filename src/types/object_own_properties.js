@@ -31,8 +31,8 @@ module.exports = function( ParentCollection ) {
 		});
 
 		OwnProperties::compileProtocolsForRootType({
-			getKVN( key ) {
-				return new KVN( key, this.args.object.member(key, true) );
+			getUnchecked( key ) {
+				return this.args.object.member( key, true );
 			},
 			hasKey( key ) {
 				return this.args.object.member(`hasOwnProperty`).call( key );

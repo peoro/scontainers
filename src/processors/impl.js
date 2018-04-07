@@ -599,10 +599,19 @@ function deriveProtocolsForRootType( configuration={} ) {
 			},
 			getKVN() {
 				if( getUnchecked ) {
-					return function( key ) {
-						if( this.*hasKey( key ) ) {
-							return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
-						}
+					if( proto.*keyToN ) {
+						return function( key ) {
+							if( this.*hasKey( key ) ) {
+								return new KVN( key, this::getUnchecked(key), this.*keyToN(key) );
+							}
+						};
+					}
+					else {
+						return function( key ) {
+							if( this.*hasKey( key ) ) {
+								return new KVN( key, this::getUnchecked(key) );
+							}
+						};
 					}
 				}
 			},
@@ -745,7 +754,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 					const innerKey = this::keyToParentKey( key );
 					const parentKVN = this[innerCollectionKey].*getKVN( innerKey );
 					if( parentKVN ) {
-						return this::nStage( parentKVN );
+						return this::kStage( parentKVN );
 					}
 				}
 			}

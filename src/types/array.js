@@ -34,8 +34,8 @@ Array::compileProtocolsForRootType({
 	keyToN( key ) {
 		return key;
 	},
-	nthKVN( n ) {
-		return new KVN( n, this.self.member( n, true ), n );
+	nthUnchecked( key ) {
+		return this.self.member( n, true );
 	},
 	// add: nope
 	len( compiler ) {

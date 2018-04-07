@@ -20,8 +20,8 @@ symbols::assignProtocols( Object, {
 });
 
 symbols::assignProtocolFactories( Object.prototype, {
-	ownProperties: Object::decorate( require('../decorators/object_own_properties') ),
-	properties: Object::decorate( require('../decorators/object_enumerable_properties') ),
+	ownProperties: Object::decorate( require('./object_own_properties') ),
+	properties: Object::decorate( require('./object_enumerable_properties') ),
 	// TODO: override `toString`, but force its overriddance
 	toString() {
 		return function toString() {

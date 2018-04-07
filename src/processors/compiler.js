@@ -620,10 +620,64 @@ function deriveProtocolsFromGenerators() {
 
 
 function compileProtocolsForRootType( compilerConfiguration ) {
-	assert( this, `compileProtocolsForRootType() must be called on an object` );
+	const Collection = this;
+	assert( Collection, `compileProtocolsForRootType() must be called on an object` );
+	const check = (cond, err)=>{
+		assert( cond, `${Collection.name}.compileProtocolsForTransformation(): ${err}` );
+	};
+
+	// taking the non-protocol data from `configuration` (e.g.  `nStage` and `stage`)
+	let {nthUnchecked, getUnchecked} = compilerConfiguration::extractKeys( Object.keys({ nthUnchecked:null, getUnchecked:null }) );
+	// deriving the missing non-protocol functions we can derive
+	{
+		use protocols from generatorSymbols;
+
+		if( nthUnchecked ) {
+			check( !getUnchecked, `either supply \`nthUnchecked\` or \`getUnchecked\`` );
+			getUnchecked = function( key ) {
+				const n = this.*keyToN( key );
+				return this::nthUnchecked( n );
+			}
+		}
+	}
 
 	// everything in `compilerConfiguration` should be protocol generator factories: assigning them to `this`
 	generatorSymbols::assignProtocols( this, compilerConfiguration );
+
+	// deriving the other core protocol generator factories we can derive from the non-protocol data
+	{
+		const proto = this.prototype;
+		use protocols from generatorSymbols;
+
+		generatorSymbols::assignProtocolFactories( this.prototype, {
+			nthKVN() {
+				if( nthUnchecked ) {
+					return function( n ) {
+						this.pushStatement(
+							this.compiler.assert( semantics.id(`Number`).member(`isInteger`).call( n ) ),
+							semantics.if(
+								semantics.or( n.lt( 0 ), n.ge( this.*len() ) ),
+								semantics.return()
+							),
+						);
+						return new KVN( this.*nToKey( n ), this::nthUnchecked( n ), n );
+					}
+				}
+			},
+			getKVN() {
+				if( getUnchecked ) {
+					return function( key ) {
+						this.pushStatement(
+							semantics.if( this.*hasKey(key).note(),
+								semantics.return()
+							)
+						);
+						return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
+					}
+				}
+			},
+		});
+	}
 
 	// deriving all the remaining protocol generators
 	this::deriveCoreProtocolGenerators();

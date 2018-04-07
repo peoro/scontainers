@@ -28,8 +28,11 @@ Map::defineProperties({
 });
 
 Map::compileProtocolsForRootType({
-	getKVN( key ) {
-		return new KVN( key, this.self.member(`get`).call( key ) );
+	getUnchecked( key ) {
+		return this.self.member(`get`).call( key );
+	},
+	hasKey( key ) {
+		return this.self.member(`has`).call( key );
 	},
 	len( compiler ) {
 		return this.self.member(`size`);

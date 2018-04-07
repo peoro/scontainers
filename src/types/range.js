@@ -41,13 +41,7 @@ Range::defineProperties({
 Range::compileProtocolsForRootType({
 	nToKey( n ) { return n.plus( this.args.begin ); },
 	keyToN( key ) { return key.minus( this.args.begin ); },
-	nthKVN( n ) {
-		return new KVN(
-			this.*nToKey( n ),
-			n.plus( this.args.begin ),
-			n
-		);
-	},
+	nthUnchecked( n ) { return n.plus( this.args.begin ); },
 	// add: nope
 	len() {
 		const {begin, end} = this.args;
