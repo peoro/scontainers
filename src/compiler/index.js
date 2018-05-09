@@ -26,9 +26,12 @@ function compile( ast ) {
 }
 
 class Compiler {
-	constructor( ast ) {
+	constructor() {
+		// the generate unique variable names
 		this.varDB = new semantics.VarDB();
-		this.ast = ast;
+
+		// the AST
+		this.ast = new semantics.Program();
 	}
 
 	createUniqueVariable( name ) {
@@ -41,18 +44,23 @@ class Compiler {
 	}
 }
 
-class ProgramCompiler extends Compiler {
-	constructor() {
-		super( new semantics.Program() );
-		this.body = this.ast;
-	}
-}
-
+// like `Compiler`, but meant to be used to generate `new Function()`s
+// it puts everything inside a function within the `new Function`
+// basically:
+//   new Function( ...$constantKeys, `return function $name(...$params) {...$statements};` }
+//       .call( null, ...$constant.*values() );
+// this way:
+//  - the constants are already captured in the function returned by `compile`
+//  - the returned function has a `name`
 class FunctionCompiler extends Compiler {
-	constructor( name ) {
-		super( new semantics.Program() );
+	constructor( params, name ) {
+		super();
 
+		const mainBody = this.body;
 		this.body = new semantics.Block();
+
+		this.pushStatement( semantics.function( name, params, this.body ).return() );
+
 		this.fn = semantics.function(name, [], this.body);
 		this.ast.pushStatement( this.fn.return() )
 

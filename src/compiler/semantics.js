@@ -277,6 +277,7 @@ module.exports = function( grammar, builders ) {
 		if( typeof id === 'string' ) {
 			id = new Identifier(id);
 		}
+
 		return new Function( id, params, body );
 	}
 	Statement.function = function( id, params, body ) {

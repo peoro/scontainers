@@ -43,7 +43,17 @@ function sumFn( a, b ) { return a+b; }
 	}
 
 	quickTest: {
-		break quickTest;
+		const collection =
+			({a:3, b:5, c:7}).*ownProperties()
+			// new Map([ ['a',7], [32,32], [false,'baobab'] ])
+		// const collection = new Range( 10 )
+			.*filter( (v,k)=>!Number.isInteger(k) )
+			.*map( x=>`(${x})` );
+
+		collection.*get( `a` );
+		collection.*forEach( ::console.log );
+
+		// break quickTest;
 		process.exit( 0 );
 	}
 

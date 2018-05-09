@@ -23,28 +23,26 @@ function defaultGet( key, defaultConstructor ) {
 }
 
 class CompilationFrame {
-	constructor( compiler, Type, typeArgMapFn, body, parameters, outer, methods ) {
+	constructor( compiler, Type, typeArgMapFn, body, parameters, methods ) {
 		this.compiler = compiler;
 
 		this.Type = Type;
-		if( outer ) {
-			this.outer = outer;
-			this.root = outer.root;
+
+		// stateStack: some state variables - pushable, poppable, modificable
+		this.stateStack = [];
+		this.stateStack.push({
+			typeArgMapFn,
+			parameters,
+			body,
+		});
+
+		// inner: the CompilationFrame for our InnerType
+		const InnerType = Type.*InnerCollection;
+		if( InnerType ) {
+			this.inner = new CompilationFrame( compiler, InnerType, typeArgMapFn, body, parameters, this, methods );
 		}
-		else {
-			this.root = this;
-			this.frameMap = new Map();
-		}
-		this.root.frameMap.set( Type, this );
 
-		this.typeArgMapFn = typeArgMapFn;
-		this.parameters = parameters;
-		this.body = body;
-
-		this.methods = methods;
-		Object.assign( this, methods );
-
-		// this.self = typeArgMapFn( compiler.getSelf(Type) );
+		// self: Expression representing the instance of `Type` we're working on
 		Object.defineProperties( this, {
 			self: {
 				get(){
@@ -53,7 +51,7 @@ class CompilationFrame {
 			}
 		});
 
-
+		// args
 		this.args = {}
 		Type.*argKeys.forEach( argKey=>{
 			// this.args[argKey] = typeArgMapFn( compiler.getArg(Type, argKey) );
@@ -64,6 +62,7 @@ class CompilationFrame {
 			});
 		});
 
+		// .* generatorSymbols
 		for( let symName in generatorSymbols ) {
 			const genSym = generatorSymbols[symName];
 			const sym = symbols[symName];
@@ -79,11 +78,24 @@ class CompilationFrame {
 				return compiler.getSelf( Type ).member( symVar, true ).call( ...args );
 			}
 		}
+	}
 
-		const InnerType = Type.*InnerCollection;
-		if( InnerType ) {
-			this.inner = new CompilationFrame( compiler, InnerType, typeArgMapFn, body, parameters, this, methods );
-		}
+	get state() { return this.stateStack[ this.stateStack.lenght-1 ]; }
+	get typeArgMapFn() { return this.state.typeArgMapFn; }
+	get parameters() { return this.state.parameters; }
+	get body() { return this.state.body; }
+	set typeArgMapFn( value ) { return this.state.typeArgMapFn = value; }
+	set parameters( value ) { return this.state.parameters = value; }
+	set body( value ) { return this.state.body = value; }
+
+	// state stack manipulation
+	pushState( typeArgMapFn=this.typeArgMapFn, body=this.body, parameters=this.parameters ) {
+		this.stateStack.push({ typeArgMapFn, body, parameters });
+		return this;
+	}
+	popState() {
+		this.stateStack.pop();
+		return this;
 	}
 
 	// VarDB management
@@ -113,7 +125,20 @@ class CompilationFrame {
 		});
 	}
 
-	// subclassing
+	// semantics: modify the current state
+	if( condition, thenFn ) {
+		const thenBlock = semantics.block();
+
+		this.pushStatement(
+			semantics.if( condition,
+				block
+			)
+		);
+
+		this.body = thenBlock.ast.statements;
+	}
+
+
 	subclass( typeArgMapFn, body, parameters, methods ) {
 		// return new CompilationFrame( this.compiler, this.Type, typeArgMapFn, body, parameters );
 		const frameChain = new CompilationFrame( this.compiler, this.root.Type, typeArgMapFn, body, parameters, null, methods );
@@ -145,6 +170,13 @@ class CompilationFrame {
 		const frame = this.subFrame( methods, bodyFn, [] );
 		return semantics.block( ...frame.body );
 	}
+	/*
+	// TODO: should we use something like this?
+	forIn( methods, bodyFn ) {
+		const frame = this.subFrame( {skip:semantics.continue}, bodyFn, [] );
+		return semantics.block( ...frame.body );
+	}
+	*/
 
 	call( bodyFn ) {
 		this::bodyFn();
@@ -320,7 +352,7 @@ class NewCompiler {
 		grammar.Program.check( program );
 
 		const code = codegen( program );
-		if( false ) {
+		if( true ) {
 			console.log(`>>>>>>>>>>>>>>>>>>>>> ${this.functionName}(${constantIdentifiers}):`);
 			console.log( code );
 			console.log(`<<<<<<<<<<<<<<<<<<<<<`);
@@ -764,6 +796,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			getKVN() {
 				if( kStage && ParentType.*getKVN ) {
 					return function( key ) {
+						this.skip = semantics.return; // TODO: temporary - remove this line ASAP!
 						const parentKey = this::keyToParentKey( key );
 						const parentKVN = this.inner.*getKVN( parentKey );
 						return this::kStage( parentKVN );
@@ -814,3 +847,18 @@ module.exports = {
 	compileProtocolsForTransformation,
 	compileProtocolsForRootType
 };
+
+
+
+
+
+if( require.main === module ) {
+	const compiler = new NewCompiler( Type, key, function(){
+		// this.pushStatement( this.compiler.debug() );
+		const result = this::factory();
+		if( result ) {
+			this.pushStatement( result.return() );
+		}
+	});
+	return compiler.toFunction();
+}

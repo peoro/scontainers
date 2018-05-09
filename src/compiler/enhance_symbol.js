@@ -15,14 +15,6 @@ function enhanceSymbol( symbol, symbolKey, symbols ) {
 			else {
 				return `[x${value.length}]`;
 			}
-			/*
-			else if( value.length === 1 ) {
-				return `[${ nodeFieldToString(value[0]) }]`;
-			}
-			else {
-				return `[...; ${value.length}]`;
-			}
-			*/
 		}
 		else if( value && typeof value === 'object' ) {
 			if( value.type ) {
@@ -30,11 +22,6 @@ function enhanceSymbol( symbol, symbolKey, symbols ) {
 			}
 			return `{…}`;
 		}
-		/*
-		else if( value === undefined ) {
-			return `ø`;
-		}
-		*/
 		return `${value}`;
 	};
 
@@ -59,30 +46,27 @@ function enhanceSymbol( symbol, symbolKey, symbols ) {
 	};
 
 	// pretty print node
+	// it prints all the fields (but `type`)
+	// a short version of the subnodes is printed
 	function pp( node ) { // nodeToString
 		const grammar = symbols;
 		if( ! node ) {
-			return `undefined{not a node}`;
+			return `${node}{✘ not a node}`;
 		}
 		else if( ! node.type ) {
-			return `TypelessNode{✘ broken}`;
+			return `TypelessNode{✘ not a node}`;
 		}
 
 		const symbol = grammar[ node.type ];
 		if( ! symbol ) {
-			return `${node.type}{✘ nonexistent type}`;
+			return `${node.type}{✘ unknown type}`;
 		}
 
-		/*
-		const fields = Object.keys( symbol.fields )
-			.filter( (field)=>field !== 'type' )
-			.map( (field)=>`${field}:${pps(node[field])}` );
-		*/
 		const fields = Object.keys( symbol.fields )
 			.filter( (field)=>field !== 'type' )
 			.map( (field)=>{
 				if( node[field] === undefined ) {
-					return field.split('').map( (c)=>`${c}\u0336` ).join('');
+					return field.split('').map( (c)=>`${c}̶` ).join('');
 				}
 				return `${field}:${pps(node[field])}`;
 			});

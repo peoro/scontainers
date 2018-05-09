@@ -5,12 +5,12 @@ const utilSymbols = protocols.util.symbols;
 const symbols = new protocols.util.Protocol();
 
 // static methods
-symbols[utilSymbols.defineAndAssign]( {}, {
+symbols.defineAndAssign( {}, {
 	from( collection ){},	// return a new instance of the collection constructed from `collection`
 });
 
 // core protocols: a collection should explicitely implement them
-symbols[utilSymbols.defineAndAssign]( {}, {
+symbols.defineAndAssign( {}, {
 	// naturally-indexed collections (e.g. Array, Range)
 	nth( n ){},	// return the ${n}-th element - O(1)
 	nthKVN( n ){},	// NOTE: it doesn't check to see if `n` is there - O(1)
@@ -52,7 +52,7 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 });
 
 // derived protocols, automatically implemented
-symbols[utilSymbols.defineAndAssign]( {}, {
+symbols.defineAndAssign( {}, {
 	forEach( fn ){},	// call ${fn(value, key)} for every item in ${this} - O(n)
 	whileEach( fn ){},
 	untilEach( fn ){},
@@ -132,3 +132,7 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 symbols.iterator = Symbol.iterator;
 
 module.exports = symbols;
+
+if( require.main === module ) {
+	console.log( Object.keys(symbols).join(`, `) );
+}
