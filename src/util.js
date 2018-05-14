@@ -5,9 +5,11 @@ const symbols = require('./symbols.js');
 const scontainersTraits = symbols;
 
 
-const utilTraits = Object.assign( {}, straits.utils );
-utilTraits.addTraits = Symbol(`addTraits`);
-utilTraits.implScontainer = Symbol(`implScontainer`);
+const utilTraits = Object.assign( {}, straits.utils, straits.utils.TraitSet.fromKeys({
+	addTraits( target, implementationObj ){},
+	implScontainer( implementationObj ){},
+	wrapScontainer( decoratorFactoryFactory ){}, // return a function factory for the decorator `decoratorFactory` built on `this`
+}) );
 
 const {toString} = straits.common.methods;
 
@@ -33,12 +35,10 @@ Object.prototype.*addTraits = function( target, implementationObj ) {
 Object.prototype.*implScontainer = function( implementationObj ) {
 	return scontainersTraits.*addTraits( this, implementationObj );
 }
+Object.prototype.*wrapScontainer = function( decoratorFactoryFactory ) {
+	const Container = this;
 
-// return a function factory for the decorator `decoratorFactory` built on `this`
-function decorate( decoratorFactoryFactory ) {
-	const Collection = this;
-
-	const decoratorFactory = decoratorFactoryFactory( Collection );
+	const decoratorFactory = decoratorFactoryFactory( Container );
 	if( ! decoratorFactory ) {
 		// this decorator can't be implemented on `Type`
 		return;
@@ -46,40 +46,14 @@ function decorate( decoratorFactoryFactory ) {
 
 	return {
 		factory() {
-			const Decorator = decoratorFactory( Collection );
-			assert( Decorator, `${decoratorFactory.name} is broken.` );
+			const Decorator = decoratorFactory( Container );
+			assert( typeof Decorator === 'function', `${decoratorFactory.name} is broken.` );
 
 			return function( ...args ) {
 				return new Decorator( this, ...args );
 			};
 		}
 	};
-}
-
-
-function forEachCollectionSymbol( fn ) {
-	assert( this, `forEachValidSymbol() must be called on an object` );
-
-	for( let symName in this ) {
-		if( ! this.hasOwnProperty(symName) ) {
-			console.log(`Unexpected prototype's enumerable property ${symName}`);
-			continue;
-		}
-
-		const sym = symbols.hasOwnProperty(symName) && symbols.*[symName];
-		if( ! sym ) {
-			console.log(`Unknown symbol ${symName}`);
-			continue;
-		}
-
-		const value = this[symName];
-		if( ! value ) {
-			console.log(`Symbol ${symName} has no value O,o`);
-			continue;
-		}
-
-		fn( value, sym, symName );
-	}
 }
 
 // like `assignProtocols`, but the values of `symbolObj` are protocol factories, rather than just protocols
@@ -163,11 +137,11 @@ function KVN( key, value, n ) {
 	this.n = n;
 }
 
-function KVArr( key, value ) {
+function KVIt( key, value ) {
 	this.value = [key, value];
 	this.done = false;
 }
-function VArr( value ) {
+function VIt( value ) {
 	this.value = value;
 	this.done = false;
 }
@@ -178,10 +152,9 @@ function Done() {
 
 Object.assign( utilTraits, {
 	toString,
-	decorate,
 	replaceSymbol,
 	extractKeys,
 	assignProtocolFactories,
-	KVN, KVArr, VArr, Done,
+	KVN, KVIt, VIt, Done,
 });
 module.exports = utilTraits;

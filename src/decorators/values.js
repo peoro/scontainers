@@ -4,7 +4,7 @@
 const straits = require('js-protocols');
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {VArr, Done} = require('../util.js');
+const {VIt, Done} = require('../util.js');
 const symbols = require('../symbols');
 
 use traits * from straits.utils;
@@ -39,7 +39,7 @@ module.exports = function( ParentCollection ) {
 				}
 
 				const {value} = next;
-				return new VArr( value );
+				return new VIt( value );
 			}
 		};
 

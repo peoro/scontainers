@@ -9,7 +9,7 @@ use traits * from utils;
 use traits * from symbols;
 
 
-const {decorate, extractKeys, assignProtocolFactories, KVN, KVArr, Done} = utils;
+const {extractKeys, assignProtocolFactories, KVN, KVIt, Done} = utils;
 const properties = require('./properties');
 
 const {ReorderedIterator} = require('../reordered_iterator.js');
@@ -95,7 +95,7 @@ function deriveCoreProtocols() {
 							}
 
 							const {key, value} = next;
-							return new KVArr( key, value );
+							return new KVIt( key, value );
 						}
 					};
 				};
@@ -475,8 +475,8 @@ function deriveProtocols() {
 				return this.*map( function key(value, key){return key;} ).*values();
 			};
 		},
-		values: Collection::decorate(Values),
-		entries: Collection::decorate(Entries),
+		values: Collection.*wrapScontainer(Values),
+		entries: Collection.*wrapScontainer(Entries),
 		enumerate() {
 			return function enumerate() {
 				TODO();
@@ -484,17 +484,17 @@ function deriveProtocols() {
 				return this.*map( (value)=>[count++, value] );
 			};
 		},
-		filter: Collection::decorate(Filter),
-		slice: Collection::decorate(Slice),
-		chunk: Collection::decorate(Chunk),
-		map: Collection::decorate(Map),
-		mapKey: Collection::decorate(MapKey),
-		cache: Collection::decorate(Cache),
-		iter: Collection::decorate(Iter),
-		reordered: Collection::decorate(Reordered),
-		groupBy: Collection::decorate(GroupBy),
-		cow: Collection::decorate(Cow),
-		flatten: Collection::decorate(Flatten),
+		filter: Collection.*wrapScontainer(Filter),
+		slice: Collection.*wrapScontainer(Slice),
+		chunk: Collection.*wrapScontainer(Chunk),
+		map: Collection.*wrapScontainer(Map),
+		mapKey: Collection.*wrapScontainer(MapKey),
+		cache: Collection.*wrapScontainer(Cache),
+		iter: Collection.*wrapScontainer(Iter),
+		reordered: Collection.*wrapScontainer(Reordered),
+		groupBy: Collection.*wrapScontainer(GroupBy),
+		cow: Collection.*wrapScontainer(Cow),
+		flatten: Collection.*wrapScontainer(Flatten),
 		flattenDeep() {
 			if( this.*map ) {
 				return function() {
@@ -519,8 +519,8 @@ function deriveProtocols() {
 				};
 			}
 		},
-		skipWhile: Collection::decorate(SkipWhile),
-		takeWhile: Collection::decorate(TakeWhile),
+		skipWhile: Collection.*wrapScontainer(SkipWhile),
+		takeWhile: Collection.*wrapScontainer(TakeWhile),
 		skip() {
 			if( proto.*slice ) {
 				return function skip( n ) { return this.*slice(n); };
