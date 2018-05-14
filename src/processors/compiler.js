@@ -411,10 +411,19 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const key = this.registerParameter(`key`);
 
+						this.body.*comment( `${Type.name} GET KVN` );
+
+						const kvn = this.*getKVN( key );
+
+						/*
 						this.body
+							.*comment( semantics.lit(`HAS KEY`) )
 							.*if( this.*hasKey(key),
-								semantics.return( this.*getKVN(key).value )
+								this.body = semantics.block()
 							)
+						*/
+
+						this.body.*return( kvn.value )
 					}
 				}
 			},
@@ -536,8 +545,9 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const forEachFn = this.registerParameter(`forEachFn`);
 
-						const loop = this.body.*loop();
-						return this.body.*statement(
+						const kvn = this.*loop();
+
+						this.body.*statement(
 							forEachFn.*call( kvn.value, kvn.key, kvn.n )
 						);
 					}
@@ -605,6 +615,7 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 			nthKVN() {
 				if( nthUnchecked ) {
 					return function( n ) {
+						/*
 						this.body
 							// .*statement( this.assert( semantics.id(`Number`).*member(`isInteger`).*call( n ) ) )
 							// .*if( semantics.or( n.*lt( 0 ), n.*ge( this.*len() ) ),
@@ -622,15 +633,22 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 			},
 			getKVN() {
 				if( getUnchecked ) {
-					return function( key ) {
-						/*
-						this.pushStatement(
-							semantics.if( this.*hasKey(key).note(),
-								semantics.return()
-							)
-						);
-						*/
-						return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
+					if( this.*keyToN ) {
+						return function( key ) {
+							/*
+							this.pushStatement(
+								semantics.if( this.*hasKey(key).note(),
+									semantics.return()
+								)
+							);
+							*/
+							return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
+						}
+					}
+					else {
+						return function( key ) {
+							return new KVN( key, this::getUnchecked( key ) );
+						}
 					}
 				}
 			},
