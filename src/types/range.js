@@ -2,9 +2,10 @@
 'use strict';
 
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
-const {implementSymbols, KVN} = require('../util.js');
+const {KVN} = require('../util.js');
 
-use protocols from require('../symbols.js');;
+use traits * from require('esast/dist/semantics.js');
+use traits * from require('../symbols.js');;
 
 
 class Range {
@@ -30,7 +31,7 @@ class Range {
 	}
 
 	toString( ) {
-		return `${this.begin}..${this.end}`;
+		return `${this.begin}…${this.end}`;
 	}
 }
 
@@ -39,13 +40,13 @@ Range::defineProperties({
 });
 
 Range::compileProtocolsForRootType({
-	nToKey( n ) { return n.plus( this.args.begin ); },
-	keyToN( key ) { return key.minus( this.args.begin ); },
-	nthUnchecked( n ) { return n.plus( this.args.begin ); },
+	nToKey( n ) { return n.*plus( this.args.begin ); },
+	keyToN( key ) { return key.*minus( this.args.begin ); },
+	nthUnchecked( n ) { return n.*plus( this.args.begin ); },
 	// add: nope
 	len() {
 		const {begin, end} = this.args;
-		return end.minus( begin );
+		return end.*minus( begin );
 	},
 	// reverse: from nth+len
 	// clear: nope

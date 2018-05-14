@@ -1,10 +1,12 @@
 
 'use strict';
 
-const {defineProperties, deriveProtocolsForTransformation, compileProtocolsForTransformation} = require('../processors/index.js')
-const {semantics} = require('../compiler/index.js');
+const {defineProperties, deriveProtocolsForTransformation, compileProtocolsForTransformation} = require('../processors/index.js');
 
-use protocols from require('../symbols');
+const {semantics} = require('esast/dist/es5.js');
+
+use traits * from require('esast/dist/semantics.js');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
@@ -34,11 +36,9 @@ module.exports = function( ParentCollection ) {
 
 		Filter::compileProtocolsForTransformation({
 			kStage( kvn ) {
-				this.pushStatement(
-					semantics.if(
-						this.args.filterFn.call( kvn.value, kvn.key, kvn.n ).not(),
-						this.skip()
-					)
+				this.body.*if(
+					this.args.filterFn.*call( kvn.value, kvn.key, kvn.n ),
+					this.body = semantics.block()
 				);
 				return kvn;
 			},

@@ -1,18 +1,20 @@
 
 const assert = require('assert');
 
+const straits = require('js-protocols');
 const symbols = require('../symbols');
+const utils = require('../util.js');
 
-use protocols from symbols;
+use traits * from utils;
+use traits * from symbols;
 
 
-const util = require('../util.js');
-const {decorate, implementSymbolsFromFactory, extractKeys, assignProtocolFactories, assignProtocols, KVN, KVArr, Done} = util;
+const {decorate, extractKeys, assignProtocolFactories, KVN, KVArr, Done} = utils;
 const properties = require('./properties');
 
 const {ReorderedIterator} = require('../reordered_iterator.js');
 
-const toStr = util.toString;
+const toStr = utils.toString;
 
 
 function deriveCoreProtocols() {
@@ -574,7 +576,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 	}
 
 	// everything in `compilerConfiguration` should be protocol generator factories: assigning them to `this`
-	symbols::assignProtocols( this.prototype, configuration );
+	this.prototype.*implScontainer( configuration );
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
@@ -619,7 +621,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 			nth() {
 				if( nthUnchecked ) {
 					return function( n ) {
-						assert( Number.isInteger(n), `${Collection.name}.nth(${n}): ${n} not valid` );
+						assert( Number.isInteger(n), `${this.constructor.name}.nth(${n}): ${n} not valid` );
 						if( n >= 0 && n < this.*len() ) {
 							return this::nthUnchecked( n );
 						}
@@ -671,7 +673,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 		assert( cond, `${this.name}.compileProtocolsForTransformation(): ${err}` );
 	};
 
-	use protocols from properties.symbols;
+	use traits * from properties;
 
 	const Collection = this;
 	const proto = this;

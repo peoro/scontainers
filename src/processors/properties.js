@@ -1,15 +1,11 @@
 
 const assert = require('assert');
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
-const util = require('../util.js');
+const utils = require('../util.js');
 
-const symbols = new protocols.util.Protocol();
-
-// core protocol generators: static methods, explicitely implemented by a collection
-// these are used to dynamically generate core and derived protocols for higher performance
-symbols[utilSymbols.defineAndAssign]( {}, {
+const traits = utils.TraitSet.fromKeys({
+	// core protocol generators: static methods, explicitely implemented by a collection
+	// these are used to dynamically generate core and derived traits for higher performance
 	InnerCollection: Object,
 	innerCollectionKey: '',
 	argKeys: [''],
@@ -18,25 +14,21 @@ symbols[utilSymbols.defineAndAssign]( {}, {
 	transformStream: false,	// the decorator can transform the inner collection as a stream
 });
 
+use traits * from utils;
+use traits * from traits;
 
-use protocols from symbols;
-
-
-function defineProperties( props ) {
+traits.defineProperties = function( props ) {
 	assert( props.argKeys );
 	assert( (!!props.innerCollectionKey)===(!!props.InnerCollection), this );
 
 	// setting properties
-	symbols::util.assignProtocols( this, props );
+	traits.*implTraits( this, props );
 
 	// setting default property values
-	symbols::util.assignProtocols( this, {
+	traits.*addTraits( this, {
 		mappingOnly: false,
 		transformStream: this.*mappingOnly ? true : false,
 	});
-}
-
-module.exports = {
-	symbols,
-	defineProperties,
 };
+
+module.exports = traits;

@@ -1,15 +1,18 @@
 
 const assert = require('assert');
 
+const straits = require('js-protocols');
+const es5 = require('esast/dist/es5.js');
+const semantics = es5.semantics;
+
 const symbols = require('../symbols');
 const generatorSymbols = require('../generator_symbols');
-
-const compilerSymbol = Symbol('compiler');
 const properties = require('./properties');
-const {grammar, builders, semantics, codegen, FunctionCompiler} = require('../compiler/index.js');
-const {extractKeys, assignProtocols, assignProtocolFactories, KVN} = require('../util.js');
+const {extractKeys, assignProtocolFactories, KVN} = require('../util.js');
 
-use protocols from properties.symbols;
+use traits * from straits.utils;
+use traits * from require('esast/dist/semantics.js');
+use traits * from properties;
 
 
 function defaultGet( key, defaultConstructor ) {
@@ -23,30 +26,23 @@ function defaultGet( key, defaultConstructor ) {
 }
 
 class CompilationFrame {
-	constructor( compiler, Type, typeArgMapFn, body, parameters, methods ) {
+	constructor( compiler, Type,  ) {
+		const frame = this;
+
 		this.compiler = compiler;
-
 		this.Type = Type;
-
-		// stateStack: some state variables - pushable, poppable, modificable
-		this.stateStack = [];
-		this.stateStack.push({
-			typeArgMapFn,
-			parameters,
-			body,
-		});
 
 		// inner: the CompilationFrame for our InnerType
 		const InnerType = Type.*InnerCollection;
 		if( InnerType ) {
-			this.inner = new CompilationFrame( compiler, InnerType, typeArgMapFn, body, parameters, this, methods );
+			this.inner = new CompilationFrame( compiler, InnerType, this.typeArgMapFn );
 		}
 
 		// self: Expression representing the instance of `Type` we're working on
 		Object.defineProperties( this, {
 			self: {
 				get(){
-					return typeArgMapFn( compiler.getSelf(Type) );
+					return frame.typeArgMapFn( compiler.getSelf(Type) );
 				}
 			}
 		});
@@ -54,10 +50,9 @@ class CompilationFrame {
 		// args
 		this.args = {}
 		Type.*argKeys.forEach( argKey=>{
-			// this.args[argKey] = typeArgMapFn( compiler.getArg(Type, argKey) );
 			Object.defineProperty( this.args, argKey, {
 				get(){
-					return typeArgMapFn( compiler.getArg(Type, argKey) );
+					return frame.typeArgMapFn( compiler.getArg(Type, argKey) );
 				}
 			});
 		});
@@ -75,161 +70,64 @@ class CompilationFrame {
 				}
 
 				const symVar = this.compiler.registerConstant( sym, `${symName}Sym` );
-				return compiler.getSelf( Type ).member( symVar, true ).call( ...args );
+				//return compiler.getSelf( Type ).*member( symVar, true ).*call( ...args );
+				return compilationFrame.self.*member( symVar, true ).*call( ...args );
 			}
 		}
 	}
 
-	get state() { return this.stateStack[ this.stateStack.lenght-1 ]; }
-	get typeArgMapFn() { return this.state.typeArgMapFn; }
-	get parameters() { return this.state.parameters; }
-	get body() { return this.state.body; }
-	set typeArgMapFn( value ) { return this.state.typeArgMapFn = value; }
-	set parameters( value ) { return this.state.parameters = value; }
-	set body( value ) { return this.state.body = value; }
-
-	// state stack manipulation
-	pushState( typeArgMapFn=this.typeArgMapFn, body=this.body, parameters=this.parameters ) {
-		this.stateStack.push({ typeArgMapFn, body, parameters });
-		return this;
-	}
-	popState() {
-		this.stateStack.pop();
-		return this;
-	}
-
-	// VarDB management
-	createUniqueVariable( name ) {
-		return this.compiler.createUniqueVariable( name );
-	}
-	registerParameter( name ) {
-		const variable = this.createUniqueVariable( name );
-		this.parameters.push( variable );
-		return variable;
-	}
-	registerConstant( ...args ) {
-		return this.compiler.registerConstant( ...args );
-	}
-	registerConstants( ...args ) {
-		return this.compiler.registerConstants( ...args );
-	}
-
-	// AST manipulation
-	pushStatement( ...statements ) {
-		statements.forEach( statement=>{
-			if( Array.isArray(statement) ) {
-				return this.pushStatements( ...statement );
-			}
-
-			this.body.push( statement );
-		});
-	}
-
-	// semantics: modify the current state
-	if( condition, thenFn ) {
-		const thenBlock = semantics.block();
-
-		this.pushStatement(
-			semantics.if( condition,
-				block
-			)
-		);
-
-		this.body = thenBlock.ast.statements;
-	}
-
-
-	subclass( typeArgMapFn, body, parameters, methods ) {
-		// return new CompilationFrame( this.compiler, this.Type, typeArgMapFn, body, parameters );
-		const frameChain = new CompilationFrame( this.compiler, this.root.Type, typeArgMapFn, body, parameters, null, methods );
-		const frame = frameChain.frameMap.get( this.Type );
-		return frame;
-	}
-
-	mapArgs( typeArgMapFn ) {
-		return this.subclass( typeArgMapFn, this.body, this.parameters, this.methods );
-	}
-
-	subFrame( newMethods, bodyFn, parameters=this.parameters ) {
-		if( ! bodyFn ) {
-			bodyFn = newMethods;
-			newMethods = {};
-		}
-		const methods = Object.assign( {}, this.methods, newMethods );
-
-		const frame = this.subclass( this.typeArgMapFn, [], parameters, methods );
-		frame::bodyFn();
-		return frame;
-	}
-
-	subFunction( id, params, methods, bodyFn ) {
-		const frame = this.subFrame( methods, bodyFn, params );
-		return semantics.function( id, frame.parameters, semantics.block(...frame.body) );
-	}
-	block( methods, bodyFn ) {
-		const frame = this.subFrame( methods, bodyFn, [] );
-		return semantics.block( ...frame.body );
-	}
-	/*
-	// TODO: should we use something like this?
-	forIn( methods, bodyFn ) {
-		const frame = this.subFrame( {skip:semantics.continue}, bodyFn, [] );
-		return semantics.block( ...frame.body );
-	}
-	*/
-
-	call( bodyFn ) {
-		this::bodyFn();
-	}
+	get typeArgMapFn() { return this.compiler.typeArgMapFn; }
+	set typeArgMapFn( val ) { return this.compiler.typeArgMapFn = val; }
+	get ast() { return this.compiler.ast; }
+	get mainFunction() { return this.compiler.mainFunction; }
+	get body() { return this.compiler.body; }
+	set body( val ) { return this.compiler.body = val; }
+	createVariable( ...args ) { return this.compiler.createVariable( ...args ); }
+	createUniqueVariable( ...args ) { return this.compiler.createUniqueVariable( ...args ); }
+	registerConstant( ...args ) { return this.compiler.registerConstant( ...args ); }
+	registerConstants( ...args ) { return this.compiler.registerConstants( ...args ); }
+	registerParameter( ...args ) { return this.compiler.registerParameter( ...args ); }
+	registerParameters( ...args ) { return this.compiler.registerParameters( ...args ); }
+	assert( ...args ) { return this.compiler.assert( ...args ); }
+	debug( ...args ) { return this.compiler.debug( ...args ); }
+	log( ...args ) { return this.compiler.log( ...args ); }
 }
 
 
-class NewCompiler {
-	constructor( Type, functionName, bodyFn ) {
-		this.Type = Type;
-		this.functionName = `${Type.name.replace(/:+/g, '_')}_${functionName}`;
+class NewCompiler extends es5.Compiler {
+	constructor( Type, functionName, params=[] ) {
+		super();
 
-		// VarDB management
-		this.varDB = new semantics.VarDB();
-		this.constantMap = new Map();
+		this.Type = Type;
+		this.typeArgMapFn = arg=>arg.variable;
 
 		// type arguments
 		this.typeArguments = new Map();
 
 		// AST manipulation
-		this.rootFrame = new CompilationFrame( this, this.Type, arg=>arg.variable, [] );
-		// this.mainFrame = new CompilationFrame( this, this.Type, arg=>arg.variable, [], [] );
+		this.frame = new CompilationFrame( this, this.Type );
 
-		const compiler = this;
-		this.mainFunction = this.rootFrame.subFunction( semantics.id(this.functionName), [], function(){
-			compiler.mainFrame = this;
-			this::bodyFn();
-		});
+		this.body = semantics.block();
+		this.mainFunction = semantics.function(
+			`${Type.name.replace(/\W+/g, '_')}_${functionName}`,
+			params,
+			this.body
+		);
+		this.ast.*return( this.mainFunction );
 	}
 
-	// VarDB management
-	createUniqueVariable( name ) {
-		return this.varDB.createUniqueVariable( name );
-	}
-	// constants
-	registerConstant( value, name ) {
-		if( this.constantMap.has(value) ) {
-			return this.constantMap.get( value );
-		}
-
+	registerParameter( name ) {
 		const variable = this.createUniqueVariable( name );
-		this.constantMap.set( value, variable );
+		this.mainFunction.params.push( variable );
 		return variable;
-	}
-	registerConstants( args ) {
-		const result = {};
-		for( let key in args ) {
-			result[key] = this.registerConstant( args[key], key );
-		}
-		return result;
 	}
 
 	// type arguments
+	// return an expression for `memberExpr` as member of `TragetType`
+	// e.g.: in the hierarchy `Array::Map::Filter`...
+	//  makeVarRelative( Array::Map::Filter, 'filterFn' ) = AST::parse( `this.filterFn` )
+	//  makeVarRelative( Array::Map, 'mapFn' ) = AST::parse( `this.wrapped.mapFn` )
+	//  makeVarRelative( Array ) = AST::parse( `this.wrapped.wrapped` )
 	makeVarRelative( TargetType, memberExpr ) {
 		let Type = this.Type;
 		let expr = semantics.this();
@@ -238,18 +136,26 @@ class NewCompiler {
 			const parentKey = Type.*innerCollectionKey;
 
 			Type = Type.*InnerCollection;
-			expr = expr.member( parentKey );
+			expr = expr.*member( parentKey );
 		}
 
 		if( memberExpr ) {
-			return expr.member( memberExpr );
+			return expr.*member( memberExpr );
 		}
 		return expr;
 	}
 
+	// returns the member arguments for `Type`
+	// e.g. getTipeArguments( Array::Map ) === 'mapFn' - check the object property `.*argKeys`
 	getTypeArguments( Type ) {
 		return this.typeArguments::defaultGet( Type, ()=>new Map() );
 	}
+	// get a member variable for `Type`. very similar to `makeVarRelative`, but returns an object...
+	// e.g. for `Array::Map::Filter`:
+	//   getArg( Array::Map, 'mapFn' ) {
+	//     name: `mapFn`,
+	//     variable: AST::parse( 'this.wrapped.mapFn' ), // same as `makeVarRelative(Array::Map, 'mapFn')`
+	//     fn: this.wrapped.mapFn
 	getArg( Type, argKey ) {
 		const typeArgs = this.getTypeArguments( Type );
 
@@ -261,9 +167,11 @@ class NewCompiler {
 
 		return arg
 	}
+	// like `getArg`, but operating on an array of args
 	getArgs( Type, ...argKeys ) {
 		return argKeys.map( argKey=>this.getArg(Type, argKey) );
 	}
+	// like `getArg`, but returning the parent for `Type`
 	getParent( Type, parentKey ) {
 		const ParentType = Type.*InnerCollection;
 		const parent = this.getSelf( ParentType );
@@ -277,6 +185,7 @@ class NewCompiler {
 
 		return parent;
 	}
+	// like `getArg`, but returning the instance of type `Type`
 	getSelf( Type, parentKey ) {
 		const typeArgs = this.getTypeArguments( Type );
 
@@ -291,6 +200,8 @@ class NewCompiler {
 		return arg;
 	}
 
+	// returns an array with all the type arguments that were used:
+	// all the stuff that was returned by `getArg`, `getArgs`, `getParent`, `getSelf`
 	getTypeArgumentArray( ) {
 		const getTypeArgRec = (Type)=>{
 			if( ! Type ) { return []; }
@@ -303,6 +214,8 @@ class NewCompiler {
 
 		return getTypeArgRec( this.Type );
 	}
+	// returns an array with the values of `instance` for every type argument that was used:
+	// the value for all the stuff that was returned by `getArg`, `getArgs`, `getParent`, `getSelf`
 	getTypeArgumentArrayValues( instance ) {
 		const getTypeArgRec = (Type, instance)=>{
 			if( ! Type ) { return []; }
@@ -329,53 +242,32 @@ class NewCompiler {
 	}
 
 	// compilation
-	toFunction() {
-		const constantIdentifiers = Array.from( this.constantMap.values() ).map( variable=>variable::semantics.ast().name );
-		const constantValues = Array.from( this.constantMap.keys() );
-
-		const mainFrame = this.mainFrame;
-		const mainFunction = this.mainFunction::semantics.ast();
-
-		const program = new semantics.Program(
-			...this.rootFrame.body,
-			semantics.return(
-				semantics.function(
-					mainFunction.id,
-					[].concat(
-						mainFrame.parameters,
-					),
-					semantics.block( ...mainFrame.body )
-				)
-			)
-		)::semantics.ast();
-
-		grammar.Program.check( program );
-
-		const code = codegen( program );
-		if( true ) {
-			console.log(`>>>>>>>>>>>>>>>>>>>>> ${this.functionName}(${constantIdentifiers}):`);
-			console.log( code );
+	compile() {
+		if( false ) {
+			const constantNames = Array.from( this.constants.values() ).map( variable=>variable.name );
+			console.log(`>>>>>>>>>>>>>>>>>>>>> ${this.mainFunction.id.name}(${constantNames}):`);
+			// console.log( fnFactory.toString() );
+			console.group();
+			console.log( this.ast.codegen() );
+			console.groupEnd();
 			console.log(`<<<<<<<<<<<<<<<<<<<<<`);
 		}
 
-		const fFactory = new Function(
-			...constantIdentifiers,
-			code
-		);
-		const f = fFactory.apply( null, constantValues );
-		return f;
+		const fnFactory = super.compile();
+
+		return fnFactory();
 	}
 
 	// semantics
 	assert( expr ) {
 		const assertVar = this.registerConstant( assert, `assert` );
-		return assertVar.call( expr );
+		return assertVar.*call( expr );
 	}
 	debug() {
-		return this.log( semantics.lit(this.functionName), semantics.id(`arguments`) );
+		return this.log( semantics.lit(this.mainFunction.id.name), semantics.id(`arguments`) );
 	}
 	log( ...args ) {
-		return semantics.id(`console`).member(`log`).call( ...args );
+		return semantics.id(`console`).*member(`log`).*call( ...args );
 	}
 }
 
@@ -387,7 +279,7 @@ function deriveCoreProtocolGenerators() {
 
 	const Type = this;
 
-	use protocols from generatorSymbols;
+	use traits * from generatorSymbols;
 
 	generatorSymbols::assignProtocolFactories( this, {
 		getKVN() {
@@ -403,9 +295,9 @@ function deriveCoreProtocolGenerators() {
 				return function( key ) {
 					const n = this.*keyToN( key );
 					return semantics.and(
-						semantics.id(`Number`).member(`isInteger`).call( n ),
-						n.ge( 0 ),
-						n.lt( this.*len() )
+						semantics.id(`Number`).*member(`isInteger`).*call( n ),
+						n.*ge( 0 ),
+						n.*lt( this.*len() )
 					);
 				}
 			}
@@ -424,19 +316,16 @@ function deriveCoreProtocolGenerators() {
 					const i = this.createUniqueVariable(`i`);
 					const lenVar = this.*len();
 
-					return [
-						semantics.for(
-							i.declare( 0 ),
-							i.lt( lenVar ),
-							i.increment(),
+					this.body
+						.*for(
+							semantics.declare( i, 0, `var` ),
+							i.*lt( lenVar ),
+							i.*increment(),
 
-							this.block( { skip:semantics.continue }, function(){
-								this.pushStatement(
-									...this::generator( this.*nthKVN(i) )
-								);
-							})
-						)
-					];
+							this.body = semantics.block()
+						);
+
+					return this.*nthKVN( i );
 				};
 			}
 		}
@@ -450,7 +339,7 @@ function deriveProtocolsFromGenerators() {
 
 	// implementing core protocols from generators
 	{
-		use protocols from generatorSymbols;
+		use traits * from generatorSymbols;
 
 		const proto = this.prototype;
 
@@ -465,14 +354,16 @@ function deriveProtocolsFromGenerators() {
 
 				factories[key] = {
 					factory() {
-						const compiler = new NewCompiler( Type, key, function(){
-							// this.pushStatement( this.compiler.debug() );
-							const result = this::factory();
-							if( result ) {
-								this.pushStatement( result.return() );
-							}
-						});
-						return compiler.toFunction();
+						const compiler = new NewCompiler( Type, key );
+
+						// compiler.body.*statement( compiler.debug() );
+
+						const result = compiler.frame::factory();
+
+						if( result ) {
+							compiler.body.*return( result );
+						}
+						return compiler.compile();
 					}
 				};
 			}
@@ -488,7 +379,7 @@ function deriveProtocolsFromGenerators() {
 						const KVNVar = this.registerConstant( KVN, `KVN` );
 						const n = this.registerParameter(`n`);
 						const kvn = this.*nthKVN( n );
-						return KVNVar.new( kvn.key, kvn.value, kvn.n );
+						return KVNVar.*new( kvn.key, kvn.value, kvn.n );
 					}
 				}
 			},
@@ -498,7 +389,7 @@ function deriveProtocolsFromGenerators() {
 						const KVNVar = this.registerConstant( KVN, `KVN` );
 						const n = this.registerParameter(`n`);
 						const kvn = this.*getKVN( n );
-						return KVNVar.new( kvn.key, kvn.value, kvn.n );
+						return KVNVar.*new( kvn.key, kvn.value, kvn.n );
 					}
 				}
 			},
@@ -506,14 +397,12 @@ function deriveProtocolsFromGenerators() {
 				if( Type.*nthKVN ) {
 					return function() {
 						const n = this.registerParameter(`n`);
-						this.pushStatement(
-							this.compiler.assert( semantics.id(`Number`).member(`isInteger`).call( n ) ),
-							semantics.if(
-								semantics.or( n.lt( 0 ), n.ge( this.*len() ) ),
-								semantics.return()
-							),
-							semantics.return( this.*nthKVN(n).value ),
-						);
+
+						this.body
+							.*statement( this.assert( semantics.id(`Number`).*member(`isInteger`).*call( n ) ) )
+							.*if( semantics.or( n.*lt( this.*len() ) ),
+								semantics.return( this.*nthKVN(n).value )
+							);
 					}
 				}
 			},
@@ -521,11 +410,11 @@ function deriveProtocolsFromGenerators() {
 				if( Type.*getKVN && Type.*hasKey ) {
 					return function() {
 						const key = this.registerParameter(`key`);
-						this.pushStatement(
-							semantics.if( this.*hasKey(key),
+
+						this.body
+							.*if( this.*hasKey(key),
 								semantics.return( this.*getKVN(key).value )
-							),
-						);
+							)
 					}
 				}
 			},
@@ -541,66 +430,100 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const fns = this.registerConstants({KVN});
 						const Iterator = this.createUniqueVariable( `Iterator` );
-						const i = semantics.this().member( this.createUniqueVariable(`i`) );
-						const lenVar = semantics.this().member( this.createUniqueVariable(`len`) );
+						const thisI = semantics.this().*member( this.createUniqueVariable(`i`) );
+						const thisLen = semantics.this().*member( this.createUniqueVariable(`len`) );
 						const key = this.createUniqueVariable( `key` );
 						const value = this.createUniqueVariable( `value` );
 
-						this.compiler.rootFrame.call( function() {
+						let typeArgMapFn = this.typeArgMapFn;
+						let body = this.body;
+						const reset = ()=>{
+							this.typeArgMapFn = typeArgMapFn;
+							this.body = body;
+						};
+
+						{
+							// will map all the type variables that are used to the variable member of `this`
+							// `this.wrapped.mapFn` becomes:
+							//  key:{name:mapFn, variable:this.wrapped.mapFn, fn:...}, value:this.mapFn
 							const argVarMap = new Map();
 
+							function rebase( variable ) {
+								const rebaseRec = (variable)=>{
+									if( variable.type === 'ThisExpression' ) {
+										return this;
+									}
+									return rebaseRec( variable.object )
+										.*member( variable.property, variable.computed );
+								}
+								return rebaseRec( variable );
+							}
+
 							// computing `Iterator.prototype.next` first
-							// as that's the one doing the actual computations
-							// after it's compiled, we'll know which type arguments are needed
-							const nextFunction = this.subFunction( null, [], function(){
-								const frameWithMemberArgs = this.mapArgs( arg=>{
-									return argVarMap::defaultGet( arg, ()=>semantics.this().member( this.createUniqueVariable(arg.name) ) );
+							{
+								this.typeArgMapFn = function( arg ) {
+									return argVarMap::defaultGet( arg, ()=>semantics.this().*member( this.createUniqueVariable(arg.name) ) );
+								};
+
+								// as that's the one doing the actual computations
+								// after it's compiled, we'll know which type arguments are needed
+								this.ast.body.unshift(
+									semantics.statement(
+										Iterator.*member('prototype').*member('next').*assign(
+											semantics.function(null, [], semantics.block()
+												.*if( thisI.*lt(thisLen),
+													this.body = semantics.block()
+												)
+											)
+										)
+									)
+								);
+
+								const kvn = this.*nthKVN( thisI );
+
+								this.body .*return( fns.KVN.*new(kvn.key, kvn.value, thisI.*increment(false)) )
+
+								reset();
+							}
+
+							// defining `Iterator`
+							{
+								const collection = this.createUniqueVariable(`collection`);
+								this.typeArgMapFn = function( arg ) {
+									return collection::rebase( arg.variable );
+								};
+
+								this.ast.body.unshift(
+									semantics.declareFunction( Iterator, [collection],
+										this.body = semantics.block()
+											.*statement( thisI.*assign(0) )
+									)
+								);
+
+								// assigning `thisLen`
+								this.body.*statement( thisLen.*assign(this.*len()) );
+
+								// assignign all the other arg vars
+								argVarMap.forEach( (thisVar, collectionVar)=>{
+									this.body.*statement(
+										thisVar.*assign( collection::rebase(collectionVar.variable) )
+									);
 								});
 
-								const kvn = frameWithMemberArgs.*nthKVN( i );
+								reset();
+							}
 
-								this.pushStatement(
-									semantics.if(
-										i.ge( lenVar ),
-										semantics.return()
-									),
-									fns.KVN.new( kvn.key, kvn.value, i.increment() ).return()
-								);
-							});
-
-							// computing `Iterator`
-							const args = this.compiler.getTypeArgumentArray();
-							// const params = args.map( arg=>arg.variable ); // need to wait longer...
-							const IteratorConstructor = this.subFunction( Iterator, [], function(){
-								const collection = this.registerParameter(`collection`);
-								function rebase( variable ) {
-									function rebaseRec( variable ) {
-										if( variable.type === 'ThisExpression' ) {
-											return collection;
-										}
-										return rebaseRec( variable.object ).member( variable.property, variable.computed );
-									}
-									return rebaseRec( variable.ast );
-								}
-								const frameWithCollectionArgs = this.mapArgs( arg=>rebase(arg.variable) );
-
-								this.pushStatement(
-									i.assign( 0 ),
-									lenVar.assign( frameWithCollectionArgs.*len() ),
-									...args.map( arg=>argVarMap.get(arg).assign( rebase(arg.variable) ) ),
-								);
-							});
-
-							this.pushStatement(
+							/*
+							this.ast
 								IteratorConstructor,
 								Iterator.member('prototype').member('next').assign( nextFunction )
 							);
-						});
+							*/
+						}
 
 						// the main function only instantiates a new `Iterator`
-						this.pushStatement(
-							Iterator.new( semantics.this() ).return()
-						);
+						this.body
+							.*return( Iterator.*new( semantics.this() ) );
 					};
 				}
 			},
@@ -613,10 +536,9 @@ function deriveProtocolsFromGenerators() {
 					return function() {
 						const forEachFn = this.registerParameter(`forEachFn`);
 
-						this.pushStatement(
-							...this.*loop( function(kvn){
-								return [ forEachFn.call( kvn.value, kvn.key, kvn.n ) ];
-							})
+						const loop = this.body.*loop();
+						return this.body.*statement(
+							forEachFn.*call( kvn.value, kvn.key, kvn.n )
 						);
 					}
 				}
@@ -629,15 +551,13 @@ function deriveProtocolsFromGenerators() {
 
 						const state = this.createUniqueVariable(`state`);
 
-						this.pushStatement(
-							state.declare( initialValue ),
+						const outsideLoop = this.body;
+						this.body.*declare( state, initialValue, `var` );
+						const kvn = this.*loop();
+						this.body.*statement( state.*assign( reduceFn.*call(state, kvn.value, kvn.key, kvn.n) ) );
 
-							...this.*loop( function(kvn){
-								return [ state.assign( reduceFn.call(state, kvn.value, kvn.key, kvn.n) ) ];
-							}),
-
-							state.return(),
-						);
+						this.body = outsideLoop;
+						this.body.*return( state );
 					}
 				}
 			},
@@ -662,7 +582,7 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 	let {nthUnchecked, getUnchecked} = compilerConfiguration::extractKeys( Object.keys({ nthUnchecked:null, getUnchecked:null }) );
 	// deriving the missing non-protocol functions we can derive
 	{
-		use protocols from generatorSymbols;
+		use traits * from generatorSymbols;
 
 		if( nthUnchecked ) {
 			check( !getUnchecked, `either supply \`nthUnchecked\` or \`getUnchecked\`` );
@@ -674,24 +594,28 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 	}
 
 	// everything in `compilerConfiguration` should be protocol generator factories: assigning them to `this`
-	generatorSymbols::assignProtocols( this, compilerConfiguration );
+	generatorSymbols.*implTraits( this, compilerConfiguration );
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
 		const proto = this.prototype;
-		use protocols from generatorSymbols;
+		use traits * from generatorSymbols;
 
-		generatorSymbols::assignProtocolFactories( this.prototype, {
+		generatorSymbols::assignProtocolFactories( this, {
 			nthKVN() {
 				if( nthUnchecked ) {
 					return function( n ) {
-						this.pushStatement(
-							this.compiler.assert( semantics.id(`Number`).member(`isInteger`).call( n ) ),
-							semantics.if(
-								semantics.or( n.lt( 0 ), n.ge( this.*len() ) ),
-								semantics.return()
-							),
-						);
+						this.body
+							// .*statement( this.assert( semantics.id(`Number`).*member(`isInteger`).*call( n ) ) )
+							// .*if( semantics.or( n.*lt( 0 ), n.*ge( this.*len() ) ),
+							/*
+							.*if( n.*lt( this.*len() ),
+								// semantics.return()
+								this.body = semantics.block()
+									.*statement( semantics.lit(this.Type.name) )
+							);
+							*/
+
 						return new KVN( this.*nToKey( n ), this::nthUnchecked( n ), n );
 					}
 				}
@@ -699,11 +623,13 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 			getKVN() {
 				if( getUnchecked ) {
 					return function( key ) {
+						/*
 						this.pushStatement(
 							semantics.if( this.*hasKey(key).note(),
 								semantics.return()
 							)
 						);
+						*/
 						return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
 					}
 				}
@@ -765,7 +691,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
-		use protocols from generatorSymbols;
+		use traits * from generatorSymbols;
 
 		generatorSymbols::assignProtocolFactories( Collection, {
 			len() {
@@ -823,10 +749,9 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 			},
 			loop() {
 				if( ParentType.*loop ) {
-					return function( generator ) {
-						return this.inner.*loop( function(parentKVN){
-							return this.outer::generator( this.outer::kStage(parentKVN) );
-						});
+					return function() {
+						const kvn = this.inner.*loop();
+						return this::kStage( kvn );
 					};
 				}
 			},
@@ -860,5 +785,5 @@ if( require.main === module ) {
 			this.pushStatement( result.return() );
 		}
 	});
-	return compiler.toFunction();
+	console.log( compiler.compile() );
 }

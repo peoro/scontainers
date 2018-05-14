@@ -1,9 +1,9 @@
 
-require('./index.js'); // to implement some symbols, like `map`
-require('./types/object.js'); // to generate some symbols, like Object[symbols.ownProperties]
+require('../src/index.js'); // to implement some symbols, like `map`
+require('../src/types/object.js'); // to generate some symbols, like Object[symbols.ownProperties]
 
-const symbols = require('./symbols.js');
-const {toString, hasSymbols} = require('./util.js');
+const symbols = require('../src/symbols.js');
+const {toString, hasSymbols} = require('../src/util.js');
 
 function bindSymbol( sym, symName ) {
 	const f = function() {

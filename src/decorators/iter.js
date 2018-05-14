@@ -5,7 +5,7 @@ const subminus = require('../index.js');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
 const {ReorderedIterator} = require('../reordered_iterator.js');
 
-use protocols from require('../symbols');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {

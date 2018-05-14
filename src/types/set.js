@@ -1,14 +1,16 @@
 
 'use strict';
 
+const straits = require('js-protocols');
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
-const {assignProtocols, KVN, toString} = require('../util.js');
-
+const {KVN, toString} = require('../util.js');
 const symbols = require('../symbols');
-use protocols from symbols;
+
+use traits * from straits.utils;
+use traits * from symbols;
 
 
-symbols::assignProtocols( Set, {
+symbols.*implTraits( Set, {
 	from( collection ) {
 		if( collection.*values ) {
 			return Set.from( collection.*values() );

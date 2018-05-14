@@ -4,7 +4,7 @@
 const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
 const {KVN} = require('../util.js');
 
-use protocols from require('../symbols');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {

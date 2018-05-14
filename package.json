@@ -4,35 +4,26 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"build.old": "flow-remove-types src/ -d lib/",
-		"build": "./peorify.sh",
-		"prepublish": "npm run build",
-		"dist-watch": "npx babel --watch src --out-dir dist",
-		"dist": "npx babel src --out-dir dist"
+		"build-watch": "npx babel --watch src --out-dir dist",
+		"prepare": "babel src --out-dir dist"
 	},
 	"author": "peoro",
 	"license": "ISC",
 	"devDependencies": {
-		"@sweet-js/cli": "^3.0.13",
+		"babel-plugin-transform-function-bind": "^6.22.0",
 		"babel-plugin-transform-strict-mode": "^6.24.1",
-		"flow-bin": "^0.59.0",
-		"flow-remove-types": "^1.2.3"
+		"straits-babel": "git+ssh://git@git.peori.space:peoro/straits-babel.git"
 	},
 	"dependencies": {
-		"babel-cli": "^6.26.0",
-		"babel-core": "^6.26.0",
-		"babel-plugin-transform-function-bind": "^6.22.0",
-		"escodegen": "^1.9.1",
-		"fs-extra": "^5.0.0",
-		"js-protocols": "file:../js-protocols",
-		"js-protocols-babylon": "file:../js-protocols-babylon"
+		"esast": "git+ssh://git@git.peori.space:peoro/esast.git",
+		"js-protocols": "git+ssh://git@git.peori.space:peoro/js-protocols.git"
 	},
 	"babel": {
 		"parserOpts": {
-			"parser": "js-protocols-babylon"
+			"parser": "straits-babel"
 		},
 		"plugins": [
-			"js-protocols-babylon/plugin",
+			"straits-babel/plugin",
 			"transform-strict-mode",
 			"transform-function-bind"
 		]

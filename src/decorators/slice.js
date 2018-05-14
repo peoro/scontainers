@@ -4,7 +4,8 @@
 const assert = require('assert');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
 
-use protocols from require('../symbols');
+use traits * from require('esast/dist/semantics.js');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
@@ -40,13 +41,13 @@ module.exports = function( ParentCollection ) {
 		Slice::compileProtocolsForTransformation({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) {
-				return index.plus( this.args.begin );
+				return index.*plus( this.args.begin );
 			},
 
 			len() {
 				if( parentProto.*len ) {
 					return function() {
-						return this.args.end.minus( this.args.begin );
+						return this.args.end.*minus( this.args.begin );
 					}
 				}
 			},

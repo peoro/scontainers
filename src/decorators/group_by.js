@@ -6,7 +6,7 @@ const {defineProperties, deriveProtocolsForTransformation, deriveProtocolsForRoo
 const {ReorderedIterator} = require('../reordered_iterator.js');
 const {KVN} = require('../util.js');
 
-use protocols from require('../symbols');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {

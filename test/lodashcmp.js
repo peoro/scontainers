@@ -2,12 +2,14 @@
 
 'use strict';
 
+const SRC = `src`;
+
 const assert = require('assert');
 const _ = require('lodash');
-const {Range} = require('./');
-const {toString} = require('./util.js');
+const {Range} = require(`../${SRC}/`);
+const {toString} = require(`../${SRC}/util.js`);
 
-use protocols from require('./symbols');
+use traits * from require(`../${SRC}/symbols`);
 
 // HACK: the bad things happen here...
 {

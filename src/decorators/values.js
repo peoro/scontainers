@@ -1,11 +1,14 @@
 
 'use strict';
 
+const straits = require('js-protocols');
+
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {assignProtocols, VArr, Done} = require('../util.js');
+const {VArr, Done} = require('../util.js');
 const symbols = require('../symbols');
 
-use protocols from symbols;
+use traits * from straits.utils;
+use traits * from symbols;
 
 
 module.exports = function( ParentCollection ) {
@@ -50,7 +53,7 @@ module.exports = function( ParentCollection ) {
 			mappingOnly: true,
 		});
 
-		symbols::assignProtocols( Values.prototype, {
+		symbols.*implTraits( Values.prototype, {
 			iterator() {
 				return new Values.Iterator( this.wrapped.*kvIterator() );
 			}

@@ -1,7 +1,8 @@
 
 const assert = require('assert');
-
 const {KVN} = require('./util.js');
+
+use traits * from require('./symbols');
 
 class ReorderedIterator {
 	constructor() {

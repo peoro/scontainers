@@ -4,9 +4,11 @@
 const assert = require('assert');
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
 const {KVN, toString} = require('../util.js');
-const {semantics} = require('../compiler/index.js');
 
-use protocols from require('../symbols');
+const es5 = require('esast/dist/es5.js');
+
+use traits * from require('esast/dist/semantics.js');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
@@ -32,30 +34,29 @@ module.exports = function( ParentCollection ) {
 
 		OwnProperties::compileProtocolsForRootType({
 			getUnchecked( key ) {
-				return this.args.object.member( key, true );
+				return this.args.object.*member( key, true );
 			},
 			hasKey( key ) {
-				return this.args.object.member(`hasOwnProperty`).call( key );
+				return this.args.object.*member(`hasOwnProperty`).*call( key );
 			},
 
-			loop( generator ) {
+			loop() {
+				const s = es5.semantics;
+
 				const key = this.createUniqueVariable(`key`);
 
-				return [
-					semantics.forIn(
-						key.declare(),
+				this.body
+					.*forIn(
+						s.declare( key, undefined, `var` ),
 						this.args.object,
 
-						this.block({skip:semantics.continue}, function(){
-							const kvn = new KVN( key, this.args.object.member(key, true) );
+						s.block()
+							.*if( this.*hasKey(key),
+								this.body = s.block()
+							)
+					);
 
-							this.pushStatement(
-								semantics.if( this.*hasKey(kvn.key).not(), this.skip() ),
-								...this::generator( kvn ),
-							);
-						})
-					)
-				];
+				return new KVN( key, this.args.object.*member(key, true) );
 			},
 		});
 

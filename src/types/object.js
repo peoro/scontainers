@@ -1,13 +1,15 @@
 
 'use strict';
 
-const symbols = require('../symbols.js');
-const {decorate, implementSymbolsFromFactory, assignProtocols, assignProtocolFactories} = require('../util.js');
+const traits = require('../symbols.js');
+const utils = require('../util.js');
+const {decorate, assignProtocolFactories} = utils;
 
-use protocols from symbols;
+use traits * from utils;
+use traits * from traits;
 
 
-symbols::assignProtocols( Object, {
+Object.*implScontainer({
 	from( collection ) {
 		// TODO: this function should be specialized, just like the rest of what this lib does...
 		if( collection.*forEach ) {
@@ -19,9 +21,10 @@ symbols::assignProtocols( Object, {
 	}
 });
 
-symbols::assignProtocolFactories( Object.prototype, {
+traits::assignProtocolFactories( Object.prototype, {
 	ownProperties: Object::decorate( require('./object_own_properties') ),
 	properties: Object::decorate( require('./object_enumerable_properties') ),
+	/*
 	// TODO: override `toString`, but force its overriddance
 	toString() {
 		return function toString() {
@@ -41,13 +44,5 @@ symbols::assignProtocolFactories( Object.prototype, {
 			return `${this.constructor.name}{${out}}`;
 		}
 	}
+	*/
 });
-
-symbols::assignProtocols( Symbol.prototype, {
-	toString() {
-		return `[[${String(this).slice( 7, -1 )}]]`;
-	}
-});
-
-// requiring bound at the end, as it needs our `ownProperties` functions etc
-const {collect, map, properties, toString} = require('../bound.js');

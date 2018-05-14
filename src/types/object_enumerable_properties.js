@@ -5,7 +5,7 @@ const assert = require('assert');
 const {defineProperties, deriveProtocolsForRootType} = require('../processors/index.js');
 const {KVN, toString} = require('../util.js');
 
-use protocols from require('../symbols');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {

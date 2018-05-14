@@ -4,11 +4,11 @@
 Error.stackTraceLimit = Infinity;
 
 const assert = require('assert');
-const {symbols, Range} = require('./');
-const generatorSymbols = require('./generator_symbols.js');
-const {toString} = require('./util.js');
+const {symbols, Range} = require('../src');
+const generatorSymbols = require('../src/generator_symbols.js');
+const {toString} = require('../src/util.js');
 
-use protocols from symbols;
+use traits * from symbols;
 
 function log() {
 	console.log( this::toString() );
@@ -28,6 +28,7 @@ function sumFn( a, b ) { return a+b; }
 	}
 
 	function print( sym, str, coll ) {
+
 		if( ! coll ) {
 			coll = str;
 			str = null;
@@ -44,12 +45,13 @@ function sumFn( a, b ) { return a+b; }
 
 	quickTest: {
 		const collection =
-			({a:3, b:5, c:7}).*ownProperties()
-			// new Map([ ['a',7], [32,32], [false,'baobab'] ])
-		// const collection = new Range( 10 )
+			//({a:3, b:5, c:7}).*ownProperties()
+			new Map([ ['a',7], [32,32], [false,'baobab'] ])
+			// new Range( 10 )
 			.*filter( (v,k)=>!Number.isInteger(k) )
 			.*map( x=>`(${x})` );
 
+		console.log( collection.*toString() );
 		collection.*get( `a` );
 		collection.*forEach( ::console.log );
 

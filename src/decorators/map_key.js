@@ -2,10 +2,10 @@
 'use strict';
 
 const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
+const utilSymbols = protocols.utils;
 const subminus = require('../');
 
-use protocols from subminus.symbols;
+use traits * from subminus.symbols;
 
 
 module.exports = function( ParentCollection ) {

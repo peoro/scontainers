@@ -3,7 +3,8 @@
 
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
 
-use protocols from require('../symbols');
+use traits * from require('esast/dist/semantics.js');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {
@@ -31,10 +32,12 @@ module.exports = function( ParentCollection ) {
 			mappingOnly: true,
 		});
 
+		use traits * from require('../processors/properties.js');
+
 		Map::compileProtocolsForTransformation({
 			stage( kvn ) {
 				const {mapFn} = this.args;
-				kvn.value = mapFn.call( kvn.value, kvn.key, kvn.n );
+				kvn.value = mapFn.*call( kvn.value, kvn.key, kvn.n );
 				return kvn;
 			},
 			indexToParentIndex( index ) { return index; },

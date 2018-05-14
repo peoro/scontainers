@@ -4,7 +4,7 @@
 const subminus = require('../index.js');
 const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
 
-use protocols from require('../symbols');
+use traits * from require('../symbols');
 
 
 module.exports = function( ParentCollection ) {

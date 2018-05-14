@@ -1,14 +1,17 @@
 
 'use strict';
 
+const straits = require('js-protocols');
 const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
-const {assignProtocols, KVN, toString} = require('../util.js');
+const {KVN, toString} = require('../util.js');
+const subminusTraits = require('../symbols');
 
-const symbols = require('../symbols');
-use protocols from symbols;
+use traits * from require('esast/dist/semantics.js');
+use traits * from straits.utils;
+use traits * from subminusTraits;
 
 
-symbols::assignProtocols( Array, {
+subminusTraits.*implTraits( Array, {
 	from( collection ) {
 		// TODO: this function should be specialized, just like the rest of what this lib does...
 		if( collection.*values ) {
@@ -34,12 +37,12 @@ Array::compileProtocolsForRootType({
 	keyToN( key ) {
 		return key;
 	},
-	nthUnchecked( key ) {
-		return this.self.member( n, true );
+	nthUnchecked( n ) {
+		return this.self.*member( n, true );
 	},
 	// add: nope
 	len( compiler ) {
-		return this.self.member(`length`);
+		return this.self.*member(`length`);
 	},
 	// reverse: from nth+len
 	// clear: nope

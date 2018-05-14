@@ -4,7 +4,7 @@
 const assert = require('assert');
 
 const symbols = require('./symbols');
-use protocols from symbols;
+use traits * from symbols;
 
 const {ReorderedIterator, implementCoreProtocols, implementDerivedProtocols} = require('./processors/index.js');
 

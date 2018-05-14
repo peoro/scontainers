@@ -1,16 +1,13 @@
 
 const protocols = require('js-protocols');
-const utilSymbols = protocols.util.symbols;
+const utilSymbols = protocols.utils;
 
-const symbols = new protocols.util.Protocol();
-
-// static methods
-symbols.defineAndAssign( {}, {
+const traits = protocols.utils.TraitSet.fromKeys({
+	// *** static methods
 	from( collection ){},	// return a new instance of the collection constructed from `collection`
-});
 
-// core protocols: a collection should explicitely implement them
-symbols.defineAndAssign( {}, {
+
+	// *** core protocols: a collection should explicitely implement them
 	// naturally-indexed collections (e.g. Array, Range)
 	nth( n ){},	// return the ${n}-th element - O(1)
 	nthKVN( n ){},	// NOTE: it doesn't check to see if `n` is there - O(1)
@@ -49,10 +46,9 @@ symbols.defineAndAssign( {}, {
 	kvIterator(){}, // identical to `[Symbol.Iterator]`, except the returned value is always in the form [key, value]
 	kvReorderedIterator(){},
 	// kvAsyncIterator(){}, // TODO: hmmmm...
-});
 
-// derived protocols, automatically implemented
-symbols.defineAndAssign( {}, {
+
+	// *** derived protocols, automatically implemented
 	forEach( fn ){},	// call ${fn(value, key)} for every item in ${this} - O(n)
 	whileEach( fn ){},
 	untilEach( fn ){},
@@ -80,7 +76,6 @@ symbols.defineAndAssign( {}, {
 	find( fn ){},	// returning a KV
 	findLast( fn ){},	// returning a KV
 
-	toString(){},	// prints the content of the collection (prefixed with a `*`)
 	collect( TargetType ){},	// creates a new `TargetType` made of the content of `this`
 	consume( TargetType ){},	// like `collect`, but might modify (and even return) `this`
 
@@ -129,10 +124,11 @@ symbols.defineAndAssign( {}, {
 	loop(){}, // repeat( Infinity )
 });
 
-symbols.iterator = Symbol.iterator;
+traits.iterator = Symbol.iterator;
+traits.toString = protocols.common.toString;
 
-module.exports = symbols;
+module.exports = traits;
 
 if( require.main === module ) {
-	console.log( Object.keys(symbols).join(`, `) );
+	console.log( Object.keys(traits).join(`, `) );
 }
