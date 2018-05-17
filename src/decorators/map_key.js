@@ -1,12 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.utils;
-const subminus = require('../');
-
-use traits * from subminus.symbols;
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	return function() {

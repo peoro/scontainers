@@ -1,15 +1,9 @@
 
-'use strict';
+const {assert, traits, semantics, toStr, id, KVN} = require('../utils.js');
 
-const assert = require('assert');
-const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
-const {KVN, toString} = require('../util.js');
-
-const es5 = require('esast/dist/es5.js');
-
-use traits * from require('esast/dist/semantics.js');
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	assert( ParentCollection === Object, `ObjectOwnProperties is only needed by Object...` );
@@ -24,15 +18,15 @@ module.exports = function( ParentCollection ) {
 			}
 
 			toString( ) {
-				return `${this.object::toString()}::ownProperties()`;
+				return `${this.object::toStr()}::ownProperties()`;
 			}
 		}
 
-		OwnProperties::defineProperties({
+		OwnProperties.*describeScontainer({
 			argKeys: [id`object`],
 		});
 
-		OwnProperties::compileProtocolsForRootType({
+		OwnProperties.*implCoreGenerators({
 			getUnchecked( key ) {
 				return this.args.object.*member( key, true );
 			},
@@ -41,18 +35,16 @@ module.exports = function( ParentCollection ) {
 			},
 
 			loop() {
-				const s = es5.semantics;
-
 				const key = this.createUniqueVariable(`key`);
 
 				this.body
 					.*forIn(
-						s.declare( key, undefined, `var` ),
+						semantics.declare( key, undefined, `var` ),
 						this.args.object,
 
-						s.block()
+						semantics.block()
 							.*if( this.*hasKey(key),
-								this.body = s.block()
+								this.body = semantics.block()
 							)
 					);
 
@@ -60,7 +52,7 @@ module.exports = function( ParentCollection ) {
 			},
 		});
 
-		OwnProperties::deriveProtocolsForRootType({
+		OwnProperties.*implCoreTraits({
 			getUnchecked( key ) { return this.object[key]; },
 			hasKey( key ) { return this.object.hasOwnProperty( key ); },
 			// set( key, value ) { this.object[key] = value; },},

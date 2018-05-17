@@ -1,12 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js');
-const {KVN} = require('../util.js');
-
-use traits * from require('esast/dist/semantics.js');
-use traits * from require('../symbols.js');;
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 class Range {
 	constructor( begin, end ) {
@@ -35,11 +32,11 @@ class Range {
 	}
 }
 
-Range::defineProperties({
+Range.*describeScontainer({
 	argKeys: [id`begin`, id`end`]
 });
 
-Range::compileProtocolsForRootType({
+Range.*implCoreGenerators({
 	nToKey( n ) { return n.*plus( this.args.begin ); },
 	keyToN( key ) { return key.*minus( this.args.begin ); },
 	nthUnchecked( n ) { return n.*plus( this.args.begin ); },
@@ -53,7 +50,7 @@ Range::compileProtocolsForRootType({
 	// iterator: from nth
 });
 
-Range::deriveProtocolsForRootType({
+Range.*implCoreTraits({
 	nthUnchecked( n ) { return this.begin + n; },
 	keyToN( key ) { return key - this.begin; },
 	nToKey( n ) { return n + this.begin; },

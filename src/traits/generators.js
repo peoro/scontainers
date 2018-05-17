@@ -1,7 +1,7 @@
 
-const protocols = require('js-protocols');
+const straits = require('js-protocols');
 
-const traits = protocols.utils.TraitSet.fromKeys({
+const generatorTraits = straits.utils.TraitSet.fromKeys({
 	// core protocol generators: static methods, explicitely implemented by a collection
 	// these are used to dynamically generate core and derived protocols for higher performance
 
@@ -37,4 +37,4 @@ const traits = protocols.utils.TraitSet.fromKeys({
 	loop(){},
 });
 
-module.exports = traits;
+module.exports = generatorTraits;

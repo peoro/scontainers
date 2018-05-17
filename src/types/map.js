@@ -1,19 +1,9 @@
 
-'use strict';
+const {traits, semantics, toStr, id, KVN} = require('../utils.js');
 
-const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
-const utils = require('../util.js');
-const {KVN, toString} = utils;
-
-const es5 = require('esast/dist/es5.js');
-
-// TODO: need this shit for `assign` :F implement `use traits *, assign from` ASAP...
-const semantics = require('esast/dist/semantics.js');
-
-use traits * from require('esast/dist/semantics.js');
-use traits * from require('../symbols');
-use traits * from utils;
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 Map.*implScontainer({
 	from( collection ) {
@@ -29,11 +19,11 @@ Map.*implScontainer({
 	}
 });
 
-Map::defineProperties({
+Map.*describeScontainer({
 	argKeys: []
 });
 
-Map::compileProtocolsForRootType({
+Map.*implCoreGenerators({
 	getUnchecked( key ) {
 		return this.self.*member(`get`).*call( key );
 	},
@@ -45,8 +35,6 @@ Map::compileProtocolsForRootType({
 	},
 
 	loop() {
-		const s = es5.semantics;
-
 		const it = this.createUniqueVariable(`it`);
 		const next = this.createUniqueVariable(`next`);
 
@@ -54,17 +42,15 @@ Map::compileProtocolsForRootType({
 			.*declare(
 				it,
 				this.self.*member(
-					s.id(`Symbol`).*member(`iterator`),
+					semantics.id(`Symbol`).*member(`iterator`),
 					true
 				).*call(),
 				`var`
 			)
 			.*declare( next, undefined, `var` )
 			// .*declare( next, it.*member(`next`).call() )
-			.*while(
-				next[ semantics.assign ]( it.*member(`next`).*call() ).*member(`done`).*not(),
-
-				this.body = s.block()
+			.*while( next.*[ traits.semantics.assign ]( it.*member(`next`).*call() ).*member(`done`).*not(),
+				this.body = semantics.block()
 			);
 
 		return new KVN(
@@ -74,7 +60,7 @@ Map::compileProtocolsForRootType({
 	},
 });
 
-Map::deriveProtocolsForRootType({
+Map.*implCoreTraits({
 	len() { return this.size; },
 	getUnchecked( key ) { return this.get( key ); },
 	hasKey( key ) { return this.has( key ); },
@@ -96,7 +82,7 @@ Map::deriveProtocolsForRootType({
 	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
-		return `Map{${this.*map( (value, key)=>`${key::toString()}:${value::toString()}` ).*collect(Array).join(', ')}}`;
+		return `Map{${this.*map( (value, key)=>`${key::toStr()}:${value::toStr()}` ).*collect(Array).join(', ')}}`;
 	}
 });
 

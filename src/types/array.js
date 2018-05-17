@@ -1,17 +1,11 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const straits = require('js-protocols');
-const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
-const {KVN, toString} = require('../util.js');
-const subminusTraits = require('../symbols');
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
-use traits * from require('esast/dist/semantics.js');
-use traits * from straits.utils;
-use traits * from subminusTraits;
-
-
-subminusTraits.*implTraits( Array, {
+traits.scontainers.*implTraits( Array, {
 	from( collection ) {
 		// TODO: this function should be specialized, just like the rest of what this lib does...
 		if( collection.*values ) {
@@ -26,11 +20,11 @@ subminusTraits.*implTraits( Array, {
 	}
 });
 
-Array::defineProperties({
+Array.*describeScontainer({
 	argKeys: []
 });
 
-Array::compileProtocolsForRootType({
+Array.*implCoreGenerators({
 	nToKey( n ) {
 		return n;
 	},
@@ -49,7 +43,7 @@ Array::compileProtocolsForRootType({
 	// iterator: from nth
 });
 
-Array::deriveProtocolsForRootType({
+Array.*implCoreTraits({
 	len() { return this.length; },
 	nthUnchecked( n ) { return this[n]; },
 	nToKey( n ) { return n; },
@@ -61,7 +55,7 @@ Array::deriveProtocolsForRootType({
 	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
-		return `[${this.*map( value=>value::toString() ).*collect(Array).join(', ')}]`;
+		return `[${this.*map( value=>value::toStr() ).*collect(Array).join(', ')}]`;
 	}
 });
 

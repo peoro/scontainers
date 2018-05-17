@@ -1,15 +1,13 @@
 
-'use strict';
+const {traits, toStr, id, KVN, DEBUG} = require('../utils.js');
 
-const subminus = require('../index.js');
-const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	const parentProto = ParentCollection.prototype;
-	if( ! subminus.DEBUG || ! parentProto.*kvReorderedIterator ) {
+	if( ! DEBUG || ! parentProto.*kvReorderedIterator ) {
 		return;
 	}
 
@@ -26,13 +24,13 @@ module.exports = function( ParentCollection ) {
 			}
 		}
 
-		Reordered::defineProperties({
+		Reordered.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [],
 		});
 
-		Reordered::deriveProtocolsForTransformation({
+		Reordered.*implCoreTraits({
 			kvReorderedIterator() {
 				return function() {
 					return this.wrapped.*kvReorderedIterator();

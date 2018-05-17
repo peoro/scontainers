@@ -1,16 +1,11 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const straits = require('js-protocols');
-const {defineProperties, compileProtocolsForRootType, deriveProtocolsForRootType} = require('../processors/index.js')
-const {KVN, toString} = require('../util.js');
-const symbols = require('../symbols');
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
-use traits * from straits.utils;
-use traits * from symbols;
-
-
-symbols.*implTraits( Set, {
+traits.scontainers.*implTraits( Set, {
 	from( collection ) {
 		if( collection.*values ) {
 			return Set.from( collection.*values() );
@@ -24,12 +19,12 @@ symbols.*implTraits( Set, {
 	}
 });
 
-Set::defineProperties({
+Set.*describeScontainer({
 	argKeys: []
 });
 
 
-Set::deriveProtocolsForRootType({
+Set.*implCoreTraits({
 	len() { return this.size; },
 	has( item ) { return this.has( item ); },
 	add( item ) { return this.add( item ); },
@@ -50,6 +45,6 @@ Set::deriveProtocolsForRootType({
 	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
-		return `Set{${this.*map( value=>value::toString() ).*collect(Array).join(', ')}}`;
+		return `Set{${this.*map( value=>value::toStr() ).*collect(Array).join(', ')}}`;
 	}
 });

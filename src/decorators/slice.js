@@ -1,12 +1,9 @@
 
-'use strict';
+const {assert, traits, toStr, id, KVN} = require('../utils.js');
 
-const assert = require('assert');
-const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-
-use traits * from require('esast/dist/semantics.js');
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	if( ! ParentCollection.prototype.*nth ) {
@@ -32,13 +29,13 @@ module.exports = function( ParentCollection ) {
 
 		const parentProto = ParentCollection.prototype;
 
-		Slice::defineProperties({
+		Slice.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`begin`, id`end`],
 		});
 
-		Slice::compileProtocolsForTransformation({
+		Slice.*implCoreGenerators({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) {
 				return index.*plus( this.args.begin );
@@ -53,7 +50,7 @@ module.exports = function( ParentCollection ) {
 			},
 		});
 
-		Slice::deriveProtocolsForTransformation({
+		Slice.*implCoreTraits({
 			stage( kvn ) {return kvn; },
 			indexToParentIndex( index ) {
 				return index + this.begin;

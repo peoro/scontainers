@@ -1,29 +1,20 @@
 
-'use strict';
+{
+	require('./utils.js');
+	require('./impl/core_generators.js');
+	require('./impl/core_traits.js');
+}
 
-const assert = require('assert');
+const straits = require('js-protocols');
+const scontainerTraits = require('./traits/scontainers.js');
 
-const symbols = require('./symbols');
-use traits * from symbols;
+const traits = new straits.utils.TraitSet();
+Object.assign( traits, scontainerTraits );
 
-const {ReorderedIterator, implementCoreProtocols, implementDerivedProtocols} = require('./processors/index.js');
-
-
-
-module.exports = {
-	DEBUG: true,
-	symbols,
-	ReorderedIterator,
-	get Range() {
-		const Range = require('./types/range');;
-		Object.defineProperties( module.exports, {
-			value: Range
-		});
-		return Range;
-	}
-};
-
-require('./types/array'),
-require('./types/set'),
-require('./types/map'),
+traits.Range = require('./types/range');
+require('./types/array');
+require('./types/set');
+require('./types/map');
 require('./types/object.js');
+
+module.exports = traits;

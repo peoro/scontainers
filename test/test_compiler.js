@@ -4,14 +4,15 @@
 Error.stackTraceLimit = Infinity;
 
 const assert = require('assert');
-const {symbols, Range} = require('../src');
-const generatorSymbols = require('../src/generator_symbols.js');
-const {toString} = require('../src/util.js');
+const scontainers = require('../src/index.js');
+const {Range} = scontainers;
 
-use traits * from symbols;
+const {traits, toStr} = require('../src/util.js');
+
+use traits * from scontainers;
 
 function log() {
-	console.log( this::toString() );
+	console.log( this::toStr() );
 }
 
 function square( n ) { return n*n; }
@@ -52,10 +53,11 @@ function sumFn( a, b ) { return a+b; }
 			.*map( x=>`(${x})` );
 
 		console.log( collection.*toString() );
-		collection.*get( `a` );
+		collection.*get( `a` )::log();
 		collection.*forEach( ::console.log );
+		console.log();
 
-		// break quickTest;
+		break quickTest;
 		process.exit( 0 );
 	}
 
@@ -69,6 +71,8 @@ function sumFn( a, b ) { return a+b; }
 		for( let kv of new Range(3).*map(n=>n+1).*iter().*map(n=>n*n) ) {
 			console.log( kv );
 		}
+
+		console.log();
 	}
 
 	/*

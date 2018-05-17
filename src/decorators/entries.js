@@ -1,15 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const straits = require('js-protocols');
-
-const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {KVIt, Done} = require('../util.js');
-const symbols = require('../symbols');
-
-use traits * from straits.utils;
-use traits * from symbols;
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	if( ! ParentCollection.prototype.*kvIterator ) {
@@ -45,7 +39,7 @@ module.exports = function( ParentCollection ) {
 
 		const parentProto = ParentCollection.prototype;
 
-		Entries::defineProperties({
+		Entries.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [],
@@ -53,18 +47,18 @@ module.exports = function( ParentCollection ) {
 			mappingOnly: true,
 		});
 
-		symbols.*implTraits( Values.prototype, {
+		traits.scontainers.*implTraits( Values.prototype, {
 			iterator() {
 				return new Entries.Iterator( this.wrapped.*kvIterator() );
 			}
 		});
 
-		Entries::compileProtocolsForTransformation({
+		Entries.*implCoreGenerators({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) { return index; },
 		});
 
-		Entries::deriveProtocolsForTransformation({
+		Entries.*implCoreTraits({
 			stage( kvn ) { return kvn; },
 			indexToParentIndex( index ) { return index; },
 		});

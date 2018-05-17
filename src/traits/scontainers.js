@@ -1,13 +1,13 @@
 
-const protocols = require('js-protocols');
-const utilSymbols = protocols.utils;
+const straits = require('js-protocols');
 
-const traits = protocols.utils.TraitSet.fromKeys({
+use traits * from straits.core;
+
+// core traits
+const coreTraits = straits.utils.TraitSet.fromKeys({
 	// *** static methods
 	from( collection ){},	// return a new instance of the collection constructed from `collection`
 
-
-	// *** core protocols: a collection should explicitely implement them
 	// naturally-indexed collections (e.g. Array, Range)
 	nth( n ){},	// return the ${n}-th element - O(1)
 	nthKVN( n ){},	// NOTE: it doesn't check to see if `n` is there - O(1)
@@ -46,9 +46,10 @@ const traits = protocols.utils.TraitSet.fromKeys({
 	kvIterator(){}, // identical to `[Symbol.Iterator]`, except the returned value is always in the form [key, value]
 	kvReorderedIterator(){},
 	// kvAsyncIterator(){}, // TODO: hmmmm...
+});
 
-
-	// *** derived protocols, automatically implemented
+// automatically implemented traits
+const derivedTraits = straits.utils.TraitSet.fromKeys({
 	forEach( fn ){},	// call ${fn(value, key)} for every item in ${this} - O(n)
 	whileEach( fn ){},
 	untilEach( fn ){},
@@ -124,8 +125,14 @@ const traits = protocols.utils.TraitSet.fromKeys({
 	loop(){}, // repeat( Infinity )
 });
 
-traits.iterator = Symbol.iterator;
-traits.toString = protocols.common.toString;
+derivedTraits.*assign({
+	iterator: Symbol.iterator,
+	toString: straits.common.toString,
+});
+
+const traits = ({}).*assign( derivedTraits, coreTraits );
+traits.coreTraits = coreTraits;
+traits.derivedTraits = derivedTraits;
 
 module.exports = traits;
 

@@ -1,12 +1,9 @@
 
-'use strict';
+const {assert, traits, toStr, id, KVN} = require('../utils.js');
 
-const assert = require('assert');
-const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {KVN} = require('../util.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	const parentProto = ParentCollection.prototype;
@@ -30,13 +27,13 @@ module.exports = function( ParentCollection ) {
 			}
 		}
 
-		Chunk::defineProperties({
+		Chunk.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`n`],
 		});
 
-		Chunk::deriveProtocolsForTransformation({
+		Chunk.*implCoreTraits({
 			len() {
 				if( parentProto.*len ) {
 					return function len(){ return Math.ceil( this.wrapped.*len() / this.n ); };

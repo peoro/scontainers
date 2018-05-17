@@ -1,11 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {KVN} = require('../util.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	if( ! ParentCollection.prototype.*hasKey ) {
@@ -28,13 +26,13 @@ module.exports = function( ParentCollection ) {
 
 		const parentProto = ParentCollection.prototype;
 
-		Cache::defineProperties({
+		Cache.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`mapFn`],
 		});
 
-		Cache::deriveProtocolsForTransformation({
+		Cache.*implCoreTraits({
 			stage( kvn ) {
 				return kvn;
 			},

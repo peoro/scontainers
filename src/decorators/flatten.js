@@ -1,10 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const {defineProperties, deriveProtocolsForTransformation} = require('../processors/index.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	return function() {
@@ -22,13 +21,13 @@ module.exports = function( ParentCollection ) {
 			}
 		}
 
-		Flatten::defineProperties({
+		Flatten.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [],
 		});
 
-		Flatten::deriveProtocolsForTransformation({
+		Flatten.*implCoreTraits({
 			count() {
 				// NOTE: might throw if one of the elements of the collections of `this.wrapped` isn't countable
 				if( parentProto.*map ) {

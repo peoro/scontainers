@@ -1,13 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const traits = require('../symbols.js');
-const utils = require('../util.js');
-const {assignProtocolFactories} = utils;
-
-use traits * from utils;
-use traits * from traits;
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 Object.*implScontainer({
 	from( collection ) {
@@ -21,7 +17,7 @@ Object.*implScontainer({
 	}
 });
 
-traits::assignProtocolFactories( Object.prototype, {
+traits.scontainers.*addTraitFactories( Object.prototype, {
 	ownProperties: Object.*wrapScontainer( require('./object_own_properties') ),
 	properties: Object.*wrapScontainer( require('./object_enumerable_properties') ),
 });

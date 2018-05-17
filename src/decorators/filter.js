@@ -1,13 +1,9 @@
 
-'use strict';
+const {traits, semantics, toStr, id, KVN} = require('../utils.js');
 
-const {defineProperties, deriveProtocolsForTransformation, compileProtocolsForTransformation} = require('../processors/index.js');
-
-const {semantics} = require('esast/dist/es5.js');
-
-use traits * from require('esast/dist/semantics.js');
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	const parentProto = ParentCollection.prototype;
@@ -26,7 +22,7 @@ module.exports = function( ParentCollection ) {
 			}
 		}
 
-		Filter::defineProperties({
+		Filter.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`filterFn`],
@@ -34,7 +30,7 @@ module.exports = function( ParentCollection ) {
 			transformStream: true,
 		});
 
-		Filter::compileProtocolsForTransformation({
+		Filter.*implCoreGenerators({
 			kStage( kvn ) {
 				this.body.*if(
 					this.args.filterFn.*call( kvn.value, kvn.key, kvn.n ),
@@ -45,7 +41,7 @@ module.exports = function( ParentCollection ) {
 			keyToParentKey( key ) { return key; },
 		});
 
-		Filter::deriveProtocolsForTransformation({
+		Filter.*implCoreTraits({
 			kStage( kvn ) {
 				if( this.filterFn(kvn.value, kvn.key, kvn.n) ) {
 					return kvn;

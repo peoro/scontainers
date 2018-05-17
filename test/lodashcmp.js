@@ -6,11 +6,12 @@ const SRC = `src`;
 
 const assert = require('assert');
 const _ = require('lodash');
-const {Range} = require(`../${SRC}/`);
-const {toString} = require(`../${SRC}/util.js`);
+const scontainers = require(`../${SRC}/index.js`);
+const {Range} = scontainers;
 
-use traits * from require(`../${SRC}/symbols`);
+use traits * from scontainers;
 
+/*
 // HACK: the bad things happen here...
 {
 	// Error.stackTraceLimit = 25;
@@ -18,6 +19,7 @@ use traits * from require(`../${SRC}/symbols`);
 		return JSON.stringify(this);
 	};
 }
+*/
 
 function isNumeric( x ) {
 	return ( (typeof x === 'number' || typeof x === 'string') && !isNaN(Number(x)) );

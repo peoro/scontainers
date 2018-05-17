@@ -1,12 +1,9 @@
 
-'use strict';
+const {assert, traits, toStr, id, KVN} = require('../utils.js');
 
-const assert = require('assert');
-const {defineProperties, deriveProtocolsForRootType} = require('../processors/index.js');
-const {KVN, toString} = require('../util.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	assert( ParentCollection === Object, `EnumerableProperties is only needed by Object...` );
@@ -21,15 +18,15 @@ module.exports = function( ParentCollection ) {
 			}
 
 			toString( ) {
-				return `${this.wrapped::toString()}::properties()`;
+				return `${this.wrapped::toStr()}::properties()`;
 			}
 		}
 
-		EnumerableProperties::defineProperties({
+		EnumerableProperties.*describeScontainer({
 			argKeys: [],
 		});
 
-		EnumerableProperties::deriveProtocolsForRootType({
+		EnumerableProperties.*implCoreTraits({
 			get( key ) {
 				return this.*hasKey(key) && this.wrapped[key];
 			},

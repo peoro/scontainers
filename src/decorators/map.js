@@ -1,11 +1,9 @@
 
-'use strict';
+const {traits, toStr, id, KVN} = require('../utils.js');
 
-const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-
-use traits * from require('esast/dist/semantics.js');
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	return function() {
@@ -24,7 +22,7 @@ module.exports = function( ParentCollection ) {
 
 		const parentProto = ParentCollection.prototype;
 
-		Map::defineProperties({
+		Map.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`mapFn`],
@@ -32,9 +30,7 @@ module.exports = function( ParentCollection ) {
 			mappingOnly: true,
 		});
 
-		use traits * from require('../processors/properties.js');
-
-		Map::compileProtocolsForTransformation({
+		Map.*implCoreGenerators({
 			stage( kvn ) {
 				const {mapFn} = this.args;
 				kvn.value = mapFn.*call( kvn.value, kvn.key, kvn.n );
@@ -43,7 +39,7 @@ module.exports = function( ParentCollection ) {
 			indexToParentIndex( index ) { return index; },
 		});
 
-		Map::deriveProtocolsForTransformation({
+		Map.*implCoreTraits({
 			stage( kvn ) {
 				kvn.value = this.mapFn( kvn.value, kvn.key, kvn.n );
 				return kvn;

@@ -1,13 +1,9 @@
 
-'use strict';
+const {assert, traits, toStr, id, ReorderedIterator, KVN} = require('../utils.js');
 
-const assert = require('assert');
-const {defineProperties, deriveProtocolsForTransformation, deriveProtocolsForRootType} = require('../processors/index.js');
-const {ReorderedIterator} = require('../reordered_iterator.js');
-const {KVN} = require('../util.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	const parentProto = ParentCollection.prototype;
@@ -29,13 +25,13 @@ module.exports = function( ParentCollection ) {
 			}
 		}
 
-		GroupBy::defineProperties({
+		GroupBy.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [id`groupByFn`],
 		});
 
-		GroupBy::deriveProtocolsForTransformation({
+		GroupBy.*implCoreTraits({
 			kvReorderedIterator() {
 				if( parentProto.*kvReorderedIterator ) {
 					return function kvReorderedIterator() {
@@ -146,11 +142,11 @@ Group.ReorderedIterator = class extends ReorderedIterator {
 	}
 };
 
-Group::defineProperties({
+Group.*describeScontainer({
 	argKeys: [id`state`],
 });
 
-Group::deriveProtocolsForRootType({
+Group.*implCoreTraits({
 	kvReorderedIterator() {
 		assert( this.state === Group.state.ready, `A GroupBy.Group is iterable only once` );
 		this.state = Group.state.done;

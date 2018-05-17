@@ -1,17 +1,14 @@
 
-'use strict';
+const {traits, toStr, id, ReorderedIterator, KVN, DEBUG} = require('../utils.js');
 
-const subminus = require('../index.js');
-const {defineProperties, compileProtocolsForTransformation, deriveProtocolsForTransformation} = require('../processors/index.js');
-const {ReorderedIterator} = require('../reordered_iterator.js');
-
-use traits * from require('../symbols');
-
+use traits * from traits.utils;
+use traits * from traits.scontainers;
+use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	const parentProto = ParentCollection.prototype;
 	// TODO: I guess I should ignore parent's `kvReorderedIterator`, but it's needed by the current `/src/lodashcmp.js`
- 	if( ! subminus.DEBUG || ( ! parentProto.*kvIterator && ! parentProto.*kvReorderedIterator ) ) {
+ 	if( ! DEBUG || ( ! parentProto.*kvIterator && ! parentProto.*kvReorderedIterator ) ) {
 		return;
 	}
 
@@ -28,13 +25,13 @@ module.exports = function( ParentCollection ) {
 			}
 		}
 
-		IterableOnly::defineProperties({
+		IterableOnly.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
 			argKeys: [],
 		});
 
-		IterableOnly::deriveProtocolsForTransformation({
+		IterableOnly.*implCoreTraits({
 			kvIterator() {
 				if( parentProto.*kvIterator ) {
 					return function() {

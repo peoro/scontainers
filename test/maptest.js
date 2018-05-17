@@ -1,8 +1,10 @@
 
 'use strict';
 
-const {symbols, Range} = require('../src/');
-use traits * from symbols;
+const scontainers = require('../src/index.js');
+const {Range} = scontainers;
+
+use traits * from scontainers;
 
 Error.stackTraceLimit = 25;
 
