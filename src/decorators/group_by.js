@@ -11,6 +11,10 @@ module.exports = function( ParentCollection ) {
 		return;
 	}
 
+	if( ! Group ) {
+		makeGroup();
+	}
+
 	return function() {
 		class GroupBy {
 			static get name() { return `${ParentCollection.name}::GroupBy`; }
@@ -83,73 +87,78 @@ module.exports = function( ParentCollection ) {
 };
 
 
+let Group;
 
-class Group {
-	static get name() { return `GroupBy.Group`; }
+function makeGroup() {
+	Group = class Group {
+		static get name() { return `GroupBy.Group`; }
 
-	constructor( groupByRIt, firstKVN ) {
-		this.state = Group.state.ready;
-		this.rit = new Group.ReorderedIterator( groupByRIt, firstKVN );
-	}
+		constructor( groupByRIt, firstKVN ) {
+			this.state = Group.state.ready;
+			this.rit = new Group.ReorderedIterator( groupByRIt, firstKVN );
+		}
 
-	toString( ) {
-		return `GroupBy.Group{state:${this.state.*toString()}}`;
-	}
+		toString( ) {
+			return `GroupBy.Group{state:${this.state.*toString()}}`;
+		}
+	};
+	Group.state = {
+		ready: Symbol(`ready`),
+		done: Symbol(`done`),
+
+		preproceeding: Symbol(`preproceeding`),
+		proceeding: Symbol(`proceeding`),
+		stopped: Symbol(`stopped`),
+	};
+	Group.ReorderedIterator = class extends ReorderedIterator {
+		constructor( groupByRIt, firstKVN ) {
+			super();
+
+			this.groupByRIt = groupByRIt;
+			this.firstKVN = firstKVN;
+		}
+
+		proceed() {
+			super.proceed();
+
+			this._pushNext( this.firstKVN );
+			this.firstKVN = undefined;
+			this._work();
+		}
+		resume() {
+			super.resume();
+			this._work();
+		}
+		stop() {
+			super.stop();
+		}
+
+		_work() {
+			this.groupByRIt.resume();
+		}
+		_pushNext( kvn ) {
+			if( this.state === ReorderedIterator.state.ready ) {
+				// if the main iterator (this.`groupByRIt`) pushes a new item before were told to proceed, we want to stop:
+				// we don't want to let the user `proceed` on a group iterator some iterations after the group was created.
+				this.stop();
+			}
+			else if( this.state === ReorderedIterator.state.proceeding ) {
+				super._pushNext( kvn );
+			}
+		}
+	};
+
+	Group.*describeScontainer({
+		argKeys: [id`state`],
+	});
+
+	Group.*implCoreTraits({
+		kvReorderedIterator() {
+			assert( this.state === Group.state.ready, `A GroupBy.Group is iterable only once` );
+			this.state = Group.state.done;
+			return this.rit;
+		}
+	});
+
+	return Group;
 }
-Group.state = {
-	ready: Symbol(`ready`),
-	done: Symbol(`done`),
-
-	preproceeding: Symbol(`preproceeding`),
-	proceeding: Symbol(`proceeding`),
-	stopped: Symbol(`stopped`),
-};
-Group.ReorderedIterator = class extends ReorderedIterator {
-	constructor( groupByRIt, firstKVN ) {
-		super();
-
-		this.groupByRIt = groupByRIt;
-		this.firstKVN = firstKVN;
-	}
-
-	proceed() {
-		super.proceed();
-
-		this._pushNext( this.firstKVN );
-		this.firstKVN = undefined;
-		this._work();
-	}
-	resume() {
-		super.resume();
-		this._work();
-	}
-	stop() {
-		super.stop();
-	}
-
-	_work() {
-		this.groupByRIt.resume();
-	}
-	_pushNext( kvn ) {
-		if( this.state === ReorderedIterator.state.ready ) {
-			// if the main iterator (this.`groupByRIt`) pushes a new item before were told to proceed, we want to stop:
-			// we don't want to let the user `proceed` on a group iterator some iterations after the group was created.
-			this.stop();
-		}
-		else if( this.state === ReorderedIterator.state.proceeding ) {
-			super._pushNext( kvn );
-		}
-	}
-};
-
-Group.*describeScontainer({
-	argKeys: [id`state`],
-});
-
-Group.*implCoreTraits({
-	kvReorderedIterator() {
-		assert( this.state === Group.state.ready, `A GroupBy.Group is iterable only once` );
-		this.state = Group.state.done;
-		return this.rit;
-	}
-});

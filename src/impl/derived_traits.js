@@ -4,6 +4,22 @@ const {assert, traits, toStr} = require('../utils.js');
 use traits * from traits.utils;
 use traits * from traits.scontainers;
 
+const Values = require('../decorators/values.js');
+const Entries = require('../decorators/entries.js');
+const Filter = require('../decorators/filter.js');
+const Slice = require('../decorators/slice.js');
+const Chunk = require('../decorators/chunk.js');
+const Map = require('../decorators/map.js');
+const MapKey = require('../decorators/map_key.js');
+const Cache = require('../decorators/cache.js');
+const Iter = require('../decorators/iter.js');
+const Reordered = require('../decorators/reordered.js');
+const GroupBy = require('../decorators/group_by.js');
+const Cow = require('../decorators/cow.js');
+const Flatten = require('../decorators/flatten.js');
+const SkipWhile = require('../decorators/skip_while.js');
+const TakeWhile = require('../decorators/take_while.js');
+
 function deriveProtocols() {
 	assert( this, `deriveProtocols() must be called on an object` );
 
@@ -352,22 +368,6 @@ function deriveProtocols() {
 			};
 		},
 	});
-
-	const Values = require('../decorators/values.js');
-	const Entries = require('../decorators/entries.js');
-	const Filter = require('../decorators/filter.js');
-	const Slice = require('../decorators/slice.js');
-	const Chunk = require('../decorators/chunk.js');
-	const Map = require('../decorators/map.js');
-	const MapKey = require('../decorators/map_key.js');
-	const Cache = require('../decorators/cache.js');
-	const Iter = require('../decorators/iter.js');
-	const Reordered = require('../decorators/reordered.js');
-	const GroupBy = require('../decorators/group_by.js');
-	const Cow = require('../decorators/cow.js');
-	const Flatten = require('../decorators/flatten.js');
-	const SkipWhile = require('../decorators/skip_while.js');
-	const TakeWhile = require('../decorators/take_while.js');
 
 	traits.scontainers.*addTraitFactories( proto, {
 		keys() {

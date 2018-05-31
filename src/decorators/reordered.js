@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN, DEBUG} = require('../utils.js');
+const {traits, toStr, id, KVN, options} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -7,7 +7,7 @@ use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	const parentProto = ParentCollection.prototype;
-	if( ! DEBUG || ! parentProto.*kvReorderedIterator ) {
+	if( ! options.debug || ! parentProto.*kvReorderedIterator ) {
 		return;
 	}
 

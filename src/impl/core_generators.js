@@ -1,12 +1,16 @@
 
 const {deriveProtocolsFromGenerators} = require('./derived_generators.js');
-const {assert, traits, semantics, KVN} = require('../utils.js');
+const {assert, traits, options, semantics, KVN} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.descriptors;
 use traits * from traits.semantics;
 
 Object.prototype.*implCoreGenerators = function( compilerConfiguration ) {
+	if( ! options.generation ) {
+		return;
+	}
+
 	if( this.*InnerCollection ) {
 		this::compileProtocolsForTransformation( compilerConfiguration );
 	}

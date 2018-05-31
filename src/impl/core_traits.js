@@ -1,12 +1,16 @@
 
 const {deriveProtocols} = require('./derived_traits.js');
-const {assert, traits, ReorderedIterator, KVN, KVIt, Done} = require('../utils.js');
+const {assert, traits, options, ReorderedIterator, KVN, KVIt, Done} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.descriptors;
 use traits * from traits.scontainers;
 
 Object.prototype.*implCoreTraits = function( compilerConfiguration ) {
+	if( ! options.derivation ) {
+		return;
+	}
+
 	if( this.*InnerCollection ) {
 		this::deriveProtocolsForTransformation( compilerConfiguration );
 	}

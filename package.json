@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"test": "mocha --require babel-core/register test/index.js",
 		"build-watch": "npx babel --watch src --out-dir dist",
 		"prepare": "babel src --out-dir dist"
 	},
@@ -12,6 +13,7 @@
 	"devDependencies": {
 		"babel-plugin-transform-function-bind": "^6.22.0",
 		"babel-plugin-transform-strict-mode": "^6.24.1",
+		"babel-register": "^6.26.0",
 		"chai": "^4.1.2",
 		"mocha": "^5.1.1",
 		"straits-babel": "git+ssh://git@git.peori.space:peoro/straits-babel.git"

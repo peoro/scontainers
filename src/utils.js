@@ -1,7 +1,5 @@
 
-const assert = require('assert');
 const straits = require('js-protocols');
-const es5 = require('esast/dist/es5.js');
 
 const semanticTraits = require('esast/dist/semantics.js');
 const descriptorTraits = require('./traits/descriptor.js');
@@ -9,30 +7,17 @@ const generatorTraits = require('./traits/generators.js');
 const scontainerTraits = require('./traits/scontainers.js');
 const utilTraits = require('./traits/utils.js');
 
+const {ReorderedIterator} = require('./reordered_iterator.js');
+
+const utilsLight = require('./utils_light.js');
+const {assert} = utilsLight;
+
 use traits * from utilTraits;
 use traits * from scontainerTraits;
 
-function KVN( key, value, n ) {
-	this.key = key;
-	this.value = value;
-	this.n = n;
-}
-function KVIt( key, value ) {
-	this.value = [key, value];
-	this.done = false;
-}
-function VIt( value ) {
-	this.value = value;
-	this.done = false;
-}
-function Done() {
-	this.done = true;
-}
 
 const utils = {
-	DEBUG: true,
-	semantics: es5.semantics,
-	language: es5,
+	ReorderedIterator,
 	traits: {
 		descriptors: descriptorTraits,
 		generators: generatorTraits,
@@ -41,18 +26,20 @@ const utils = {
 		semantics: semanticTraits,
 	},
 	toStr: straits.common.toString.*asMethod(),
-	id( strings, ...args ) {
-		assert( strings.length === 1 && args.length === 0 );
-		return strings[0];
-	},
-	assert,
-	KVN, KVIt, VIt, Done,
 }
+Object.assign( utils, utilsLight );
 
 // implementing util traits
 {
 	Object.prototype.*implScontainer = function( implementationObj ) {
-		return scontainerTraits.*addTraits( this, implementationObj );
+		const factoryObj = {};
+
+		for( let key in implementationObj ) {
+			factoryObj[key] = function(){ return implementationObj[key]; };
+		}
+
+		// return scontainerTraits.*addTrait( this, implementationObj );
+		return scontainerTraits.*addTraitFactories( this, factoryObj );
 	};
 	Object.prototype.*wrapScontainer = function( decoratorFactoryFactory ) {
 		const Container = this;
@@ -77,6 +64,3 @@ const utils = {
 }
 
 module.exports = utils;
-
-const {ReorderedIterator} = require('./reordered_iterator.js');
-utils.ReorderedIterator = ReorderedIterator;

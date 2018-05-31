@@ -1,12 +1,10 @@
 
-{
-	require('./utils.js');
-	require('./impl/core_generators.js');
-	require('./impl/core_traits.js');
-}
-
 const straits = require('js-protocols');
 const scontainerTraits = require('./traits/scontainers.js');
+
+require('./utils.js');
+require('./impl/core_generators.js');
+require('./impl/core_traits.js');
 
 const traits = new straits.utils.TraitSet();
 Object.assign( traits, scontainerTraits );

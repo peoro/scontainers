@@ -1,6 +1,7 @@
 
 const assert = require('assert');
 const straits = require('js-protocols');
+const {id} = require('../utils_light.js');
 
 use traits * from straits.core;
 use traits * from straits.utils;
@@ -20,8 +21,8 @@ const utilTraits = straits.utils.TraitSet.fromKeys({
 	deriveTraits( ){},
 });
 
-utilTraits.*borrowTraits( straits.utils, ['asFreeFunction', 'asMethod', 'impl', 'implTraits'] );
-utilTraits.*borrowTraits( straits.common, ['toString'] );
+utilTraits.*borrowTraits( straits.utils, [id`asFreeFunction`, id`asMethod`, id`impl`, id`implTraits`] );
+utilTraits.*borrowTraits( straits.common, [id`toString`] );
 
 
 use traits * from utilTraits;
@@ -110,11 +111,18 @@ Object.prototype.*addTraitFactories = function( target, factoryObj ) {
 			sym.*impl( target, fn );
 		}
 		else {
-			sym.*impl( target, function(){
+			const lazyFn = function() {
 				const fn = factory.produce( this );
 				sym.*impl( this, fn );
-				return this::fn( ...arguments );
-			});
+				return this[sym]( ...arguments );
+			};
+			lazyFn.factory = function() {
+				const fn = factory.produce( this );
+				sym.*impl( this, fn );
+				return fn;
+			};
+
+			sym.*impl( target, lazyFn );
 		}
 	}
 };
