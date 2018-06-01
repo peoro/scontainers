@@ -204,6 +204,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
 					const parentKVN = this[innerCollectionKey].*nthKVN( parentN );
+					parentKVN.n = n;
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}

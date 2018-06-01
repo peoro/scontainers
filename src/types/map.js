@@ -79,7 +79,6 @@ Map.*implCoreTraits({
 		};
 	},
 	entries() { return this; },
-	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
 		return `Map{${this.*map( (value, key)=>`${key::toStr()}:${value::toStr()}` ).*collect(Array).join(', ')}}`;

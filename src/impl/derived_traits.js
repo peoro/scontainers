@@ -97,8 +97,8 @@ function deriveProtocols() {
 			if( proto.*forEach ) {
 				return function reduce( fn, start ) {
 					let state = start;
-					this.*forEach( (value, key)=>{
-						state = fn( state, value, key, this );
+					this.*forEach( (value, key, n)=>{
+						state = fn( state, value, key, n );
 					});
 					return state;
 				};

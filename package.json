@@ -15,7 +15,7 @@
 		"babel-plugin-transform-strict-mode": "^6.24.1",
 		"babel-register": "^6.26.0",
 		"chai": "^4.1.2",
-		"mocha": "^5.1.1",
+		"mocha": "^5.2.0",
 		"straits-babel": "git+ssh://git@git.peori.space:peoro/straits-babel.git"
 	},
 	"dependencies": {

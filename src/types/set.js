@@ -36,13 +36,12 @@ Set.*implCoreTraits({
 			next() {
 				const next = this.it.next();
 				if( ! next.done ) {
-					return new KVN( next.value );
+					return new KVN( undefined, next.value );
 				}
 			}
 		};
 	},
 	values() { return this; },
-	forEach( fn ) { this.forEach( fn ); },
 
 	toString() {
 		return `Set{${this.*map( value=>value::toStr() ).*collect(Array).join(', ')}}`;

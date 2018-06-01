@@ -1,9 +1,8 @@
 
 const assert = require('assert');
 const chai = require('chai');
+const scontainers = require('./scontainers.js');
 const loadScontainers = require('../src/loader.js');
-const scontainers = require('../src/index.js');
-// const scontainers = loadScontainers({ debug:true });
 
 const {expect} = chai;
 
@@ -45,5 +44,6 @@ describe(`scontainers`, function(){
 		}
 	});
 
+	require('./manual_tests.js');
 	require('./lodash.js');
 });

@@ -1,12 +1,8 @@
 
-
-'use strict';
-
 const assert = require('assert');
 const {expect} = require('chai');
 const _ = require('lodash');
-// const scontainers = require(`../index.js`);
-const loadScontainers = require('../src/loader.js');
+const scontainers = require('./scontainers.js');
 
 function test( scontainers, depth ) {
 	const {Range} = scontainers;
@@ -342,9 +338,10 @@ function test( scontainers, depth ) {
 
 describe(`compare with lodash`, function() {
 	describe(`using generated and derived traits`, function() {
-		test( loadScontainers({ debug:true, generation:true, derivation:true }), 2 );
+		test( scontainers.full, 2 );
+		test( scontainers.full, 2 );
 	});
 	describe(`using derived traits only`, function() {
-		test( loadScontainers({ debug:true, generation:false, derivation:true }), 4 );
+		test( scontainers.onlyDerivation, 4 );
 	});
 });

@@ -52,9 +52,7 @@ module.exports = function( ParentCollection ) {
 
 		Slice.*implCoreTraits({
 			stage( kvn ) {return kvn; },
-			indexToParentIndex( index ) {
-				return index + this.begin;
-			},
+			indexToParentIndex( index ) { return index + this.begin; },
 			len() {
 				if( parentProto.*len ) {
 					return function( ) {

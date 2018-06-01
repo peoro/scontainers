@@ -52,8 +52,6 @@ Array.*implCoreTraits({
 	add( value ) { this.push(value); },
 	clear() { this.length = 0; },
 
-	forEach( fn ) { this.forEach( fn ); },
-
 	toString() {
 		return `[${this.*map( value=>value::toStr() ).*collect(Array).join(', ')}]`;
 	}

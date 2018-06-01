@@ -171,6 +171,8 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 					return function( n ) {
 						const parentN = this::nToParentN( n );
 						const parentKVN = this.inner.*nthKVN( parentN );
+						parentKVN.n = n;
+						this.body.*comment(`n for ${Collection.name}: (${parentKVN.n.codegen()})==(${parentN.codegen()})==(${n.codegen()})`);
 						return this::nStage( parentKVN );
 					};
 				}

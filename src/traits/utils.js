@@ -112,13 +112,13 @@ Object.prototype.*addTraitFactories = function( target, factoryObj ) {
 		}
 		else {
 			const lazyFn = function() {
-				const fn = factory.produce( this );
-				sym.*impl( this, fn );
+				const fn = factory.produce( target );
+				sym.*impl( target, fn );
 				return this[sym]( ...arguments );
 			};
 			lazyFn.factory = function() {
-				const fn = factory.produce( this );
-				sym.*impl( this, fn );
+				const fn = factory.produce( target );
+				sym.*impl( target, fn );
 				return fn;
 			};
 
