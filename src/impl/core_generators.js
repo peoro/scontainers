@@ -172,7 +172,6 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 						const parentN = this::nToParentN( n );
 						const parentKVN = this.inner.*nthKVN( parentN );
 						parentKVN.n = n;
-						this.body.*comment(`n for ${Collection.name}: (${parentKVN.n.codegen()})==(${parentN.codegen()})==(${n.codegen()})`);
 						return this::nStage( parentKVN );
 					};
 				}
@@ -205,7 +204,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				}
 			},
 			loop() {
-				if( ParentType.*loop ) {
+				if( ParentType.*loop && this.*standardIteration ) {
 					return function() {
 						const kvn = this.inner.*loop();
 						return this::kStage( kvn );
@@ -253,7 +252,7 @@ function deriveCoreProtocolGenerators() {
 			}
 		},
 		loop() {
-			if( this.*nthKVN ) {
+			if( this.*nthKVN && this.*standardIteration ) {
 				return function( generator ) {
 					const i = this.createUniqueVariable(`i`);
 					const lenVar = this.*len();

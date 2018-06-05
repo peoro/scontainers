@@ -63,7 +63,9 @@ Object.prototype.*addTraits = function( target, implementationObj ) {
 }
 
 class Factory {
-	constructor( factory ) {
+	constructor( factory, target ) {
+		this.target = target;
+
 		if( ! factory ) {
 			this.factory = function(){ throw new Error(`No factory`); };
 			this.assignImmediately = false;
@@ -72,7 +74,7 @@ class Factory {
 		else if( typeof factory === 'function' ) {
 			this.factory = factory;
 			this.assignImmediately = false;
-			this.canProduce = function(){ return this.factory() !== undefined; };
+			this.canProduce = function(){ return target::this.factory() !== undefined; };
 		}
 		else {
 			this.factory = factory.factory;
@@ -81,7 +83,8 @@ class Factory {
 		}
 	}
 
-	produce( target ) {
+	produce( ) {
+		const {target} = this;
 		const fn = target::this.factory();
 		assert( fn !== undefined, `A factory didn't produce anything` );
 		fn.factory = function(){ return fn; };
@@ -92,7 +95,7 @@ class Factory {
 // `factoryObj` has symbol names as traits and factories as
 Object.prototype.*addTraitFactories = function( target, factoryObj ) {
 	for( let name in factoryObj ) {
-		const factory = new Factory( factoryObj[name] );
+		const factory = new Factory( factoryObj[name], target );
 		if( ! factory.canProduce() ) {
 			// factory can't produce anything
 			continue;
@@ -107,17 +110,17 @@ Object.prototype.*addTraitFactories = function( target, factoryObj ) {
 		}
 
 		if( factory.assignImmediately ) {
-			const fn = factory.produce( target );
+			const fn = factory.produce();
 			sym.*impl( target, fn );
 		}
 		else {
 			const lazyFn = function() {
-				const fn = factory.produce( target );
+				const fn = factory.produce();
 				sym.*impl( target, fn );
 				return this[sym]( ...arguments );
 			};
 			lazyFn.factory = function() {
-				const fn = factory.produce( target );
+				const fn = factory.produce();
 				sym.*impl( target, fn );
 				return fn;
 			};

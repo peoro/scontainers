@@ -14,6 +14,7 @@ const descriptorTraits = straits.utils.TraitSet.fromKeys({
 	argKeys: [''],	// the names of the data-fields of this container
 
 	mappingOnly: false,	// the decorator is just a map-like function
+	standardIteration: false,	// iterating every element in order from `0` to `len()-1`
 	transformStream: false,	// the decorator can transform the inner collection as a stream
 });
 
@@ -30,7 +31,8 @@ Object.prototype.*describeScontainer = function( props ) {
 	// setting default property values
 	descriptorTraits.*addTraits( this, {
 		mappingOnly: false,
-		transformStream: this.*mappingOnly ? true : false,
+		standardIteration: ( this.*mappingOnly || ! this.*InnerCollection ),
+		transformStream: this.*mappingOnly,
 	});
 };
 

@@ -28,6 +28,7 @@ module.exports = function( ParentCollection ) {
 			argKeys: [id`filterFn`],
 
 			transformStream: true,
+			standardIteration: true,
 		});
 
 		Filter.*implCoreGenerators({

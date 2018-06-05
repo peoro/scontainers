@@ -122,7 +122,7 @@ const derivedTraits = straits.utils.TraitSet.fromKeys({
 
 	collectInto( target ){},
 	repeat( n ){},
-	loop(){}, // repeat( Infinity )
+	// loop(){}, // repeat( Infinity )
 });
 
 derivedTraits.*assign({

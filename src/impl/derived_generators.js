@@ -3,6 +3,7 @@ const {assert, traits, semantics, KVN} = require('../utils.js');
 const Compiler = require('./compiler.js');
 
 use traits * from traits.utils;
+use traits * from traits.descriptors;
 use traits * from traits.semantics;
 
 function deriveProtocolsFromGenerators() {
@@ -108,7 +109,7 @@ function deriveProtocolsFromGenerators() {
 				}
 			},
 			kvIterator() {
-				if( Type.*nthKVN ) {
+				if( Type.*nthKVN && this.*standardIteration ) {
 					return function() {
 						const fns = this.registerConstants({KVN});
 						const Iterator = this.createUniqueVariable( `Iterator` );
