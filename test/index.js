@@ -1,7 +1,7 @@
 
 const assert = require('assert');
 const chai = require('chai');
-const scontainers = require('./scontainers.js');
+const scontainerSet = require('./scontainers.js');
 const loadScontainers = require('../src/loader.js');
 
 const {expect} = chai;
@@ -12,6 +12,7 @@ describe(`scontainers`, function(){
 		let mapTrait;
 
 		{
+			const scontainers = scontainerSet.standard;
 			use traits * from scontainers;
 
 			expect( [].*iter ).to.equal(undefined);
@@ -24,7 +25,7 @@ describe(`scontainers`, function(){
 		}
 
 		{
-			const scontainers = loadScontainers( {debug:true, generation:false, num:1} );
+			const scontainers = scontainerSet.onlyDerivation;
 			use traits * from scontainers;
 
 			expect( [].*iter ).to.be.a(`function`);
@@ -34,7 +35,7 @@ describe(`scontainers`, function(){
 		}
 
 		{
-			const scontainers = loadScontainers({ num:2 });
+			const scontainers = loadScontainers();
 			use traits * from scontainers;
 
 			expect( [].*iter ).to.equal(undefined);
@@ -45,5 +46,6 @@ describe(`scontainers`, function(){
 	});
 
 	require('./manual_tests.js');
+	require('./derived_vs_generated.js');
 	require('./lodash.js');
 });

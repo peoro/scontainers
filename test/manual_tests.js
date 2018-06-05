@@ -6,6 +6,11 @@ const {id} = require('../src/utils.js');
 
 const {expect} = chai;
 
+const flags = {
+	missing: Symbol(`missing`),
+	throwing: Symbol(`throwing`),
+};
+
 function test( scontainers ) {
 	const {Range} = scontainers;
 
@@ -19,17 +24,38 @@ function test( scontainers ) {
 			data.count = data.len
 		}
 
-		function getTraitValue( traitName ) {
-			const trait = scontainers[traitName];
+		if( data.len === undefined ) {
+			data.len = flags.missing;
+		}
+		if( data.ns === undefined ) {
+			data.ns = flags.missing;
+		}
 
-			switch( traitName ) {
-				case id`values`:
-				case id`keys`:
-					return container[trait]().*collect( Array );
-				case id`ns`:
-					return container.*map( (v,k,n)=>n ).*collect( Array );
-				default:
-					return container[trait]();
+		function getTraitValue( traitName ) {
+			try {
+				switch( traitName ) {
+					case id`ns`:
+						return container.*nth ?
+							container.*map( (v,k,n)=>n ).*collect( Array ) :
+							flags.missing;
+					}
+
+				const trait = scontainers[traitName];
+				assert( trait, `${traitName} not a scontainers trait` );
+				if( ! container[trait] ) {
+					return flags.missing;
+				}
+
+				switch( traitName ) {
+					case id`values`:
+					case id`keys`:
+						return container[trait]().*collect( Array );
+					default:
+						return container[trait]();
+				}
+			}
+			catch( err ) {
+				return flags.throwing;
 			}
 		}
 
@@ -112,12 +138,14 @@ function test( scontainers ) {
 		len: 0,
 		sum: 0,
 		values: [],
+		keys: [],
 	});
 	testContainer( new Set([5, 3, 9]), {
 		toString: `Set{5, 3, 9}`,
 		len: 3,
 		sum: 17,
 		values: [5, 3, 9],
+		keys: [undefined, undefined, undefined],
 	});
 
 	// testing `Map`
@@ -126,13 +154,61 @@ function test( scontainers ) {
 		len: 0,
 		sum: 0,
 		values: [],
+		keys: [],
 	});
-	testContainer( new Map([ ['a',1], [1,'a'], ['x', 'y'] ]), {
-		toString: `Map{"a":1, 1:"a", "x":"y"}`,
+	testContainer( new Map([ ['a',1], [1,5], ['x', 3] ]), {
+		toString: `Map{"a":1, 1:5, "x":3}`,
 		len: 3,
-		values: [1, 'a', 'y'],
+		sum: 9,
+		values: [1, 5, 3],
 		keys: ['a', 1, 'x'],
 	});
+
+	// testing objects properties and own properties
+	testContainer( {}.*properties(), {
+		toString: `*{}`,
+		count: 0,
+		sum: 0,
+		values: [],
+		keys: [],
+	});
+	testContainer( {a:1, b:2}.*properties(), {
+		toString: `*{"a":1, "b":2}`,
+		count: 2,
+		sum: 3,
+		values: [1, 2],
+		keys: ['a', 'b'],
+	});
+	testContainer( Object.assign( Object.create({a:1}), {b:2}).*properties(), {
+		toString: `*{"b":2, "a":1}`,
+		count: 2,
+		sum: 3,
+		values: [2, 1],
+		keys: ['b', 'a'],
+	});
+
+	testContainer( {}.*ownProperties(), {
+		toString: `*{}`,
+		count: 0,
+		sum: 0,
+		values: [],
+		keys: [],
+	});
+	testContainer( {a:1, b:2}.*ownProperties(), {
+		toString: `*{"a":1, "b":2}`,
+		count: 2,
+		sum: 3,
+		values: [1, 2],
+		keys: ['a', 'b'],
+	});
+	testContainer( Object.assign( Object.create({a:1}), {b:2}).*ownProperties(), {
+		toString: `*{"b":2}`,
+		count: 1,
+		sum: 2,
+		values: [2],
+		keys: ['b'],
+	});
+
 }
 
 describe(`hand written tests`, function() {
