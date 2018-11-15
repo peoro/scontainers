@@ -37,7 +37,7 @@ groupBy23::overrideFunctionName( `n|2+n|3` );
 
 
 
-{
+function test( console ) {
 	function print( str, coll ) {
 		if( ! coll ) {
 			coll = str;
@@ -243,6 +243,34 @@ groupBy23::overrideFunctionName( `n|2+n|3` );
 		console.log( r );
 	}
 
-
 	console.log( fib.*nth(70) );
+};
+
+{
+	const assert = require('assert');
+	const fs = require('fs');
+	const streamBuffers = require('stream-buffers');
+	const {Console} = require('console');
+
+	const expectedOutput = fs.readFileSync('./test/data/test.js.out', 'utf8');
+	const output = (()=>{
+		const outStream = new streamBuffers.WritableStreamBuffer();
+		const console = new Console( outStream, outStream );
+		test( console );
+		return outStream.getContentsAsString( 'utf8' );
+	})();
+
+	if( require.main === module ) {
+		process.stdout.write( output );
+		if( output !== expectedOutput ) {
+			process.exit( 1 );
+		}
+	}
+	else {
+		describe( `testbench`, function(){
+			it( `didn't regress`, function(){
+				assert.equal( output, expectedOutput );
+			});
+		});
+	}
 }

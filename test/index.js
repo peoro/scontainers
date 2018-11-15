@@ -48,4 +48,5 @@ describe(`scontainers`, function(){
 	require('./manual_tests.js');
 	require('./derived_vs_generated.js');
 	require('./lodash.js');
+	require('./test.js');
 });
