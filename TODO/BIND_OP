@@ -26,4 +26,4 @@ I could do...
 o::implProto(p)
 ```
 
-In `Collections` (i.e. `subminus`) all the protocols (and the abstractions over them, like the `f<s>` functions) should always offer a `factory` property, that returns the optimized function.
+In `Collections` (i.e. `scontainers`) all the protocols (and the abstractions over them, like the `f<s>` functions) should always offer a `factory` property, that returns the optimized function.

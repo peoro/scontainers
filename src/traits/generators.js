@@ -1,5 +1,5 @@
 
-const straits = require('js-protocols');
+const straits = require('straits');
 
 const generatorTraits = straits.utils.TraitSet.fromKeys({
 	// core protocol generators: static methods, explicitely implemented by a collection

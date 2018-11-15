@@ -17,6 +17,7 @@ const Reordered = require('../decorators/reordered.js');
 const GroupBy = require('../decorators/group_by.js');
 const Cow = require('../decorators/cow.js');
 const Flatten = require('../decorators/flatten.js');
+const Reverse = require('../decorators/reverse.js');
 const SkipWhile = require('../decorators/skip_while.js');
 const TakeWhile = require('../decorators/take_while.js');
 
@@ -215,7 +216,9 @@ function deriveProtocols() {
 				};
 			}
 			else if( proto.*reverse ) {
-				return this.*reverse().*first();
+				return function last() {
+					return this.*reverse().*first();
+				};
 			}
 		},
 		random() {
@@ -277,6 +280,14 @@ function deriveProtocols() {
 			if( proto.*reduceFirst ) {
 				return function () {
 					return this.*reduceFirst( (max, n)=>Math.max(max, n) );
+				};
+			}
+		},
+		join() {
+			// TODO: `reduce` could be more performant in some cases...
+			if( proto.*reduceFirst ) {
+				return function join( sep='' ) {
+					return this.*reduceFirst( (str, substr)=>str+sep+substr, '' );
 				};
 			}
 		},
@@ -395,6 +406,7 @@ function deriveProtocols() {
 		groupBy: Collection.*wrapScontainer(GroupBy),
 		cow: Collection.*wrapScontainer(Cow),
 		flatten: Collection.*wrapScontainer(Flatten),
+		reverse: Collection.*wrapScontainer(Reverse),
 		flattenDeep() {
 			if( proto.*map ) {
 				return function() {
@@ -409,12 +421,12 @@ function deriveProtocols() {
 		},
 		uniq() {
 			if( proto.*filter ) {
-				return function uniq() {
+				return function uniq( eq=((a,b)=>(a===b)) ) {
 					let last = NaN;
 					return this.*filter( (value, key)=>{
-						const result = ( last !== value );
+						const result = eq( last, value );
 						last = value;
-						return result;
+						return ! result;
 					});
 				};
 			}

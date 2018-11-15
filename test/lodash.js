@@ -26,6 +26,7 @@ function test( scontainers, depth ) {
 			arr0(){ return []; },
 			arr1(){ return [9]; },
 			arr(){ return [1, 7, 4, 12, 3, 9, 3, 2, 1]; },
+			arrArr(){ return [[1,2,3][4,[5,[6]]],7,8,9]; },
 		},
 
 		customGens: {
@@ -88,6 +89,11 @@ function test( scontainers, depth ) {
 			reordered: {
 				sm(coll){ return coll.*reordered(); },
 				lodash(coll){ return coll; },
+			},
+			_flatten: {
+				// `reordered` breaks this
+				sm(coll){ return coll.*flatten(); },
+				lodash(coll){ return _.flatten( _.values(coll) ); },
 			},
 			_uniq: {
 				// hmmm... has got very weird issues on a map `map`, because of the iteration order? O,o

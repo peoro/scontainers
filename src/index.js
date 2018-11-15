@@ -1,5 +1,5 @@
 
-const straits = require('js-protocols');
+const straits = require('straits');
 const scontainerTraits = require('./traits/scontainers.js');
 
 require('./utils.js');

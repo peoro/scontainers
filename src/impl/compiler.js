@@ -1,5 +1,5 @@
 
-const {traits, language, semantics, defaultGet} = require('../utils.js');
+const {traits, options, language, semantics, defaultGet} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.semantics;
@@ -11,6 +11,15 @@ class CompilationFrame {
 
 		this.compiler = compiler;
 		this.Type = Type;
+
+		if( options.debug ) {
+			this.innerCalls = [];
+			this.traceInnerCall = function( traitName ) {
+				const genTrait = traits.generators[traitName];
+				const trait = traits.scontainers[traitName];
+				this.innerCalls.push( {traitName, generated:!!this[genTrait]} );
+			}
+		}
 
 		// inner: the CompilationFrame for our InnerType
 		const InnerType = Type.*InnerCollection;
@@ -38,20 +47,24 @@ class CompilationFrame {
 		});
 
 		// .*
-		for( let symName in traits.generators ) {
-			const genSym = traits.generators[symName];
-			const sym = traits.scontainers[symName];
+		for( let traitName in traits.generators ) {
+			const genTrait = traits.generators[traitName];
+			const trait = traits.scontainers[traitName];
 
 			const compilationFrame = this;
-			this.*[sym] = this.*[genSym] = function( ...args ) {
-				const Type = this.Type;
-				if( Type.*[genSym] ) {
-					return this::Type.*[genSym]( ...args );
+			this.*[trait] = this.*[genTrait] = function( ...args ) {
+				if( options.debug ) {
+					compilationFrame.traceInnerCall( traitName );
 				}
 
-				const symVar = this.compiler.registerConstant( sym, `${symName}Sym` );
-				//return compiler.getSelf( Type ).*member( symVar, true ).*call( ...args );
-				return compilationFrame.self.*member( symVar, true ).*call( ...args );
+				const Type = this.Type;
+				if( Type.*[genTrait] ) {
+					return this::Type.*[genTrait]( ...args );
+				}
+
+				const traitVar = this.compiler.registerConstant( trait, `${traitName}Sym` );
+				//return compiler.getSelf( Type ).*member( traitVar, true ).*call( ...args );
+				return compilationFrame.self.*member( traitVar, true ).*call( ...args );
 			}
 		}
 	}
@@ -230,6 +243,17 @@ class Compiler extends language.Compiler {
 			console.group();
 			console.log( this.ast.codegen() );
 			console.groupEnd();
+			if( options.debug ) {
+				console.log(`==========`);
+				let {frame} = this;
+				while( frame ) {
+					frame.innerCalls.forEach( ic=>{
+						console.log( `${frame.Type.name}: ${ic.generated ? `✔` : `❌❌❌`} ${ic.traitName}` );
+					});
+					frame = frame.inner;
+				}
+			}
+
 			console.log(`<<<<<<<<<<<<<<<<<<<<<`);
 		}
 

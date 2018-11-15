@@ -1,0 +1,14 @@
+
+We want to get long chains to work even if they're broken...
+What I mean is, the following should work:
+```
+something.*sort().*map()
+```
+Even if after a `.*sort()` all the properties of the iterator are broken...
+
+We can't get that working on everything... `[].*sort().*map` needs not to exist, otherwise you wouldn't be able to tell what traits a structure "natively supports"...
+But we could have: `[].*auto().*sort().*map()` to work.
+
+`Auto<T>` would implement all the properties in a custom way:
+ - each transformation called on it returns a further auto-object (e.g. `AutoMap< Auto<T> >` for `.*map()`).
+ - each consumer, when called the first time, computes how to run the transformation pipeline (i.e. where to `.*collect()` what), and overwrites itself with a function that directly calls the correct sequence.

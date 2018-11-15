@@ -1,0 +1,11 @@
+
+# Strings
+
+`String` shouldn't be iterable.
+Like `Object`, it should have some methods to turn it into an iterable object:
+ - `.*codeUnits()` for a collection of UTF16 code units (NOTE: only available on UCS-2/UTF-16 strings).
+ - `.*chars()` for a collection of Unicode characters
+ - `.*bytes( encoding="UCS-2" )` for a collection of bytes (NOTE: the default encoding is the native one).
+
+We want this stuff to be as independent as possible for the underlying representation of strings (UCS-2), avoid ambiguities (`"😁"` should have length 1 or 2? it's 1 in python and Unicode, but 2 in JS...) etc.
+This will also fix problems with recursive algorithms like `.*flattenDeep()`: if a string is a collection of strings, recursively exploring them leads to stack overflows/infinite loops.

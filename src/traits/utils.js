@@ -1,6 +1,6 @@
 
 const assert = require('assert');
-const straits = require('js-protocols');
+const straits = require('straits');
 const {id} = require('../utils_light.js');
 
 use traits * from straits.core;

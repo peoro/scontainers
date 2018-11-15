@@ -174,7 +174,7 @@ function test( objs, maxDepth ) {
 
 			// rec( [objs.generators, objs.transformations, objs.transformations, objs.transformations, objs.consumers] )
 			rec( [objs.generators, ...Array(depth).fill(objs.transformers), objs.consumers] );
-		}).timeout( 2500 );
+		}).timeout( 5000 );
 	}
 }
 

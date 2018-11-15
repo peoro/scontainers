@@ -23,6 +23,12 @@ function test( scontainers ) {
 		if( data.len !== undefined && data.count === undefined ) {
 			data.count = data.len
 		}
+		if( data.values !== undefined && data.flatten === undefined ) {
+			data.flatten = data.values;
+		}
+		if( data.flatten !== undefined && data.flattenDeep === undefined ) {
+			data.flattenDeep = data.flatten;
+		}
 
 		if( data.len === undefined ) {
 			data.len = flags.missing;
@@ -49,6 +55,8 @@ function test( scontainers ) {
 				switch( traitName ) {
 					case id`values`:
 					case id`keys`:
+					case id`flatten`:
+					case id`flattenDeep`:
 						return container[trait]().*collect( Array );
 					default:
 						return container[trait]();
@@ -130,6 +138,15 @@ function test( scontainers ) {
 		values: [1, 9, 5],
 		ns: [0, 1, 2],
 		keys: [1, 2, 3],
+	});
+	testContainer( [[], 2, [7, [3]]], {
+		toString: `[[], 2, [7, [3]]]`,
+		len: 3,
+		values: [[], 2, [7, [3]]],
+		keys: [0, 1, 2],
+		ns: [0, 1, 2],
+		flatten: [2, 7, [3]],
+		flattenDeep: [2, 7, 3],
 	});
 
 	// testing `Set`

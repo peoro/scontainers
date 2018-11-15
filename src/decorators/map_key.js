@@ -7,35 +7,44 @@ use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	return function() {
-		const parentProto = ParentCollection.prototype;
-
 		class MapKey {
-			constructor( coll, fn ) {
-				this.wrapped = coll;
-				this.fn = fn;
-			}
+			static get name() { return `${ParentCollection.name}::MapKey`; }
 
-			reverse() {
-				if( parentProto.*reverse ) {
-					return this.wrapped.*reverse().*mapKey( this.fn );
-				}
+			constructor( coll, mapKeyFn ) {
+				this.wrapped = coll;
+				this.mapKeyFn = mapKeyFn;
 			}
 
 			toString( ) {
-				return `${this.wrapped}.map(⋯)`;
+				return `${this.wrapped}.mapKey(${this.mapFn.name || 'ƒ'})`;
 			}
 		}
-		MapKey.Propagator = {
-			parentCollection() { return this.wrapped; },
-			next( kv ) {
-				kv.key = this.fn( kv.value, kv.key );
-				return kv;
+
+		const parentProto = ParentCollection.prototype;
+
+		MapKey.*describeScontainer({
+			InnerCollection: ParentCollection,
+			innerCollectionKey: id`wrapped`,
+			argKeys: [id`mapKeyFn`],
+
+			standardIteration: true,
+			transformStream: true,
+		});
+
+		MapKey.*implCoreTraits({
+			stage( kvn ) {
+				kvn.key = this.mapKeyFn( kvn.value, kvn.key, kvn.n );
+				return kvn;
 			},
-			alwaysPropagate: true,
-			propagateMulti: false,
-			needState: false,
-			reorder: false
-		};
+			nToParentN( n ) { return n; },
+
+			reverse() {
+				if( parentProto.*reverse ) {
+					return this.wrapped.*reverse().*mapKey( this.mapKeyFn );
+				}
+			}
+		});
+
 		return MapKey;
 	};
 };

@@ -1,26 +1,36 @@
 {
-	"name": "subminus",
-	"version": "1.0.0",
-	"description": "",
+	"name": "scontainers",
+	"version": "0.0.1",
+	"description": "A container/collection/iterator library for JavaScript, comfortable to use, performant and versatile.",
 	"main": "index.js",
 	"scripts": {
 		"test": "mocha --require babel-core/register test/index.js",
 		"build-watch": "npx babel --watch src --out-dir dist",
 		"prepare": "babel src --out-dir dist"
 	},
+	"keywords": [
+		"scontainers",
+		"containers",
+		"collections",
+		"iterator",
+		"functional",
+		"range",
+		"traits",
+		"straits"
+	],
 	"author": "peoro",
 	"license": "ISC",
 	"devDependencies": {
+		"babel-cli": "^6.26.0",
 		"babel-plugin-transform-function-bind": "^6.22.0",
 		"babel-plugin-transform-strict-mode": "^6.24.1",
-		"babel-register": "^6.26.0",
-		"chai": "^4.1.2",
+		"chai": "^4.2.0",
 		"mocha": "^5.2.0",
-		"straits-babel": "git+ssh://git@git.peori.space:peoro/straits-babel.git"
+		"straits-babel": "^1.0.0"
 	},
 	"dependencies": {
-		"esast": "git+ssh://git@git.peori.space:peoro/esast.git",
-		"js-protocols": "git+ssh://git@git.peori.space:peoro/js-protocols.git"
+		"esast": "^0.1.0",
+		"straits": "^1.0.0"
 	},
 	"babel": {
 		"parserOpts": {

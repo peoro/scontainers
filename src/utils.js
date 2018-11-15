@@ -1,5 +1,5 @@
 
-const straits = require('js-protocols');
+const straits = require('straits');
 
 const semanticTraits = require('esast/dist/semantics.js');
 const descriptorTraits = require('./traits/descriptor.js');

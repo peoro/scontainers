@@ -1,5 +1,5 @@
 
-const straits = require('js-protocols');
+const straits = require('straits');
 
 use traits * from straits.core;
 
@@ -65,12 +65,13 @@ const derivedTraits = straits.utils.TraitSet.fromKeys({
 	swapNs( n1, n2 ){},	// swap two elements (by n)
 	swapKeys( k1, k2 ){},	// swap two elements (by key)
 	swap(){},	// TODO: get rid of this...
-	reduce( fn ){},
+	reduce( fn, initialValue ){},
 	reduceFirst( fn ){},
 	sum(){},
 	avg(){},
 	min(){},
 	max(){},
+	join( sep='' ){},
 	every( fn ){},
 	some( fn ){},
 	// TODO: the following still need to be implemented

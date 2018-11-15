@@ -54,7 +54,9 @@ module.exports = function( ParentCollection ) {
 			},
 			reverse() {
 				if( parentProto.*reverse ) {
-					return this.wrapped.*reverse().*skipWhile( this.fn );
+					return function reverse() {
+						return this.wrapped.*reverse().*skipWhile( this.fn );
+					};
 				}
 			}
 		});
