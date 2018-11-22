@@ -1,0 +1,5 @@
+
+Birray
+An Array where both endings can be pushed/popped in O(1)
+It's implemented using 2 arrays (one going to the right, the other to the left), plus the index of the first element (negative number for left array, 0 or positive for the right one).
+If the start of the array is greater than array's length, it automatically moves all the values so that 0 becomes the middle

@@ -49,6 +49,7 @@ Array.*implCoreTraits({
 	nToKey( n ) { return n; },
 	keyToN( key ) { return key; },
 	setNth( n, value ) { this[n] = value; },
+	truncate( n ) { this.length = n; },
 	add( value ) { this.push(value); },
 	clear() { this.length = 0; },
 

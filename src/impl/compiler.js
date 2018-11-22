@@ -1,4 +1,5 @@
 
+const assert = require('assert');
 const {traits, options, language, semantics, defaultGet} = require('../utils.js');
 
 use traits * from traits.utils;

@@ -52,6 +52,12 @@ function deriveProtocolsForRootType( configuration={} ) {
 		const proto = this.prototype;
 
 		traits.scontainers.*addTraitFactories( this.prototype, {
+			inplace() {
+				return function inplace() {
+					return this;
+				}
+			},
+
 			hasKey() {
 				if( nthUnchecked ) {
 					return function( key ) {

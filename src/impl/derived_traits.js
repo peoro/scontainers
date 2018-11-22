@@ -35,6 +35,37 @@ function deriveProtocols() {
 	}
 
 	traits.scontainers.*addTraitFactories( proto, {
+		// TODO: move these away from here! they're core traits...
+		push() {
+			if( proto.*setNth && proto.*len ) {
+				return function push( value ) {
+					const n = this.*len();
+					this.*setNth( n, value );
+				};
+			}
+		},
+		unshift() {
+			if( proto.*setNth && proto.*len ) {
+				return function push( value ) {
+					this.*reverse().forEach( (v,k,n)=>{
+						this.*setNth( n+1, v );
+					});
+					this.*setNth( 0, value );
+				};
+			}
+		},
+		remove() {
+			if( proto.*setNth && proto.*len ) {
+				return function remove( n ) {
+					const len = this.*len();
+					for( let i = n; i < len; ++i ) {
+						this.*setNth( i-1, this.*nth(i) );
+					}
+					this.*truncate( len-1 );
+				};
+			}
+		},
+
 		forEach() {
 			if( proto.*kvIterator ) {
 				return function forEach( fn ) {
@@ -226,6 +257,22 @@ function deriveProtocols() {
 				return function random() {
 					const n = Math.floor( Math.random()*this.*len() );
 					return this.*nthKVN( n );
+				};
+			}
+		},
+		find() {
+			if( proto.*whileEach ) {
+				return function find( fn ) {
+					return this.*whileEach( (v,k,n)=>{
+						return ! fn(v, k, n);
+					});
+				};
+			}
+		},
+		findLast( fn ) {
+			if( proto.*reverse && proto.*find ) {
+				return function findLast( fn ) {
+					return this.*reverse().*find( fn );
 				};
 			}
 		},
@@ -456,7 +503,7 @@ function deriveProtocols() {
 					return counter < n;
 				});
 			};
-		}
+		},
 	});
 }
 
