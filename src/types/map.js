@@ -49,7 +49,7 @@ Map.*implCoreGenerators({
 			)
 			.*declare( next, undefined, `var` )
 			// .*declare( next, it.*member(`next`).call() )
-			.*while( next.*[ traits.semantics.assign ]( it.*member(`next`).*call() ).*member(`done`).*not(),
+			.*while( next[traits.semantics.assign]( it.*member(`next`).*call() ).*member(`done`).*not(),
 				this.body = semantics.block()
 			);
 

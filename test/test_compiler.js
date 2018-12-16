@@ -21,7 +21,7 @@ function sumFn( a, b ) { return a+b; }
 
 {
 	function compile( coll, sym ) {
-		const fn = coll.*[sym];
+		const fn = coll[sym];
 		assert( fn.factory, `No compiler for ${coll.toString()}.*${sym.toString()}` );
 
 		const compiler = fn.factory();

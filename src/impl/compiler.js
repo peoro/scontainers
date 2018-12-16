@@ -53,20 +53,25 @@ class CompilationFrame {
 			const trait = traits.scontainers[traitName];
 
 			const compilationFrame = this;
-			this.*[trait] = this.*[genTrait] = function( ...args ) {
+			function traitWrapper( ...args ) {
 				if( options.debug ) {
 					compilationFrame.traceInnerCall( traitName );
 				}
 
 				const Type = this.Type;
-				if( Type.*[genTrait] ) {
-					return this::Type.*[genTrait]( ...args );
+				if( Type[genTrait] ) {
+					return this::Type[genTrait]( ...args );
 				}
 
 				const traitVar = this.compiler.registerConstant( trait, `${traitName}Sym` );
 				//return compiler.getSelf( Type ).*member( traitVar, true ).*call( ...args );
 				return compilationFrame.self.*member( traitVar, true ).*call( ...args );
+			};
+			
+			if( trait ) {
+				trait.*impl( this, traitWrapper );
 			}
+			genTrait.*impl( this, traitWrapper );
 		}
 	}
 
