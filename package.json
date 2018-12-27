@@ -10,18 +10,10 @@
 		"test": "nyc mocha --require @babel/register test/index.js",
 		"coverage": "nyc report --reporter=lcov"
 	},
-	"keywords": [
-		"scontainers",
-		"containers",
-		"collections",
-		"iterator",
-		"functional",
-		"range",
-		"traits",
-		"straits"
-	],
-	"author": "peoro",
-	"license": "ISC",
+	"dependencies": {
+		"esast": "^0.1.0",
+		"straits": "^1.0.0"
+	},
 	"devDependencies": {
 		"@babel/plugin-proposal-function-bind": "^7.2.0",
 		"@babel/plugin-transform-strict-mode": "^7.2.0",
@@ -35,8 +27,19 @@
 		"nyc": "^13.1.0",
 		"stream-buffers": "^3.0.2"
 	},
-	"dependencies": {
-		"esast": "^0.1.0",
-		"straits": "^1.0.0"
-	}
+	"author": "peoro",
+	"license": "MIT",
+	"keywords": [
+		"scontainers",
+		"containers",
+		"collections",
+		"iterator",
+		"functional",
+		"range",
+		"traits",
+		"straits"
+	],
+	"homepage": "https://github.com/peoro/scontainers#readme",
+	"bugs": "https://github.com/peoro/scontainers/issues",
+	"repository": "github:peoro/scontainers"
 }
