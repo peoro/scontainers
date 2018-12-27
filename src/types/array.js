@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits, toStr} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;

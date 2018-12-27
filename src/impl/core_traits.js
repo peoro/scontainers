@@ -23,7 +23,7 @@ Object.prototype.*implCoreTraits = function( compilerConfiguration ) {
 
 	// deriving non-core protocols
 	this::deriveProtocols();
-}
+};
 
 function deriveProtocolsForRootType( configuration={} ) {
 	assert( this, `deriveProtocolsForRootType() must be called on an object` );
@@ -40,7 +40,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 			getUnchecked = function( key ) {
 				const n = this.*keyToN( key );
 				return this::nthUnchecked( n );
-			}
+			};
 		}
 	}
 
@@ -55,7 +55,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 			inplace() {
 				return function inplace() {
 					return this;
-				}
+				};
 			},
 
 			hasKey() {
@@ -63,7 +63,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 					return function( key ) {
 						const n = this.*keyToN( key );
 						return Number.isInteger(n) && n >= 0 && n < this.*len();
-					}
+					};
 				}
 			},
 
@@ -71,7 +71,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 				if( nthUnchecked ) {
 					return function( n ) {
 						return new KVN( this.*nToKey( n ), this::nthUnchecked( n ), n );
-					}
+					};
 				}
 			},
 			getKVN() {
@@ -100,7 +100,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 						if( n >= 0 && n < this.*len() ) {
 							return this::nthUnchecked( n );
 						}
-					}
+					};
 				}
 			},
 			get() {
@@ -110,7 +110,7 @@ function deriveProtocolsForRootType( configuration={} ) {
 							return;
 						}
 						return this::getUnchecked( key );
-					}
+					};
 				}
 			},
 
@@ -142,7 +142,6 @@ function deriveProtocolsForTransformation( configuration={} ) {
 	};
 
 	const Collection = this;
-	const proto = this;
 	const ParentCollection = this.*InnerCollection;
 	check( ParentCollection, `need to specify the ParentType` );
 	const parentProto = ParentCollection.prototype;
@@ -184,7 +183,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( Collection.*mappingOnly && parentProto.*len ) {
 				return function() {
 					return this[innerCollectionKey].*len();
-				}
+				};
 			}
 		},
 
@@ -193,7 +192,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 				return function( n ) {
 					const parentN = this::nToParentN( n );
 					return this[innerCollectionKey].*nToKey( parentN );
-				}
+				};
 			}
 		},
 		keyToN() {
@@ -201,7 +200,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 				return function( key ) {
 					const innerKey = this::keyToParentKey( key );
 					return this[innerCollectionKey].*keyToN( innerKey );
-				}
+				};
 			}
 		},
 
@@ -214,7 +213,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 					if( parentKVN ) {
 						return this::nStage( parentKVN );
 					}
-				}
+				};
 			}
 		},
 		getKVN() {
@@ -225,7 +224,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 					if( parentKVN ) {
 						return this::kStage( parentKVN );
 					}
-				}
+				};
 			}
 		},
 
@@ -235,13 +234,12 @@ function deriveProtocolsForTransformation( configuration={} ) {
 					return this::kStage( (c)=>{
 						this[innerCollectionKey].*nth( c, c.key );
 					});
-					return true;
-				}
+				};
 			}
 			if( Collection.*mappingOnly && parentProto.*hasKey ) {
 				return function( key ) {
 					return this[innerCollectionKey].*hasKey( keyToParentKey(key) );
-				}
+				};
 			}
 		},
 	});
@@ -273,10 +271,6 @@ function deriveProtocolsForTransformation( configuration={} ) {
 								return this.next();
 							}
 
-							if( false ) {
-								TODO(`handle the situation wehn ${kvn} is an iterator`);
-							}
-
 							return new KVN( kvn.key, kvn.value, kvn.n );
 						}
 					};
@@ -287,7 +281,7 @@ function deriveProtocolsForTransformation( configuration={} ) {
 			if( parentProto.*kvReorderedIterator && kStage ) {
 				return function() {
 					const innerRIt = this[innerCollectionKey].*kvReorderedIterator();
-					return new ReorderedIterator.MapReorderedIterator( innerRIt, this::kStage )
+					return new ReorderedIterator.MapReorderedIterator( innerRIt, this::kStage );
 				};
 			}
 		},
@@ -308,7 +302,7 @@ function deriveCoreProtocols() {
 					if( kvn ) {
 						return kvn.value;
 					}
-				}
+				};
 			}
 		},
 		get() {
@@ -318,7 +312,7 @@ function deriveCoreProtocols() {
 					if( kvn ) {
 						return kvn.value;
 					}
-				}
+				};
 			}
 		},
 		set() {
@@ -326,7 +320,7 @@ function deriveCoreProtocols() {
 				return function( key, value ) {
 					const n = this.*keyToN( key );
 					this.*setNth( n, value );
-				}
+				};
 			}
 		},
 		kvIterator() {

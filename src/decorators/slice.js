@@ -1,5 +1,5 @@
 
-const {assert, traits, toStr, id, KVN} = require('../utils.js');
+const {assert, traits, id} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -45,7 +45,7 @@ module.exports = function( ParentCollection ) {
 				if( parentProto.*len ) {
 					return function() {
 						return this.args.end.*minus( this.args.begin );
-					}
+					};
 				}
 			},
 		});
@@ -57,7 +57,7 @@ module.exports = function( ParentCollection ) {
 				if( parentProto.*len ) {
 					return function( ) {
 						return this.end - this.begin;
-					}
+					};
 				}
 			},
 		});

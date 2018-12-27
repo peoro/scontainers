@@ -1,13 +1,11 @@
 
-const {traits, semantics, toStr, id, KVN} = require('../utils.js');
+const {traits, semantics, id} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
 use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
-	const parentProto = ParentCollection.prototype;
-
 	return function() {
 		class Filter {
 			static get name() { return `${ParentCollection.name}::Filter`; }

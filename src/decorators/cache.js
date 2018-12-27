@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits, id, KVN} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -55,14 +55,14 @@ module.exports = function( ParentCollection ) {
 						const kvn = this.wrapped.*getKVN( key );
 						this.cache.*set( key, kvn );
 						return new KVN( kvn.key, kvn.value, kvn.n );
-					}
+					};
 				}
 			},
 			len() {
 				if( parentProto.*len ) {
 					return function( ) {
 						return this.wrapped.*len();
-					}
+					};
 				}
 			},
 		});

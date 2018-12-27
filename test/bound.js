@@ -23,13 +23,13 @@ function bindSymbol( sym, symName ) {
 		}
 	};
 	f.factory = function() {
-		TODO();
+		global.TODO();
 		// return new Function(`function ${symName}(){  }`);
 	};
 	// f.name = symName;
 	f.symbol = sym;
 	return f;
-};
+}
 
 const boundFunctions = {};
 for( const symName in symbols ) {
@@ -44,9 +44,9 @@ if( require.main === module ) {
 	const {Range} = require('./');
 	const {map, filter, toString, collect, ownProperties} = module.exports;
 
-	function log( ) {
+	const log = function( ) {
 		console.log( this::toString() );
-	}
+	};
 
 	{
 		console.log();

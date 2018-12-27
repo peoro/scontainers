@@ -4,8 +4,7 @@ module.exports = function( api ) {
 
 	return {
 		"plugins": [
-			{ parserOverride:require('@straits/babel').parse },
-			"@straits/babel/plugin.js",
+			"@straits",
 			"@babel/plugin-transform-strict-mode",
 			"@babel/plugin-proposal-function-bind",
 		]

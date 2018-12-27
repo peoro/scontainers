@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN, VIt, Done} = require('../utils.js');
+const {traits, id, VIt, Done} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -36,8 +36,6 @@ module.exports = function( ParentCollection ) {
 				return new VIt( value );
 			}
 		};
-
-		const parentProto = ParentCollection.prototype;
 
 		Values.*describeScontainer({
 			InnerCollection: ParentCollection,

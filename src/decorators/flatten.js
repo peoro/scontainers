@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits, id} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -46,7 +46,7 @@ module.exports = function( ParentCollection ) {
 						it: this.wrapped.*kvIterator(), // iterator on `this.wrapped`
 						jt: null, // iterator on latest returned element of `this.wrapped`
 						next() {
-							while( true ) {
+							for(;;) {
 								if( this.jt ) {
 									const j = this.jt.next();
 									if( j ) {
@@ -73,8 +73,6 @@ module.exports = function( ParentCollection ) {
 								// `i` was not iterable: just returning it
 								return i;
 							}
-
-							unreachable();
 						}
 					};
 				};
@@ -86,7 +84,7 @@ module.exports = function( ParentCollection ) {
 						return this.wrapped
 							.*reverse()
 							.*map( (value)=>value.*kvIterator ? value.*reverse() : value )
-							.*flatten()
+							.*flatten();
 					};
 				}
 			},

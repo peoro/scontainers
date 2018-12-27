@@ -1,5 +1,5 @@
 
-const {assert, traits, toStr, id, KVN} = require('../utils.js');
+const {assert, traits, toStr, KVN} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -7,7 +7,6 @@ use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	assert( ParentCollection === Object, `EnumerableProperties is only needed by Object...` );
-	const parentProto = ParentCollection.prototype;
 
 	return function() {
 		class EnumerableProperties {

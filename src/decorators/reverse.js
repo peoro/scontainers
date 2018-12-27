@@ -1,5 +1,5 @@
 
-const {assert, traits, toStr, id, KVN} = require('../utils.js');
+const {traits, id} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -11,8 +11,6 @@ module.exports = function( ParentCollection ) {
 	}
 
 	return function() {
-		const parentProto = ParentCollection.prototype;
-
 		class Reverse {
 			static get name() { return `${ParentCollection.name}::Reverse`; }
 

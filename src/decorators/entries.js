@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits, id, KVIt, Done} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -37,8 +37,6 @@ module.exports = function( ParentCollection ) {
 			}
 		};
 
-		const parentProto = ParentCollection.prototype;
-
 		Entries.*describeScontainer({
 			InnerCollection: ParentCollection,
 			innerCollectionKey: id`wrapped`,
@@ -47,7 +45,7 @@ module.exports = function( ParentCollection ) {
 			mappingOnly: true,
 		});
 
-		traits.scontainers.*implTraits( Values.prototype, {
+		traits.scontainers.*implTraits( Entries.prototype, {
 			iterator() {
 				return new Entries.Iterator( this.wrapped.*kvIterator() );
 			}

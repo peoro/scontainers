@@ -21,7 +21,7 @@ function test( scontainers ) {
 			data.keys = data.ns;
 		}
 		if( data.len !== undefined && data.count === undefined ) {
-			data.count = data.len
+			data.count = data.len;
 		}
 		if( data.values !== undefined && data.flatten === undefined ) {
 			data.flatten = data.values;
@@ -44,7 +44,7 @@ function test( scontainers ) {
 						return container.*nth ?
 							container.*map( (v,k,n)=>n ).*collect( Array ) :
 							flags.missing;
-					}
+				}
 
 				const trait = scontainers[traitName];
 				assert( trait, `${traitName} not a scontainers trait` );

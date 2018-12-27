@@ -1,5 +1,5 @@
 
-const {assert, traits, toStr, id, ReorderedIterator, KVN} = require('../utils.js');
+const {assert, traits, id, ReorderedIterator, KVN} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -78,7 +78,7 @@ module.exports = function( ParentCollection ) {
 			}
 			stop() {
 				super.stop();
-				TODO(`We should stop creating new groups, but keep iterating for old ones - but only if some are still active...`);
+				global.TODO(`We should stop creating new groups, but keep iterating for old ones - but only if some are still active...`);
 			}
 		};
 

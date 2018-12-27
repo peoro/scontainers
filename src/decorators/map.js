@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits, id} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -19,8 +19,6 @@ module.exports = function( ParentCollection ) {
 				return `${this.wrapped}.map(${this.mapFn.name || 'ƒ'})`;
 			}
 		}
-
-		const parentProto = ParentCollection.prototype;
 
 		Map.*describeScontainer({
 			InnerCollection: ParentCollection,

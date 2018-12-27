@@ -1,5 +1,4 @@
 
-const assert = require('assert');
 const chai = require('chai');
 const scontainerSet = require('./scontainers.js');
 const loadScontainers = require('../src/loader.js');

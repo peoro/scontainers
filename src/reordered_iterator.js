@@ -15,14 +15,14 @@ class ReorderedIterator {
 	proceed() {
 		assert( this.state === ReorderedIterator.state.ready, `proceed() should be called only once.` );
 		this.state = ReorderedIterator.state.proceeding;
-	};
+	}
 	resume() {
 		assert( this.state === ReorderedIterator.state.proceeding, `resume() should be called only when the ReorderedIterator is already proceeding and not stopped.` );
-	};
+	}
 	stop() {
 		assert( this.state === ReorderedIterator.state.proceeding, `stop() should be called only when the ReorderedIterator is proceeding and not yet stopped.` );
 		this.state = ReorderedIterator.state.stopped;
-	};
+	}
 
 	// register handlers for some common events...
 	onNext( fn ) {
@@ -71,15 +71,15 @@ ReorderedIterator.MapReorderedIterator = class extends ReorderedIterator {
 	proceed() {
 		super.proceed();
 		this.rit.proceed();
-	};
+	}
 	resume() {
 		super.resume();
 		this.rit.resume();
-	};
+	}
 	stop() {
 		super.stop();
 		this.rit.stop();
-	};
+	}
 };
 
 ReorderedIterator.FromIterator = class extends ReorderedIterator {

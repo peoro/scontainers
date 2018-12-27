@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN, options} = require('../utils.js');
+const {traits, id, options} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -34,7 +34,7 @@ module.exports = function( ParentCollection ) {
 			kvReorderedIterator() {
 				return function() {
 					return this.wrapped.*kvReorderedIterator();
-				}
+				};
 			}
 		});
 

@@ -1,13 +1,10 @@
 
-'use strict';
-
 Error.stackTraceLimit = Infinity;
 
-const assert = require('assert');
 const scontainers = require('../src/index.js');
 const {Range} = scontainers;
 
-const {traits, toStr} = require('../src/util.js');
+const {toStr} = require('../src/util.js');
 
 use traits * from scontainers;
 
@@ -20,45 +17,20 @@ function isEven( n ) { return n%2 === 0; }
 function sumFn( a, b ) { return a+b; }
 
 {
-	function compile( coll, sym ) {
-		const fn = coll[sym];
-		assert( fn.factory, `No compiler for ${coll.toString()}.*${sym.toString()}` );
-
-		const compiler = fn.factory();
-		return compiler.toString();
-	}
-
-	function print( sym, str, coll ) {
-
-		if( ! coll ) {
-			coll = str;
-			str = null;
-		}
-		if( str ) {
-			console.log(str);
-		}
-		console.log( coll.toString() );
-		console.log( coll.*toString() );
-		// console.log( compile(coll, sym) );
-
-		console.log();
-	}
-
-	quickTest: {
+	{
 		const collection =
 			//({a:3, b:5, c:7}).*ownProperties()
 			new Map([ ['a',7], [32,32], [false,'baobab'] ])
 			// new Range( 10 )
-			.*filter( (v,k)=>!Number.isInteger(k) )
-			.*map( x=>`(${x})` );
+				.*filter( (v,k)=>!Number.isInteger(k) )
+				.*map( x=>`(${x})` );
 
 		console.log( collection.*toString() );
 		collection.*get( `a` )::log();
 		collection.*forEach( ::console.log );
 		console.log();
 
-		break quickTest;
-		process.exit( 0 );
+		//process.exit( 0 );
 	}
 
 	{

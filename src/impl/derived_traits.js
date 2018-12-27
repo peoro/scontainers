@@ -280,8 +280,8 @@ function deriveProtocols() {
 		swapNs() {
 			if( proto.*nth && proto.*setNth ) {
 				return function( n1, n2 ) {
-					const value1 = this.*nth( key1 );
-					this.*setNth( n1, this.*nth(key2) );
+					const value1 = this.*nth( n1 );
+					this.*setNth( n1, this.*nth(n2) );
 					this.*setNth( n2, value1 );
 				};
 			}
@@ -400,7 +400,7 @@ function deriveProtocols() {
 				return function toString() {
 					const out = this.*map( (item)=>item::toStr() ).*collect( Array );
 					return `*{${out.join(', ')}}`;
-				}
+				};
 			}
 			if( proto.*forEach ) {
 				return function toString() {
@@ -408,7 +408,7 @@ function deriveProtocols() {
 						.*map( (value, key)=>`${key::toStr()}:${value::toStr()}` )
 						.*collect( Array );
 					return `*{${out.join(', ')}}`;
-				}
+				};
 			}
 			console.warn( `${Collection.name} not printable` );
 		},
@@ -437,7 +437,7 @@ function deriveProtocols() {
 		entries: Collection.*wrapScontainer(Entries),
 		enumerate() {
 			return function enumerate() {
-				TODO();
+				global.TODO();
 				let count = 0;
 				return this.*map( (value)=>[count++, value] );
 			};
@@ -464,7 +464,7 @@ function deriveProtocols() {
 		concat() {
 			return function concat( ...collections ) {
 				return [this, ...collections].*flatten();
-			}
+			};
 		},
 		uniq() {
 			if( proto.*filter ) {

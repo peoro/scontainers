@@ -17,7 +17,7 @@ function deriveProtocolsFromGenerators() {
 
 		const proto = this.prototype;
 
-		function deriveProtocols( protoObj ) {
+		const deriveProtocols = function( protoObj ) {
 			const factories = {};
 
 			for( let key in protoObj ) {
@@ -42,8 +42,8 @@ function deriveProtocolsFromGenerators() {
 				};
 			}
 
-			return traits.scontainers.*addTraitFactories( proto, factories )
-		}
+			return traits.scontainers.*addTraitFactories( proto, factories );
+		};
 
 		// deriving core protocols from protocol generators
 		deriveProtocols({
@@ -54,7 +54,7 @@ function deriveProtocolsFromGenerators() {
 						const n = this.registerParameter(`n`);
 						const kvn = this.*nthKVN( n );
 						return KVNVar.*new( kvn.key, kvn.value, kvn.n );
-					}
+					};
 				}
 			},
 			getKVN() {
@@ -64,7 +64,7 @@ function deriveProtocolsFromGenerators() {
 						const n = this.registerParameter(`n`);
 						const kvn = this.*getKVN( n );
 						return KVNVar.*new( kvn.key, kvn.value, kvn.n );
-					}
+					};
 				}
 			},
 			nth() {
@@ -77,7 +77,7 @@ function deriveProtocolsFromGenerators() {
 							.*if( semantics.or( n.*lt( this.*len() ) ),
 								semantics.return( this.*nthKVN(n).value )
 							);
-					}
+					};
 				}
 			},
 			get() {
@@ -97,15 +97,15 @@ function deriveProtocolsFromGenerators() {
 							)
 						*/
 
-						this.body.*return( kvn.value )
-					}
+						this.body.*return( kvn.value );
+					};
 				}
 			},
 			len() {
 				if( Type.*len ) {
 					return function() {
 						return this.*len();
-					}
+					};
 				}
 			},
 			kvIterator() {
@@ -115,8 +115,6 @@ function deriveProtocolsFromGenerators() {
 						const Iterator = this.createUniqueVariable( `Iterator` );
 						const thisI = semantics.this().*member( this.createUniqueVariable(`i`) );
 						const thisLen = semantics.this().*member( this.createUniqueVariable(`len`) );
-						const key = this.createUniqueVariable( `key` );
-						const value = this.createUniqueVariable( `value` );
 
 						let typeArgMapFn = this.typeArgMapFn;
 						let body = this.body;
@@ -131,16 +129,16 @@ function deriveProtocolsFromGenerators() {
 							//  key:{name:mapFn, variable:this.wrapped.mapFn, fn:...}, value:this.mapFn
 							const argVarMap = new Map();
 
-							function rebase( variable ) {
+							const rebase = function( variable ) {
 								const rebaseRec = (variable)=>{
 									if( variable.type === 'ThisExpression' ) {
 										return this;
 									}
 									return rebaseRec( variable.object )
 										.*member( variable.property, variable.computed );
-								}
+								};
 								return rebaseRec( variable );
-							}
+							};
 
 							// computing `Iterator.prototype.next` first
 							{
@@ -164,7 +162,7 @@ function deriveProtocolsFromGenerators() {
 
 								const kvn = this.*nthKVN( thisI );
 
-								this.body .*return( fns.KVN.*new(kvn.key, kvn.value, thisI.*increment(false)) )
+								this.body.*return( fns.KVN.*new(kvn.key, kvn.value, thisI.*increment(false)) );
 
 								reset();
 							}
@@ -210,7 +208,7 @@ function deriveProtocolsFromGenerators() {
 					};
 				}
 			},
-		})
+		});
 
 		// deriving derived protocols
 		deriveProtocols({
@@ -224,7 +222,7 @@ function deriveProtocolsFromGenerators() {
 						this.body.*statement(
 							forEachFn.*call( kvn.value, kvn.key, kvn.n )
 						);
-					}
+					};
 				}
 			},
 			reduce() {
@@ -242,7 +240,7 @@ function deriveProtocolsFromGenerators() {
 
 						this.body = outsideLoop;
 						this.body.*return( state );
-					}
+					};
 				}
 			},
 		});

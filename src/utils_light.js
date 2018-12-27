@@ -32,4 +32,4 @@ module.exports = {
 	language: es5,
 	id,
 	KVN, KVIt, VIt, Done,
-}
+};

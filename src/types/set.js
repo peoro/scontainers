@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {assert, traits, toStr, KVN} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -15,7 +15,7 @@ traits.scontainers.*implTraits( Set, {
 			collection.*forEach( value=>void set.add(value) );
 			return set;
 		}
-		assert( false );
+		assert.fail();
 	}
 });
 

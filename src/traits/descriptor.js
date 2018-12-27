@@ -1,7 +1,7 @@
 
-const assert = require('assert');
 const straits = require('straits');
 const utilTraits = require('./utils.js');
+const {assert} = require('../utils_light.js');
 
 use traits * from straits.utils;
 

@@ -1,6 +1,5 @@
 
-const assert = require('assert');
-const {traits, options, language, semantics, defaultGet} = require('../utils.js');
+const {assert, traits, options, language, semantics} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.semantics;
@@ -17,9 +16,8 @@ class CompilationFrame {
 			this.innerCalls = [];
 			this.traceInnerCall = function( traitName ) {
 				const genTrait = traits.generators[traitName];
-				const trait = traits.scontainers[traitName];
 				this.innerCalls.push( {traitName, generated:!!this[genTrait]} );
-			}
+			};
 		}
 
 		// inner: the CompilationFrame for our InnerType
@@ -38,7 +36,7 @@ class CompilationFrame {
 		});
 
 		// args
-		this.args = {}
+		this.args = {};
 		Type.*argKeys.forEach( argKey=>{
 			Object.defineProperty( this.args, argKey, {
 				get(){
@@ -53,7 +51,7 @@ class CompilationFrame {
 			const trait = traits.scontainers[traitName];
 
 			const compilationFrame = this;
-			function traitWrapper( ...args ) {
+			const traitWrapper = function( ...args ) {
 				if( options.debug ) {
 					compilationFrame.traceInnerCall( traitName );
 				}
@@ -67,7 +65,7 @@ class CompilationFrame {
 				//return compiler.getSelf( Type ).*member( traitVar, true ).*call( ...args );
 				return compilationFrame.self.*member( traitVar, true ).*call( ...args );
 			};
-			
+
 			if( trait ) {
 				trait.*impl( this, traitWrapper );
 			}
@@ -164,7 +162,7 @@ class Compiler extends language.Compiler {
 			fn() { return this[argKey]; }
 		}) );
 
-		return arg
+		return arg;
 	}
 	// like `getArg`, but operating on an array of args
 	getArgs( Type, ...argKeys ) {
@@ -242,7 +240,7 @@ class Compiler extends language.Compiler {
 
 	// compilation
 	compile() {
-		if( false ) {
+		if( options.showGeneratedFunctions ) {
 			const constantNames = Array.from( this.constants.values() ).map( variable=>variable.name );
 			console.log(`>>>>>>>>>>>>>>>>>>>>> ${this.mainFunction.id.name}(${constantNames}):`);
 			// console.log( fnFactory.toString() );
@@ -283,6 +281,7 @@ class Compiler extends language.Compiler {
 
 module.exports = Compiler;
 
+/*
 if( require.main === module ) {
 	const compiler = new Compiler( Type, key, function(){
 		// this.pushStatement( this.compiler.debug() );
@@ -293,3 +292,4 @@ if( require.main === module ) {
 	});
 	console.log( compiler.compile() );
 }
+*/

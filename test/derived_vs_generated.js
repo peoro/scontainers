@@ -28,7 +28,6 @@ function prepareData( scontainers ) {
 		set(){ return new Set([8, 12, -3, 5, 9, 0]); },
 		range0(){ return new Range(0); },
 		range1(){ return new Range(1); },
-		range(){ return new Range(11); },
 		range(){ return new Range(7, 21); },
 		obj0Properties(){ return {}.*properties(); },
 		obj0OwnProperties(){ return {}.*ownProperties(); },
@@ -68,7 +67,7 @@ function prepareData( scontainers ) {
 
 			obj[traitName] = function( coll ) {
 				return coll[trait].apply( coll, args );
-			}
+			};
 		}
 	}
 
@@ -83,32 +82,10 @@ function prepareData( scontainers ) {
 }
 
 function test( objs, maxDepth ) {
-	function tryTest( msg, fn ) {
-		expect( fn, msg ).not.to.throw();
-	};
-
-	function testEq( values, msg ) {
-		const {generated, derived} = values;
-		const same = _.isEqual( generated, derived );
-
-		if( ! same ) {
-			throw new Error( `${generated} != ${derived}` );
-		}
-	};
-
-	function map( obj, fn ) {
-		return _.map( obj, (value, key)=>{
-			if( key.match(/^_/) ) {
-				return 0;
-			}
-			return fn( value, key );
-		});
-	};
-
 	// testing everything automatically with a bunch of transformations...
 
 	// given a set of collections `colls`, applies all the functions in `obj`
-	function applyAll( colls, obj, nextFn ) {
+	const applyAll = function( colls, obj, nextFn ) {
 		_.forEach( obj, (fnObj, fnName)=>{
 			const nextColls = {};
 			_.forEach( fnObj, (fn, lib)=>{
@@ -122,7 +99,7 @@ function test( objs, maxDepth ) {
 			});
 			nextFn( fnName, nextColls );
 		});
-	}
+	};
 
 	for( let depth = 0; depth <= maxDepth; ++depth ) {
 		let outerIt = it;
@@ -139,7 +116,7 @@ function test( objs, maxDepth ) {
 				});
 			});
 			*/
-			function rec( opObjs, values={}, str=`` ) {
+			const rec = function( opObjs, values={}, str=`` ) {
 				if( opObjs.length === 0 ) {
 
 					innerIt( str, function(){
@@ -167,10 +144,10 @@ function test( objs, maxDepth ) {
 
 					const newStr = str ? `${str}.${stepName}()` : `${stepName}()`;
 					// describe( str, function(){
-						rec( nextOpObjs, results, newStr );
+					rec( nextOpObjs, results, newStr );
 					// });
 				});
-			}
+			};
 
 			// rec( [objs.generators, objs.transformations, objs.transformations, objs.transformations, objs.consumers] )
 			rec( [objs.generators, ...Array(depth).fill(objs.transformers), objs.consumers] );
@@ -184,7 +161,7 @@ describe(`compare generated with derived traits`, function() {
 	const derivatedData = prepareData( scontainers.onlyDerivation );
 
 	// merging data together
-	function mergeData( ...dataSets ) {
+	const mergeData = function( ...dataSets ) {
 		const dataSet = dataSets[0];
 
 		const data = {};
@@ -200,7 +177,7 @@ describe(`compare generated with derived traits`, function() {
 		}
 
 		return data;
-	}
+	};
 
 	test( mergeData(generatedData, derivatedData), 2 );
 });

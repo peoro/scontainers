@@ -9,13 +9,6 @@ function test( scontainers, depth ) {
 
 	use traits * from scontainers;
 
-	function isNumeric( x ) {
-		return ( (typeof x === 'number' || typeof x === 'string') && !isNaN(Number(x)) );
-	}
-	function toNumeric( x ) {
-		return isNumeric(x) ? +x : x;
-	}
-
 	const objs = {
 		finalize: {
 			sm(coll){ return coll.*collect(Array); },
@@ -46,7 +39,7 @@ function test( scontainers, depth ) {
 				// fuck this: objects sort their properties in a weird way :\
 				// sm(){ return new Map([[7, 5], [3, 9], [5, 9], [7, 2], [12, 27]]); },
 				sm(){ return new Map([[3, 9], [5, 9], [7, 2], [12, 27]]); },
-				lodash(){ return {7:5, 3:9, 5:9, 7:2, 12:27}; },
+				lodash(){ return {3:9, 5:9, 7:2, 12:27}; },
 			},
 			obj0Properties: {
 				sm(){ return {}.*properties(); },
@@ -132,7 +125,7 @@ function test( scontainers, depth ) {
 				sm(coll){ return coll.*sum(); },
 				lodash(coll){ return _.sum( _.values(coll) ); },
 			},
-			sum: {
+			avg: {
 				sm(coll){ return coll.*avg(); },
 				lodash(coll){ return _.meanBy( _.values(coll) ); },
 			},
@@ -194,7 +187,7 @@ function test( scontainers, depth ) {
 					return _.map( _.groupBy( coll, (v)=>`g${(v%2===0) + (v%3===0)}` ), x=>x );
 				},
 			},
-		_fail: {
+			_fail: {
 				sm(coll){ return coll.*sum() + 1; },
 				lodash(coll){ return _.sum( coll ); },
 			},
@@ -212,19 +205,12 @@ function test( scontainers, depth ) {
 
 	// actually testing...
 	{
-		function tryTest( msg, fn ) {
+		const tryTest = function( msg, fn ) {
 			// fn();
 			expect( fn, msg ).not.to.throw();
-			return;
-
-			try {
-				return fn() || 0;
-			} catch( err ) {
-				throw new Error( `${msg} mismatch: ${err.message}` );
-			}
 		};
 
-		function testEq( values, msg ) {
+		const testEq = function( values, msg ) {
 			const {sm, lodash} = values;
 			const same = _.isEqual( sm, lodash );
 
@@ -233,7 +219,7 @@ function test( scontainers, depth ) {
 			}
 		};
 
-		function map( obj, fn ) {
+		const map = function( obj, fn ) {
 			return _.sum( _.map( obj, (value, key)=>{
 				if( key.match(/^_/) ) {
 					return 0;
@@ -244,7 +230,7 @@ function test( scontainers, depth ) {
 
 		// testing everything automatically with a bunch of transformations...
 		{
-			function gen( fn ) {
+			const gen = function( fn ) {
 				return map( objs.customGens, (gen, name)=>{
 					const obj = {};
 					_.forEach( gen, (genFn, lib)=>{
@@ -252,58 +238,44 @@ function test( scontainers, depth ) {
 					});
 					return obj::fn( name );
 				});
-			}
-			function _transform( str, fn ) {
+			};
+			const _transform = function( str, fn ) {
 				return map( objs.transforms, (trns, tName)=>{
 					return this::applyAndCall( trns, `${str}.${tName}()`, fn );
-
-					return tryTest( `${str}.${tName}()`, ()=>{
-						const obj = {};
-						_.forEach( this, (coll, lib)=>{
-							obj[lib] = trns[lib]( coll );
-						});
-						return obj::fn( `${str}.${tName}()` );
-					});
 				});
-			}
-			function transform( fn ) {
+			};
+			const transform = function( fn ) {
 				return function( str ) {
 					return this::_transform( str, fn );
 				};
-			}
-			function _finalize( str, fn ) {
+			};
+			const _finalize = function( str, fn ) {
 				const obj = {};
 				_.forEach( this, (coll, lib)=>{
 					obj[lib] = objs.finalize[lib]( coll );
 				});
 				return obj::fn( str );
-			}
-			function finalize( fn ) {
+			};
+			const finalize = function( fn ) {
 				return function( str ) {
 					return this::_finalize( str, fn );
 				};
-			}
-			function _collect( str, fn ) {
+			};
+			const _collect = function( str, fn ) {
 				return map( objs.collectors, (cllc, cName)=>{
 					return this::applyAndCall( cllc, `${str}.${cName}()`, fn );
-
-					const obj = {};
-					_.forEach( this, (coll, lib)=>{
-						obj[lib] = cllc[lib]( coll );
-					});
-					return obj::fn( `${str}.${cName}()` );
 				});
-			}
-			function collect( fn ) {
+			};
+			const collect = function( fn ) {
 				return function( str ) {
 					return this::_collect( str, fn );
 				};
-			}
-			function test( str ) {
+			};
+			const test = function( str ) {
 				return tryTest( str, ()=>testEq(this) );
 			};
 
-			function applyAndCall( transformation, str, nextFn ) {
+			const applyAndCall = function( transformation, str, nextFn ) {
 				return tryTest( str, ()=>{
 					const obj = {};
 					_.forEach( this, (coll, lib)=>{
@@ -311,22 +283,15 @@ function test( scontainers, depth ) {
 					});
 					return obj::nextFn( str );
 				});
-			}
-			function apply( transformation) {
-				return function( nextFn ) {
-					return function( str ) {
-						return this::applyAndCall( transformation, str, nextFn );
-					};
-				};
-			}
+			};
 
-			function compose( ...fns ) {
+			const compose= function( ...fns ) {
 				const last = fns.pop();
 				return _.reduceRight( fns, (arg, fn)=>fn(arg), last );
-			}
-			function testSeq( ...fns ) {
+			};
+			const testSeq = function( ...fns ) {
 				return compose( gen, ...fns, test );
-			}
+			};
 
 			for( let i = 0; i < depth; ++i ) {
 				const nTransforms = Array( i ).fill( transform );

@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -35,7 +35,7 @@ module.exports = function( ParentCollection ) {
 			}
 			setNth() {
 				if( parentProto.*nth ) {
-					return function setNth( n, value ) { TODO(); };
+					return function setNth( n, value ) { global.TODO(); };
 				}
 			}
 			get() {
@@ -45,7 +45,7 @@ module.exports = function( ParentCollection ) {
 			}
 			set() {
 				if( parentProto.*get ) {
-					return function set( key, value ) { TODO(); };
+					return function set( key, value ) { global.TODO(); };
 				}
 			}
 			hasKey() {

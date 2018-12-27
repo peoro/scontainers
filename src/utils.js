@@ -26,7 +26,7 @@ const utils = {
 		semantics: semanticTraits,
 	},
 	toStr: straits.common.toString.*asMethod(),
-}
+};
 Object.assign( utils, utilsLight );
 
 // implementing util traits

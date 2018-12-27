@@ -1,7 +1,6 @@
 
-const assert = require('assert');
 const straits = require('straits');
-const {id} = require('../utils_light.js');
+const {assert, id} = require('../utils_light.js');
 
 use traits * from straits.core;
 use traits * from straits.utils;
@@ -59,8 +58,8 @@ Object.prototype.*addTraits = function( target, implementationObj ) {
 		}
 
 		sym.*impl( target, implementationObj[name] );
-	};
-}
+	}
+};
 
 class Factory {
 	constructor( factory, target ) {
@@ -137,14 +136,14 @@ if( require.main === module ) {
 	use traits * from traits;
 
 	const logs = [];
-	function log( arg ) {
+	const log = function( arg ) {
 		logs.push( arg );
-	}
+	};
 	// checks and clears logs
-	function checkLogs( ...expectedLogs ) {
+	const checkLogs = function( ...expectedLogs ) {
 		assert.deepStrictEqual( logs, expectedLogs );
 		logs.length = 0;
-	}
+	};
 
 	const obj = {};
 	const factoryObj = {
@@ -152,7 +151,7 @@ if( require.main === module ) {
 			log( `a factory` );
 			return function() {
 				log( `a` );
-			}
+			};
 		},
 		b() {
 			log( `b factory` );
@@ -165,7 +164,7 @@ if( require.main === module ) {
 				log( `x factory` );
 				return function() {
 					log( `x` );
-				}
+				};
 			},
 		},
 		y: {
@@ -173,7 +172,7 @@ if( require.main === module ) {
 				log( `y factory` );
 				return function() {
 					log( `y` );
-				}
+				};
 			},
 		},
 		z: {
@@ -181,7 +180,7 @@ if( require.main === module ) {
 				log( `z factory` );
 				return function() {
 					log( `z` );
-				}
+				};
 			},
 			canProduce() {
 				log( `z can produce` );

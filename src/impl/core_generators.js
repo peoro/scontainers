@@ -23,7 +23,7 @@ Object.prototype.*implCoreGenerators = function( compilerConfiguration ) {
 
 	// deriving non-core protocols from our protocol generators
 	this::deriveProtocolsFromGenerators();
-}
+};
 
 function compileProtocolsForRootType( compilerConfiguration ) {
 	const Collection = this;
@@ -43,7 +43,7 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 			getUnchecked = function( key ) {
 				const n = this.*keyToN( key );
 				return this::nthUnchecked( n );
-			}
+			};
 		}
 	}
 
@@ -52,7 +52,6 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 
 	// deriving the other core protocol generator factories we can derive from the non-protocol data
 	{
-		const proto = this.prototype;
 		use traits * from traits.generators;
 
 		traits.generators.*addTraitFactories( this, {
@@ -72,7 +71,7 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 							*/
 
 						return new KVN( this.*nToKey( n ), this::nthUnchecked( n ), n );
-					}
+					};
 				}
 			},
 			getKVN() {
@@ -87,12 +86,12 @@ function compileProtocolsForRootType( compilerConfiguration ) {
 							);
 							*/
 							return new KVN( key, this::getUnchecked( key ), this.*keyToN( key ) );
-						}
+						};
 					}
 					else {
 						return function( key ) {
 							return new KVN( key, this::getUnchecked( key ) );
-						}
+						};
 					}
 				}
 			},
@@ -154,7 +153,7 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 				if( Collection.*mappingOnly && ParentType.*len ) {
 					return function() {
 						return this.inner.*len();
-					}
+					};
 				}
 			},
 
@@ -218,8 +217,6 @@ function compileProtocolsForTransformation( compilerConfiguration ) {
 function deriveCoreProtocolGenerators() {
 	assert( this, `deriveCoreProtocolGenerators() must be called on an object` );
 
-	const Type = this;
-
 	use traits * from traits.generators;
 
 	traits.generators.*addTraitFactories( this, {
@@ -228,7 +225,7 @@ function deriveCoreProtocolGenerators() {
 				return function( key ) {
 					const n = this.*keyToN( key );
 					return this.*nthKVN( n );
-				}
+				};
 			}
 		},
 		hasKey() {
@@ -240,7 +237,7 @@ function deriveCoreProtocolGenerators() {
 						n.*ge( 0 ),
 						n.*lt( this.*len() )
 					);
-				}
+				};
 			}
 		},
 		set() {
@@ -248,7 +245,7 @@ function deriveCoreProtocolGenerators() {
 				return function( key, value ) {
 					const n = this.*keyToN( key );
 					return this.*setNth( n, value );
-				}
+				};
 			}
 		},
 		loop() {

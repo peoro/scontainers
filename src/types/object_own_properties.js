@@ -7,7 +7,6 @@ use traits * from traits.semantics;
 
 module.exports = function( ParentCollection ) {
 	assert( ParentCollection === Object, `ObjectOwnProperties is only needed by Object...` );
-	const parentProto = ParentCollection.prototype;
 
 	return function() {
 		class OwnProperties {

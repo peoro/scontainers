@@ -1,5 +1,16 @@
 
 # source directories
-src/
-test/
-TODO/
+/src/
+/test/
+/TODO/
+
+# linter
+.eslintrc.*
+
+# coverage files
+/coverage/
+.nyc_output
+*.lcov
+
+# CI
+.travis.*

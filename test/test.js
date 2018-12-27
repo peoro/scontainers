@@ -1,6 +1,4 @@
 
-'use strict';
-
 const scontainers = require('./scontainers.js').full;
 const {Range} = scontainers;
 
@@ -18,14 +16,14 @@ square::overrideFunctionName( `n²` );
 function multipleOf( k ) {
 	function multipleOfK( n ) {
 		return n % k === 0;
-	};
+	}
 	multipleOfK::overrideFunctionName( `n|${k}` );
 	return multipleOfK;
 }
 function lessThan( k ) {
 	function lessThanK( n ) {
 		return n < k;
-	};
+	}
 	lessThanK::overrideFunctionName( `n<${k}` );
 	return lessThanK;
 }
@@ -132,10 +130,8 @@ function test( console ) {
 
 				git.onNext( (kv)=>{
 					console.log( `  ${kv.key}:${kv.value} => group ${groupKey}` );
-				})
-				.proceed();
-			})
-			.proceed();
+				}).proceed();
+			}).proceed();
 		}
 		console.log();
 
@@ -157,7 +153,7 @@ function test( console ) {
 		{
 			const res = coll.*map( group=>{
 				return group.*sum();
-			}).*sum()
+			}).*sum();
 
 			console.log( res );
 		}
@@ -244,7 +240,7 @@ function test( console ) {
 	}
 
 	console.log( fib.*nth(70) );
-};
+}
 
 {
 	const assert = require('assert');

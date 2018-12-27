@@ -1,5 +1,5 @@
 
-const {traits, toStr, id, KVN} = require('../utils.js');
+const {traits, id} = require('../utils.js');
 
 use traits * from traits.utils;
 use traits * from traits.scontainers;
@@ -58,7 +58,7 @@ Range.*implCoreTraits({
 
 	// optimizations
 	sum() { return ( this.begin + this.end-1 ) * this.len() / 2; },
-	slice( begin, end ) { return new Range(this.begin+begin, this.begin+end) },
+	slice( begin, end ) { return new Range(this.begin+begin, this.begin+end); },
 });
 
 module.exports = Range;

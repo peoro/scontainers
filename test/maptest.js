@@ -1,8 +1,5 @@
 
-'use strict';
-
 const scontainers = require('../src/index.js');
-const {Range} = scontainers;
 
 use traits * from scontainers;
 
