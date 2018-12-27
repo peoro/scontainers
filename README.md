@@ -1,6 +1,6 @@
+# scontainers ![npm (scoped)](https://img.shields.io/npm/v/scontainers.svg?style=popout) ![NpmLicense](https://img.shields.io/npm/l/scontainers.svg?style=popout) ![David](https://img.shields.io/david/peoro/scontainers.svg?style=popout) ![Travis (.com)](https://img.shields.io/travis/com/peoro/scontainers.svg?style=popout) ![Coveralls github](https://img.shields.io/coveralls/github/peoro/scontainers.svg?style=popout)
 
-# Scontainers
-Scontainers is a container/collection/iterator library for JavaScript, extremely comfortable to use, performant and versatile.
+Scontainers is a container/collection/iterator library for JavaScript, comfortable to use, performant and versatile.
 
 Scontainers offers functional-style operations like `forEach`, `map`, `filter`, `reduce` etc, similarly to [lodash](https://lodash.com/) and [underscore](https://underscorejs.org/), but it...
 
