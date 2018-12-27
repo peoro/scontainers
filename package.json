@@ -1,6 +1,6 @@
 {
 	"name": "scontainers",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "A container/collection/iterator library for JavaScript, comfortable to use, performant and versatile.",
 	"main": "index.js",
 	"scripts": {
